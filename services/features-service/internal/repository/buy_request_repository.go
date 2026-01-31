@@ -106,6 +106,20 @@ func (r *BuyRequestRepository) UpdateStatus(ctx context.Context, id uint64, stat
 	return err
 }
 
+// UpdateStatusWithTx updates the status within a transaction
+func (r *BuyRequestRepository) UpdateStatusWithTx(ctx context.Context, tx *sql.Tx, id uint64, status int) error {
+	query := "UPDATE buy_feature_requests SET status = ?, updated_at = NOW() WHERE id = ?"
+	_, err := tx.ExecContext(ctx, query, status, id)
+	return err
+}
+
+// SoftDeleteWithTx soft deletes within a transaction
+func (r *BuyRequestRepository) SoftDeleteWithTx(ctx context.Context, tx *sql.Tx, id uint64) error {
+	query := "UPDATE buy_feature_requests SET deleted_at = NOW() WHERE id = ?"
+	_, err := tx.ExecContext(ctx, query, id)
+	return err
+}
+
 // ListByBuyerID retrieves all buy requests for a buyer (excluding soft-deleted)
 func (r *BuyRequestRepository) ListByBuyerID(ctx context.Context, buyerID uint64) ([]*models.BuyFeatureRequest, error) {
 	query := `

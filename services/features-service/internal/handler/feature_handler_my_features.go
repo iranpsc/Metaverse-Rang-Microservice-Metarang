@@ -189,7 +189,7 @@ func (h *FeatureHandler) UpdateMyFeature(ctx context.Context, req *pb.UpdateMyFe
 		}
 		// Check for validation errors from pricing service
 		if strings.Contains(err.Error(), "حداقل درصد") {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
 		}
 		return nil, status.Errorf(codes.Internal, "failed to update feature: %v", err)
 	}

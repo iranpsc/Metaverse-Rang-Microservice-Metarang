@@ -300,6 +300,13 @@ func (r *FeatureRepository) UpdateOwner(ctx context.Context, featureID, newOwner
 	return err
 }
 
+// UpdateOwnerWithTx transfers ownership within a transaction
+func (r *FeatureRepository) UpdateOwnerWithTx(ctx context.Context, tx *sql.Tx, featureID, newOwnerID uint64) error {
+	query := "UPDATE features SET owner_id = ?, updated_at = NOW() WHERE id = ?"
+	_, err := tx.ExecContext(ctx, query, newOwnerID, featureID)
+	return err
+}
+
 // IsLocked checks if a feature is locked
 func (r *FeatureRepository) IsLocked(ctx context.Context, featureID uint64) (bool, error) {
 	query := `

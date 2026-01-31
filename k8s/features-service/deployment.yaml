@@ -11,11 +11,16 @@ spec:
   selector:
     matchLabels:
       app: features-service
+      version: v1
   template:
     metadata:
       labels:
         app: features-service
         version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
     spec:
       containers:
       - name: features-service
@@ -29,20 +34,64 @@ spec:
           name: metrics
           protocol: TCP
         env:
-        - name: DB_DSN
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: metargb-config
+              key: db.host
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: metargb-config
+              key: db.port
+        - name: DB_USER
           valueFrom:
             secretKeyRef:
-              name: mysql-credentials
-              key: dsn
+              name: metargb-secrets
+              key: db.user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: metargb-secrets
+              key: db.password
+        - name: DB_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: metargb-config
+              key: db.database
         - name: PORT
           value: "50051"
         - name: METRICS_PORT
           value: "9090"
+        - name: COMMERCIAL_SERVICE_ADDR
+          value: "commercial-service:50052"
+        - name: NOTIFICATIONS_SERVICE_ADDR
+          value: "notifications-service:50058"
+        - name: AUTH_SERVICE_ADDR
+          value: "auth-service:50051"
+        - name: REDIS_ADDR
+          valueFrom:
+            configMapKeyRef:
+              name: metargb-config
+              key: redis.host
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: metargb-secrets
+              key: redis.password
+              optional: true
+        - name: BROADCAST_CHANNEL
+          value: "feature-events"
+        - name: COMMERCIAL_SERVICE_TIMEOUT
+          value: "3s"
+        - name: COMMERCIAL_SERVICE_RETRIES
+          value: "3"
         - name: THREE_D_META_URL
           valueFrom:
             configMapKeyRef:
-              name: shared-config
-              key: three_d_meta_url
+              name: metargb-config
+              key: threed.meta.url
+              optional: true
         resources:
           requests:
             memory: "256Mi"
@@ -52,14 +101,19 @@ spec:
             cpu: "500m"
         livenessProbe:
           exec:
-            command: ["/bin/grpc_health_probe", "-addr=:50051"]
-          initialDelaySeconds: 10
-          periodSeconds: 10
+            command: ["/bin/sh", "-c", "nc -z localhost 50051"]
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
         readinessProbe:
           exec:
-            command: ["/bin/grpc_health_probe", "-addr=:50051"]
-          initialDelaySeconds: 5
-          periodSeconds: 5
+            command: ["/bin/sh", "-c", "nc -z localhost 50051"]
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+      restartPolicy: Always
 ---
 apiVersion: v1
 kind: Service
@@ -107,4 +161,3 @@ spec:
       target:
         type: Utilization
         averageUtilization: 80
-

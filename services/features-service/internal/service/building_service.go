@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"regexp"
 	"strconv"
 	"time"
@@ -195,25 +194,31 @@ func (s *BuildingService) BuildFeature(ctx context.Context, req *pb.BuildFeature
 		return fmt.Errorf("insufficient satisfaction: required %f, available %f", launchedSatisfaction, walletSatisfaction)
 	}
 
-	// 5. Validate rotation
+	// 5. Deduct satisfaction from wallet before creating building
+	err = s.commercialClient.DeductBalance(ctx, user.UserID, "satisfaction", launchedSatisfaction)
+	if err != nil {
+		return fmt.Errorf("failed to deduct satisfaction: %w", err)
+	}
+
+	// 6. Validate rotation
 	_, err = strconv.ParseFloat(req.Rotation, 64)
 	if err != nil {
 		return fmt.Errorf("invalid rotation: %w", err)
 	}
 
-	// 6. Validate position format (regex: ^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$)
+	// 7. Validate position format (regex: ^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$)
 	positionRegex := regexp.MustCompile(`^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$`)
 	if !positionRegex.MatchString(req.Position) {
 		return fmt.Errorf("invalid position format: expected 'x,y'")
 	}
 
-	// 7. Build information JSON if provided
+	// 8. Build information JSON only if activity_line is provided
 	var informationJSON string
-	if req.Information != nil {
+	if req.Information != nil && req.Information.ActivityLine != "" {
+		// Only create information JSON if activity_line is provided
 		infoMap := make(map[string]interface{})
-		if req.Information.ActivityLine != "" {
-			infoMap["activity_line"] = req.Information.ActivityLine
-		}
+		infoMap["activity_line"] = req.Information.ActivityLine
+
 		if req.Information.Name != "" {
 			infoMap["name"] = req.Information.Name
 		}
@@ -230,75 +235,95 @@ func (s *BuildingService) BuildFeature(ctx context.Context, req *pb.BuildFeature
 			infoMap["description"] = req.Information.Description
 		}
 
-		if len(infoMap) > 0 {
-			infoBytes, err := json.Marshal(infoMap)
-			if err != nil {
-				return fmt.Errorf("failed to marshal information: %w", err)
-			}
-			informationJSON = string(infoBytes)
+		infoBytes, err := json.Marshal(infoMap)
+		if err != nil {
+			return fmt.Errorf("failed to marshal information: %w", err)
 		}
+		informationJSON = string(infoBytes)
 
-		// Create ISIC code if activity_line is provided
-		if req.Information.ActivityLine != "" {
-			_, err = s.buildingRepo.FirstOrCreateIsicCode(ctx, req.Information.ActivityLine)
-			if err != nil {
-				return fmt.Errorf("failed to create ISIC code: %w", err)
-			}
+		// Create ISIC code
+		_, err = s.buildingRepo.FirstOrCreateIsicCode(ctx, req.Information.ActivityLine)
+		if err != nil {
+			return fmt.Errorf("failed to create ISIC code: %w", err)
 		}
 	}
+	// If activity_line not provided, informationJSON remains empty string
 
-	// 8. Calculate construction end date
-	// Duration: buildingModel.required_satisfaction * 288000 / launched_satisfaction
-	constructionDuration := requiredSatisfaction * 288000.0 / launchedSatisfaction
+	// 9. Calculate construction end date
+	// Duration in hours: buildingModel.required_satisfaction * 288000 / launched_satisfaction
+	constructionDurationHours := requiredSatisfaction * 288000.0 / launchedSatisfaction
 	constructionStartDate := time.Now()
-	constructionEndDate := constructionStartDate.Add(time.Duration(constructionDuration) * time.Second)
+	// Convert hours to seconds for time.Duration
+	constructionEndDate := constructionStartDate.Add(time.Duration(constructionDurationHours * 3600) * time.Second)
 
-	// 9. Deactivate hourly profits for this feature
+	// 10. Deactivate hourly profits for this feature
 	if err := s.hourlyProfitRepo.DeactivateProfitsForFeature(ctx, req.FeatureId); err != nil {
+		// Refund wallet on error
+		s.commercialClient.AddBalance(ctx, user.UserID, "satisfaction", launchedSatisfaction)
 		return fmt.Errorf("failed to deactivate profits: %w", err)
 	}
 
-	// 10. Calculate bubble diameter from model attributes
-	// Parse attributes JSON to extract width, length, and density (from attributes, not properties)
-	var bubbleDiameter float64
-	var attributes map[string]interface{}
-	if err := json.Unmarshal([]byte(buildingModel.Attributes), &attributes); err == nil {
-		bubbleDiameter = s.calculateBubbleDiameter(attributes)
-	}
+	// 11. Calculate bubble diameter from model attributes
+	// Attributes are stored as JSON string in buildingModel.Attributes
+	bubbleDiameter := s.calculateBubbleDiameter(buildingModel.Attributes)
 
 	// 12. Create building record
 	err = s.buildingRepo.CreateBuilding(ctx, req.FeatureId, req.BuildingModelId,
 		req.LaunchedSatisfaction, req.Rotation, req.Position, informationJSON,
 		constructionStartDate, constructionEndDate, bubbleDiameter)
 	if err != nil {
-		// Reactivate profits on error
+		// Rollback: reactivate profits and refund wallet on error
 		s.hourlyProfitRepo.ActivateProfitsForFeature(ctx, req.FeatureId)
+		s.commercialClient.AddBalance(ctx, user.UserID, "satisfaction", launchedSatisfaction)
 		return fmt.Errorf("failed to create building: %w", err)
 	}
 
 	return nil
 }
 
+// ExtractAttributeValue extracts a value by slug from attributes array
+// Attributes format: [{"slug": "width", "value": 50}, ...]
+func ExtractAttributeValue(attributes []map[string]interface{}, slug string) (float64, bool) {
+	for _, attr := range attributes {
+		if s, ok := attr["slug"].(string); ok && s == slug {
+			if v, ok := attr["value"].(float64); ok {
+				return v, true
+			}
+		}
+	}
+	return 0, false
+}
+
 // calculateBubbleDiameter calculates bubble diameter from model attributes
-// Expects attributes to have 'width', 'length', and 'density'
-func (s *BuildingService) calculateBubbleDiameter(attributes map[string]interface{}) float64 {
-	width, widthOk := attributes["width"].(float64)
-	length, lengthOk := attributes["length"].(float64)
-	density, densityOk := attributes["density"].(float64)
+// Expects attributes JSON string with array format: [{"slug": "width", "value": 50}, ...]
+// Formula: perimeter × coefficient where:
+//   - perimeter = 2 × (width + length)
+//   - coefficient = 1 + (0.3 × (density - 1))
+func (s *BuildingService) calculateBubbleDiameter(attributesJSON string) float64 {
+	var attributes []map[string]interface{}
+	if err := json.Unmarshal([]byte(attributesJSON), &attributes); err != nil {
+		return 0.0
+	}
+
+	width, widthOk := ExtractAttributeValue(attributes, "width")
+	length, lengthOk := ExtractAttributeValue(attributes, "length")
+	density, densityOk := ExtractAttributeValue(attributes, "density")
 
 	if !widthOk || !lengthOk || !densityOk {
 		return 0.0
 	}
 
-	// Calculate based on width, length, and density
-	// Formula: sqrt((width * length * density) / PI)
-	area := width * length * density
-	if area <= 0 {
-		return 0.0
+	// Calculate perimeter: 2 × (width + length)
+	perimeter := 2.0 * (width + length)
+
+	// Calculate coefficient: starts at 1, adds 0.3 for each density level above 1
+	coefficient := 1.0
+	for i := 1; i < int(density); i++ {
+		coefficient += 0.3
 	}
 
-	diameter := math.Sqrt(area / math.Pi)
-	return diameter
+	// Final diameter: perimeter × coefficient
+	return perimeter * coefficient
 }
 
 // GetBuildings retrieves all buildings on a feature with Jalali formatted dates
@@ -425,13 +450,22 @@ func (s *BuildingService) UpdateBuilding(ctx context.Context, req *pb.UpdateBuil
 		return nil, fmt.Errorf("invalid position format: expected 'x,y'")
 	}
 
-	// 6. Build information JSON if provided
+	// 6. Get existing building to preserve start date and bubble diameter
+	existingBuilding, err := s.buildingRepo.FindBuildingByFeatureAndModel(ctx, req.FeatureId, req.BuildingModelId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find existing building: %w", err)
+	}
+	if existingBuilding == nil {
+		return nil, fmt.Errorf("building not found")
+	}
+
+	// 7. Build information JSON only if activity_line is provided
 	var informationJSON string
-	if req.Information != nil {
+	if req.Information != nil && req.Information.ActivityLine != "" {
+		// Only create information JSON if activity_line is provided
 		infoMap := make(map[string]interface{})
-		if req.Information.ActivityLine != "" {
-			infoMap["activity_line"] = req.Information.ActivityLine
-		}
+		infoMap["activity_line"] = req.Information.ActivityLine
+
 		if req.Information.Name != "" {
 			infoMap["name"] = req.Information.Name
 		}
@@ -448,25 +482,23 @@ func (s *BuildingService) UpdateBuilding(ctx context.Context, req *pb.UpdateBuil
 			infoMap["description"] = req.Information.Description
 		}
 
-		if len(infoMap) > 0 {
-			infoBytes, err := json.Marshal(infoMap)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal information: %w", err)
-			}
-			informationJSON = string(infoBytes)
+		infoBytes, err := json.Marshal(infoMap)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal information: %w", err)
+		}
+		informationJSON = string(infoBytes)
+
+		// Create ISIC code
+		_, err = s.buildingRepo.FirstOrCreateIsicCode(ctx, req.Information.ActivityLine)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create ISIC code: %w", err)
 		}
 	}
+	// If activity_line not provided, informationJSON remains empty string (will preserve existing if not updating)
 
-	// 7. Recalculate construction end date using updated satisfaction
-	constructionDuration := requiredSatisfaction * 288000.0 / launchedSatisfaction
-	// Get existing building to preserve start date
-	existingBuilding, err := s.buildingRepo.FindBuildingByFeatureAndModel(ctx, req.FeatureId, req.BuildingModelId)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find existing building: %w", err)
-	}
-	if existingBuilding == nil {
-		return nil, fmt.Errorf("building not found")
-	}
+	// 8. Recalculate construction end date using updated satisfaction
+	// Duration in hours: buildingModel.required_satisfaction * 288000 / launched_satisfaction
+	constructionDurationHours := requiredSatisfaction * 288000.0 / launchedSatisfaction
 
 	// Parse start date from existing building
 	// The date comes from database in MySQL datetime format: "2006-01-02 15:04:05"
@@ -494,19 +526,16 @@ func (s *BuildingService) UpdateBuilding(ctx context.Context, req *pb.UpdateBuil
 		constructionStartDate = time.Now()
 	}
 
-	constructionEndDate := constructionStartDate.Add(time.Duration(constructionDuration) * time.Second)
+	// Convert hours to seconds for time.Duration
+	constructionEndDate := constructionStartDate.Add(time.Duration(constructionDurationHours * 3600) * time.Second)
 
-	// 8. Calculate bubble diameter
-	var bubbleDiameter float64
-	var attributes map[string]interface{}
-	if err := json.Unmarshal([]byte(buildingModel.Attributes), &attributes); err == nil {
-		bubbleDiameter = s.calculateBubbleDiameter(attributes)
-	}
+	// 9. Preserve existing bubble diameter (don't recalculate on update)
+	existingBubbleDiameter, _ := strconv.ParseFloat(existingBuilding.BubbleDiameter, 64)
 
-	// 9. Update building
+	// 10. Update building (preserve existing bubble diameter)
 	updatedBuilding, err := s.buildingRepo.UpdateBuilding(ctx, req.FeatureId, req.BuildingModelId,
 		req.LaunchedSatisfaction, req.Rotation, req.Position, informationJSON,
-		constructionEndDate, bubbleDiameter)
+		constructionEndDate, existingBubbleDiameter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update building: %w", err)
 	}
@@ -543,7 +572,7 @@ func (s *BuildingService) UpdateBuilding(ctx context.Context, req *pb.UpdateBuil
 	return updatedBuilding, nil
 }
 
-// DestroyBuilding removes a building from a feature
+// DestroyBuilding removes a building from a feature and refunds invested satisfaction
 func (s *BuildingService) DestroyBuilding(ctx context.Context, featureID, buildingModelID uint64) error {
 	// Check ownership
 	feature, _, err := s.featureRepo.FindByID(ctx, featureID)
@@ -561,10 +590,41 @@ func (s *BuildingService) DestroyBuilding(ctx context.Context, featureID, buildi
 		return fmt.Errorf("unauthorized: user does not own this feature")
 	}
 
-	// Reactivate hourly profits when building is destroyed
-	if err := s.hourlyProfitRepo.ActivateProfitsForFeature(ctx, featureID); err != nil {
-		return fmt.Errorf("failed to reactivate profits: %w", err)
+	// Get building to retrieve launched_satisfaction for refund
+	building, err := s.buildingRepo.FindBuildingByFeatureAndModel(ctx, featureID, buildingModelID)
+	if err != nil {
+		return fmt.Errorf("failed to find building: %w", err)
+	}
+	if building == nil {
+		return fmt.Errorf("building not found")
 	}
 
-	return s.buildingRepo.DeleteBuilding(ctx, featureID, buildingModelID)
+	// Parse launched_satisfaction for refund
+	launchedSat, err := strconv.ParseFloat(building.LaunchedSatisfaction, 64)
+	if err != nil {
+		// Log error but continue with deletion
+		fmt.Printf("Warning: failed to parse launched_satisfaction for refund: %v\n", err)
+		launchedSat = 0
+	}
+
+	// Delete building first
+	if err := s.buildingRepo.DeleteBuilding(ctx, featureID, buildingModelID); err != nil {
+		return fmt.Errorf("failed to delete building: %w", err)
+	}
+
+	// Reactivate hourly profits when building is destroyed
+	if err := s.hourlyProfitRepo.ActivateProfitsForFeature(ctx, featureID); err != nil {
+		// Log error but don't fail - building already deleted
+		fmt.Printf("Warning: failed to reactivate profits: %v\n", err)
+	}
+
+	// Refund satisfaction to wallet
+	if launchedSat > 0 && s.commercialClient != nil {
+		if err := s.commercialClient.AddBalance(ctx, user.UserID, "satisfaction", launchedSat); err != nil {
+			// Log error but don't fail - building already deleted
+			fmt.Printf("Warning: failed to refund satisfaction: %v\n", err)
+		}
+	}
+
+	return nil
 }

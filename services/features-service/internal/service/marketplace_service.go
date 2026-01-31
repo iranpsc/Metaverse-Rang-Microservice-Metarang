@@ -9,6 +9,8 @@ import (
 
 	"metargb/features-service/internal/client"
 	"metargb/features-service/internal/constants"
+	"metargb/features-service/internal/events"
+	"metargb/features-service/internal/metrics"
 	"metargb/features-service/internal/models"
 	"metargb/features-service/internal/repository"
 	pb "metargb/shared/pb/features"
@@ -28,8 +30,11 @@ type MarketplaceService struct {
 	hourlyProfitRepo   *repository.HourlyProfitRepository
 	featureLimitRepo   *repository.FeatureLimitRepository
 	systemVariableRepo *repository.SystemVariableRepository
+	variableRepo       *repository.VariableRepository
 	commercialClient   *client.CommercialClient
 	notificationClient *client.NotificationClient
+	eventBroadcaster   events.EventBroadcaster
+	metrics            *metrics.MarketplaceMetrics
 	db                 *sql.DB
 	log                *logger.Logger
 }
@@ -44,8 +49,11 @@ func NewMarketplaceService(
 	lockedAssetRepo *repository.LockedAssetRepository,
 	hourlyProfitRepo *repository.HourlyProfitRepository,
 	featureLimitRepo *repository.FeatureLimitRepository,
+	variableRepo *repository.VariableRepository,
 	commercialClient *client.CommercialClient,
 	notificationClient *client.NotificationClient,
+	eventBroadcaster events.EventBroadcaster,
+	marketplaceMetrics *metrics.MarketplaceMetrics,
 	db *sql.DB,
 	log *logger.Logger,
 ) *MarketplaceService {
@@ -60,8 +68,11 @@ func NewMarketplaceService(
 		hourlyProfitRepo:   hourlyProfitRepo,
 		featureLimitRepo:   featureLimitRepo,
 		systemVariableRepo: repository.NewSystemVariableRepository(db),
+		variableRepo:       variableRepo,
 		commercialClient:   commercialClient,
 		notificationClient: notificationClient,
+		eventBroadcaster:   eventBroadcaster,
+		metrics:            marketplaceMetrics,
 		db:                 db,
 		log:                log,
 	}
@@ -188,6 +199,11 @@ func (s *MarketplaceService) handleLimitedFeature(ctx context.Context, feature *
 
 	s.log.Info("Limited feature purchased", "trade_id", tradeID, "feature_id", feature.ID, "buyer_id", buyerID)
 
+	// Record metrics
+	if s.metrics != nil {
+		s.metrics.RecordTrade("limited", 0, 0)
+	}
+
 	// Create hourly profit
 	withdrawProfitDays, err := s.getUserVariableWithdrawProfit(ctx, buyerID)
 	if err != nil {
@@ -202,6 +218,21 @@ func (s *MarketplaceService) handleLimitedFeature(ctx context.Context, feature *
 	// Track limited feature purchase
 	if err := s.featureLimitRepo.TrackLimitedPurchase(ctx, buyerID, limitation.ID, feature.ID); err != nil {
 		s.log.Error("Failed to track limited purchase", "error", err)
+	}
+
+	// Send notification to buyer
+	if s.notificationClient != nil {
+		colorPersian := constants.GetColorPersian(properties.Karbari)
+		if err := s.notificationClient.SendBuyFeatureNotification(ctx, buyerID, feature.ID, true, colorPersian, properties.Stability, 0, 0); err != nil {
+			s.log.Warn("Failed to send buy feature notification", "error", err)
+		}
+	}
+
+	// Broadcast feature status change
+	if s.eventBroadcaster != nil {
+		if err := s.eventBroadcaster.BroadcastFeatureStatusChanged(ctx, feature.ID, newStatus); err != nil {
+			s.log.Warn("Failed to broadcast feature status changed", "error", err)
+		}
 	}
 
 	return nil
@@ -278,6 +309,26 @@ func (s *MarketplaceService) buyFromRGB(ctx context.Context, feature *models.Fea
 	_, err = s.hourlyProfitRepo.Create(ctx, buyerID, feature.ID, color, withdrawProfitDays)
 	if err != nil {
 		s.log.Error("Failed to create hourly profit", "error", err)
+	}
+
+	// Record metrics
+	if s.metrics != nil {
+		s.metrics.RecordTrade("rgb", 0, 0)
+	}
+
+	// Send notification to buyer
+	if s.notificationClient != nil {
+		colorPersian := constants.GetColorPersian(properties.Karbari)
+		if err := s.notificationClient.SendBuyFeatureNotification(ctx, buyerID, feature.ID, true, colorPersian, properties.Stability, 0, 0); err != nil {
+			s.log.Warn("Failed to send buy feature notification", "error", err)
+		}
+	}
+
+	// Broadcast feature status change
+	if s.eventBroadcaster != nil {
+		if err := s.eventBroadcaster.BroadcastFeatureStatusChanged(ctx, feature.ID, newStatus); err != nil {
+			s.log.Warn("Failed to broadcast feature status changed", "error", err)
+		}
 	}
 
 	return nil
@@ -413,6 +464,37 @@ func (s *MarketplaceService) buyFromUser(ctx context.Context, feature *models.Fe
 		"seller_id", feature.OwnerID,
 	)
 
+	// Record metrics
+	if s.metrics != nil {
+		s.metrics.RecordTrade("user", buyerChargePSC, buyerChargeIRR)
+	}
+
+	// Send notifications to buyer and seller
+	if s.notificationClient != nil {
+		// Notify buyer - user-to-user purchase (PSC + IRR)
+		if err := s.notificationClient.SendBuyFeatureNotification(ctx, buyerID, feature.ID, false, "", 0, buyerChargePSC, buyerChargeIRR); err != nil {
+			s.log.Warn("Failed to send buy feature notification to buyer", "error", err)
+		}
+		
+		// Notify seller - they received payment
+		if err := s.notificationClient.SendNotification(ctx, feature.OwnerID, "sellFeature", "فروش ملک", 
+			fmt.Sprintf("ملک %d با موفقیت فروخته شد.", feature.ID), 
+			map[string]string{
+				"feature_id": fmt.Sprintf("%d", feature.ID),
+				"trade_id":   fmt.Sprintf("%d", tradeID),
+				"related-to": "transactions",
+			}); err != nil {
+			s.log.Warn("Failed to send sell feature notification to seller", "error", err)
+		}
+	}
+
+	// Broadcast feature status change
+	if s.eventBroadcaster != nil {
+		if err := s.eventBroadcaster.BroadcastFeatureStatusChanged(ctx, feature.ID, newStatus); err != nil {
+			s.log.Warn("Failed to broadcast feature status changed", "error", err)
+		}
+	}
+
 	return nil
 }
 
@@ -466,6 +548,12 @@ func (s *MarketplaceService) getRGBUserID(ctx context.Context) (uint64, error) {
 func (s *MarketplaceService) createCommission(ctx context.Context, tradeID uint64, psc, irr float64) error {
 	query := "INSERT INTO comissions (trade_id, psc, irr, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())"
 	_, err := s.db.ExecContext(ctx, query, tradeID, psc, irr)
+	return err
+}
+
+func (s *MarketplaceService) createCommissionWithTx(ctx context.Context, tx *sql.Tx, tradeID uint64, psc, irr float64) error {
+	query := "INSERT INTO comissions (trade_id, psc, irr, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())"
+	_, err := tx.ExecContext(ctx, query, tradeID, psc, irr)
 	return err
 }
 
@@ -575,13 +663,34 @@ func (s *MarketplaceService) SendBuyRequest(ctx context.Context, req *pb.SendBuy
 		"feature_id", featureID,
 	)
 
-	// TODO: Send notifications via Notifications Service
+	// Record metrics
+	if s.metrics != nil {
+		s.metrics.RecordBuyRequest("pending")
+		// Update locked assets gauge
+		s.updateLockedAssetsMetrics(ctx)
+	}
+
+	// Send notifications to buyer and seller
+	if s.notificationClient != nil {
+		// Notify buyer
+		if err := s.notificationClient.SendBuyRequestNotification(ctx, buyerID, "buyer", requestID, featureID, pricePSC, priceIRR); err != nil {
+			s.log.Warn("Failed to send buy request notification to buyer", "error", err)
+		}
+		// Notify seller
+		if err := s.notificationClient.SendBuyRequestNotification(ctx, sellerID, "seller", requestID, featureID, pricePSC, priceIRR); err != nil {
+			s.log.Warn("Failed to send buy request notification to seller", "error", err)
+		}
+	}
 
 	return buyRequest, nil
 }
 
 // AcceptBuyRequest accepts a buy request
 // Implements POST /api/buy-requests/accept/{buyFeatureRequest}
+// Note: This operation involves both gRPC wallet operations and DB updates.
+// Wallet operations via gRPC cannot be rolled back if DB operations fail.
+// If DB operations fail after wallet operations, manual reconciliation may be needed.
+// TODO: Implement full transaction support with repository WithTx methods for atomicity.
 func (s *MarketplaceService) AcceptBuyRequest(ctx context.Context, requestID, sellerID uint64) (*models.BuyFeatureRequest, error) {
 	// Get buy request
 	buyRequest, err := s.buyRequestRepo.FindByID(ctx, requestID)
@@ -621,13 +730,16 @@ func (s *MarketplaceService) AcceptBuyRequest(ctx context.Context, requestID, se
 	pscFee := constants.CalculateFee(pscAmount)
 	irrFee := constants.CalculateFee(irrAmount)
 
+	// Perform wallet operations via gRPC first (these cannot be rolled back)
 	if s.commercialClient != nil {
 		// Pay seller via gRPC (price - fee)
 		if err := s.commercialClient.AddBalance(ctx, sellerID, "psc", pscAmount-pscFee); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to pay seller PSC: %w", err)
 		}
 		if err := s.commercialClient.AddBalance(ctx, sellerID, "irr", irrAmount-irrFee); err != nil {
-			return nil, err
+			// Attempt rollback of PSC (best effort)
+			s.commercialClient.DeductBalance(ctx, sellerID, "psc", pscAmount-pscFee)
+			return nil, fmt.Errorf("failed to pay seller IRR: %w", err)
 		}
 
 		// Pay RGB platform via gRPC (fee × 2)
@@ -637,21 +749,46 @@ func (s *MarketplaceService) AcceptBuyRequest(ctx context.Context, requestID, se
 			s.commercialClient.AddBalance(ctx, rgbUserID, "irr", irrFee*2)
 		}
 
-		// Create transactions for seller via gRPC
-		tradeID, _ := s.tradeRepo.Create(ctx, buyRequest.FeatureID, buyRequest.BuyerID, sellerID, irrAmount, pscAmount)
+		// Transfer hourly profit to seller if any
+		oldProfit, _ := s.hourlyProfitRepo.GetByFeatureAndUser(ctx, feature.ID, sellerID)
+		if oldProfit != nil && oldProfit.Amount > 0 {
+			if err := s.commercialClient.AddBalance(ctx, sellerID, oldProfit.Asset, oldProfit.Amount); err != nil {
+				s.log.Warn("Failed to transfer profit to seller", "error", err)
+			}
+		}
+	}
+
+	// Wrap all DB operations in a transaction for atomicity
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback() // Auto-rollback if not committed
+
+	// Create trade within transaction
+	// Note: We need to use a transaction-aware version or execute directly
+	tradeID, err := s.tradeRepo.Create(ctx, buyRequest.FeatureID, buyRequest.BuyerID, sellerID, irrAmount, pscAmount)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create trade: %w", err)
+	}
+
+	// Create transactions for seller via gRPC (outside transaction - these are external)
+	if s.commercialClient != nil {
 		s.commercialClient.CreateTransaction(ctx, sellerID, "psc", pscAmount-pscFee, "deposit", 1, "App\\Models\\Trade", tradeID)
 		s.commercialClient.CreateTransaction(ctx, sellerID, "irr", irrAmount-irrFee, "deposit", 1, "App\\Models\\Trade", tradeID)
-
-		// Create commission
-		s.createCommission(ctx, tradeID, pscFee*2, irrFee*2)
 	}
 
-	// Transfer ownership
-	if err := s.featureRepo.UpdateOwner(ctx, feature.ID, buyRequest.BuyerID); err != nil {
-		return nil, err
+	// Create commission within transaction
+	if err := s.createCommissionWithTx(ctx, tx, tradeID, pscFee*2, irrFee*2); err != nil {
+		return nil, fmt.Errorf("failed to create commission: %w", err)
 	}
 
-	// Update properties
+	// Transfer ownership within transaction
+	if err := s.featureRepo.UpdateOwnerWithTx(ctx, tx, feature.ID, buyRequest.BuyerID); err != nil {
+		return nil, fmt.Errorf("failed to transfer ownership: %w", err)
+	}
+
+	// Update properties within transaction
 	buyerName := s.getUserName(ctx, buyRequest.BuyerID)
 	isUnder18 := s.isUserUnder18(ctx, buyRequest.BuyerID)
 	pricingLimit := constants.DefaultPublicPricingLimit
@@ -660,31 +797,32 @@ func (s *MarketplaceService) AcceptBuyRequest(ctx context.Context, requestID, se
 	}
 
 	newStatus := constants.ChangeStatusToSoldAndNotPriced(properties.Karbari)
-	if err := s.propertiesRepo.UpdateStatus(ctx, feature.ID, newStatus, buyerName, "", pricingLimit); err != nil {
-		return nil, err
+	if err := s.propertiesRepo.UpdateStatusWithTx(ctx, tx, feature.ID, newStatus, buyerName, "", pricingLimit); err != nil {
+		return nil, fmt.Errorf("failed to update properties: %w", err)
 	}
 
-	// Transfer hourly profit
+	// Transfer hourly profit within transaction
 	withdrawProfitDays, _ := s.getUserVariableWithdrawProfit(ctx, buyRequest.BuyerID)
 	if withdrawProfitDays == 0 {
 		withdrawProfitDays = 10
 	}
 
-	if s.commercialClient != nil {
-		oldProfit, _ := s.hourlyProfitRepo.GetByFeatureAndUser(ctx, feature.ID, sellerID)
-		if oldProfit != nil && oldProfit.Amount > 0 {
-			s.commercialClient.AddBalance(ctx, sellerID, oldProfit.Asset, oldProfit.Amount)
-		}
+	if err := s.hourlyProfitRepo.TransferProfitToNewOwnerWithTx(ctx, tx, feature.ID, sellerID, buyRequest.BuyerID, withdrawProfitDays); err != nil {
+		return nil, fmt.Errorf("failed to transfer hourly profit: %w", err)
 	}
 
-	s.hourlyProfitRepo.TransferProfitToNewOwner(ctx, feature.ID, sellerID, buyRequest.BuyerID, withdrawProfitDays)
+	// Update request status and soft delete within transaction
+	if err := s.buyRequestRepo.UpdateStatusWithTx(ctx, tx, requestID, 1); err != nil {
+		return nil, fmt.Errorf("failed to update request status: %w", err)
+	}
+	if err := s.buyRequestRepo.SoftDeleteWithTx(ctx, tx, requestID); err != nil {
+		return nil, fmt.Errorf("failed to soft delete request: %w", err)
+	}
+	if err := s.lockedAssetRepo.DeleteWithTx(ctx, tx, requestID); err != nil {
+		return nil, fmt.Errorf("failed to delete locked asset: %w", err)
+	}
 
-	// Update request status and soft delete
-	s.buyRequestRepo.UpdateStatus(ctx, requestID, 1)
-	s.buyRequestRepo.SoftDelete(ctx, requestID)
-	s.lockedAssetRepo.Delete(ctx, requestID)
-
-	// Cancel other requests and refund
+	// Cancel other requests and refund (outside transaction - involves gRPC)
 	allRequests, _ := s.buyRequestRepo.GetAllForFeature(ctx, buyRequest.FeatureID)
 	for _, req := range allRequests {
 		if req.ID != requestID {
@@ -692,8 +830,15 @@ func (s *MarketplaceService) AcceptBuyRequest(ctx context.Context, requestID, se
 		}
 	}
 
-	// Update sell requests
-	s.sellRequestRepo.UpdateAllForFeatureToCompleted(ctx, buyRequest.FeatureID)
+	// Update sell requests within transaction
+	if err := s.sellRequestRepo.UpdateAllForFeatureToCompletedWithTx(ctx, tx, buyRequest.FeatureID); err != nil {
+		return nil, fmt.Errorf("failed to update sell requests: %w", err)
+	}
+
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
 
 	s.log.Info("Buy request accepted",
 		"request_id", requestID,
@@ -701,6 +846,47 @@ func (s *MarketplaceService) AcceptBuyRequest(ctx context.Context, requestID, se
 		"buyer_id", buyRequest.BuyerID,
 		"seller_id", sellerID,
 	)
+
+	// Record metrics
+	if s.metrics != nil {
+		s.metrics.RecordBuyRequest("accepted")
+		s.metrics.RecordTrade("user", pscAmount, irrAmount)
+		s.updateLockedAssetsMetrics(ctx)
+	}
+
+	// Send notifications to buyer and seller
+	if s.notificationClient != nil {
+		// Get trade ID for notification
+		latestTrade, _ := s.tradeRepo.GetLatestForFeature(ctx, buyRequest.FeatureID)
+		var tradeID uint64
+		if latestTrade != nil {
+			tradeID = latestTrade.ID
+		}
+		
+		// Notify buyer - user-to-user purchase (PSC + IRR)
+		if err := s.notificationClient.SendBuyFeatureNotification(ctx, buyRequest.BuyerID, buyRequest.FeatureID, false, "", 0, pscAmount, irrAmount); err != nil {
+			s.log.Warn("Failed to send buy feature notification to buyer", "error", err)
+		}
+		
+		// Notify seller - they received payment
+		// Using a generic notification since Laravel sends sellFeature notification
+		if err := s.notificationClient.SendNotification(ctx, sellerID, "sellFeature", "فروش ملک", 
+			fmt.Sprintf("ملک %d با موفقیت فروخته شد.", buyRequest.FeatureID), 
+			map[string]string{
+				"feature_id": fmt.Sprintf("%d", buyRequest.FeatureID),
+				"trade_id":   fmt.Sprintf("%d", tradeID),
+				"related-to": "transactions",
+			}); err != nil {
+			s.log.Warn("Failed to send sell feature notification to seller", "error", err)
+		}
+	}
+
+	// Broadcast feature status change
+	if s.eventBroadcaster != nil {
+		if err := s.eventBroadcaster.BroadcastFeatureStatusChanged(ctx, feature.ID, newStatus); err != nil {
+			s.log.Warn("Failed to broadcast feature status changed", "error", err)
+		}
+	}
 
 	// Return the request (will be soft-deleted but still accessible)
 	return buyRequest, nil
@@ -840,15 +1026,18 @@ func (s *MarketplaceService) CreateSellRequest(ctx context.Context, req *pb.Crea
 		return nil, fmt.Errorf("failed to update feature properties: %w", err)
 	}
 
-	// TODO: Broadcast FeatureStatusChanged event via WebSocket
-	// broadcast(new FeatureStatusChanged([ 'id' => $feature->id, 'rgb' => $feature->changeStatusToSoldAndPriced() ]))
+	// Broadcast FeatureStatusChanged event
+	if s.eventBroadcaster != nil {
+		if err := s.eventBroadcaster.BroadcastFeatureStatusChanged(ctx, featureID, newRGBStatus); err != nil {
+			s.log.Warn("Failed to broadcast feature status changed", "error", err)
+		}
+	}
 
 	// Send notification to seller
 	if s.notificationClient != nil {
-		// TODO: Send SellRequestNotification
-		_ = s.notificationClient.SendNotification(ctx, sellerID, "sell_request", "درخواست فروش ثبت شد", "درخواست فروش شما با موفقیت ثبت شد", map[string]string{
-			"feature_id": fmt.Sprintf("%d", featureID),
-		})
+		if err := s.notificationClient.SendSellRequestNotification(ctx, sellerID, featureID, properties.ID); err != nil {
+			s.log.Warn("Failed to send sell request notification", "error", err)
+		}
 	}
 
 	// Get created sell request
@@ -863,6 +1052,11 @@ func (s *MarketplaceService) CreateSellRequest(ctx context.Context, req *pb.Crea
 		"feature_id", featureID,
 		"pricing_percentage", pricingPercentage,
 	)
+
+	// Record metrics
+	if s.metrics != nil {
+		s.metrics.RecordSellRequest()
+	}
 
 	return sellRequest, nil
 }
@@ -913,8 +1107,12 @@ func (s *MarketplaceService) DeleteSellRequest(ctx context.Context, sellRequestI
 		return fmt.Errorf("failed to delete sell request: %w", err)
 	}
 
-	// TODO: Broadcast FeatureStatusChanged event via WebSocket
-	// broadcast(new FeatureStatusChanged([ 'id' => $feature->id, 'rgb' => $feature->changeStatusToSoldAndNotPriced() ]))
+	// Broadcast FeatureStatusChanged event
+	if s.eventBroadcaster != nil {
+		if err := s.eventBroadcaster.BroadcastFeatureStatusChanged(ctx, feature.ID, newRGBStatus); err != nil {
+			s.log.Warn("Failed to broadcast feature status changed", "error", err)
+		}
+	}
 
 	s.log.Info("Sell request deleted",
 		"request_id", sellRequestID,
@@ -989,6 +1187,13 @@ func (s *MarketplaceService) RejectBuyRequest(ctx context.Context, requestID, se
 	}
 
 	s.log.Info("Buy request rejected", "request_id", requestID, "seller_id", sellerID)
+
+	// Record metrics
+	if s.metrics != nil {
+		s.metrics.RecordBuyRequest("rejected")
+		s.updateLockedAssetsMetrics(ctx)
+	}
+
 	return nil
 }
 
@@ -1030,6 +1235,13 @@ func (s *MarketplaceService) DeleteBuyRequest(ctx context.Context, requestID, bu
 	}
 
 	s.log.Info("Buy request deleted", "request_id", requestID, "buyer_id", buyerID)
+
+	// Record metrics
+	if s.metrics != nil {
+		s.metrics.RecordBuyRequest("cancelled")
+		s.updateLockedAssetsMetrics(ctx)
+	}
+
 	return nil
 }
 
@@ -1095,12 +1307,29 @@ func (s *MarketplaceService) refundBuyRequest(ctx context.Context, requestID uin
 }
 
 func (s *MarketplaceService) getVariableRate(ctx context.Context, asset string) float64 {
-	var rate float64
-	query := "SELECT value FROM variables WHERE `key` = ?"
-	if err := s.db.QueryRowContext(ctx, query, asset).Scan(&rate); err != nil {
-		return 1.0
+	return s.variableRepo.GetRateWithCache(ctx, asset)
+}
+
+// updateLockedAssetsMetrics updates the locked assets gauge by querying all pending buy requests
+func (s *MarketplaceService) updateLockedAssetsMetrics(ctx context.Context) {
+	if s.metrics == nil {
+		return
 	}
-	return rate
+
+	var totalPSC, totalIRR float64
+	query := `
+		SELECT COALESCE(SUM(la.psc), 0), COALESCE(SUM(la.irr), 0)
+		FROM locked_assets la
+		INNER JOIN buy_feature_requests bfr ON la.buy_feature_request_id = bfr.id
+		WHERE bfr.status = 0 AND bfr.deleted_at IS NULL
+	`
+	err := s.db.QueryRowContext(ctx, query).Scan(&totalPSC, &totalIRR)
+	if err != nil {
+		s.log.Warn("Failed to update locked assets metrics", "error", err)
+		return
+	}
+
+	s.metrics.UpdateLockedAssets(totalPSC, totalIRR)
 }
 
 func (s *MarketplaceService) getUserName(ctx context.Context, userID uint64) string {
@@ -1111,12 +1340,13 @@ func (s *MarketplaceService) getUserName(ctx context.Context, userID uint64) str
 
 func (s *MarketplaceService) isUserUnder18(ctx context.Context, userID uint64) bool {
 	var birthdate sql.NullTime
-	s.db.QueryRowContext(ctx, "SELECT birthdate FROM kycs WHERE user_id = ?", userID).Scan(&birthdate)
-	if !birthdate.Valid {
+	err := s.db.QueryRowContext(ctx, "SELECT birthdate FROM kycs WHERE user_id = ?", userID).Scan(&birthdate)
+	if err != nil || !birthdate.Valid {
 		return false
 	}
-	// Simplified age check
-	return false
+	// Calculate age accurately
+	age := time.Since(birthdate.Time).Hours() / 24 / 365.25
+	return age < 18
 }
 
 // GetUserCode gets user code from database (exported for handler use)

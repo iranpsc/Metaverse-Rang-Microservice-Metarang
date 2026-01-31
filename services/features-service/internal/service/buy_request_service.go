@@ -321,12 +321,13 @@ func (s *BuyRequestService) getUserName(ctx context.Context, userID uint64) stri
 
 func (s *BuyRequestService) isUserUnder18(ctx context.Context, userID uint64) bool {
 	var birthdate sql.NullTime
-	s.db.QueryRowContext(ctx, "SELECT birthdate FROM kycs WHERE user_id = ?", userID).Scan(&birthdate)
-	if !birthdate.Valid {
+	err := s.db.QueryRowContext(ctx, "SELECT birthdate FROM kycs WHERE user_id = ?", userID).Scan(&birthdate)
+	if err != nil || !birthdate.Valid {
 		return false
 	}
-	// Simplified age check
-	return false
+	// Calculate age accurately
+	age := time.Since(birthdate.Time).Hours() / 24 / 365.25
+	return age < 18
 }
 
 func (s *BuyRequestService) getUserVariableWithdrawProfit(ctx context.Context, userID uint64) (int, error) {

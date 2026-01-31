@@ -17,6 +17,7 @@ use (
 	./services/training-service
 	./shared
 	./tests/database
+	./tests/features-service
 	./tests/financial-service
 	./tests/golden
 	./tests/integration

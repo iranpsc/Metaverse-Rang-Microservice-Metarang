@@ -1,16 +1,12 @@
-module metargb/features-service
+module metargb/features-service-test
 
-go 1.24.0
-
-toolchain go1.24.3
+go 1.25.5
 
 require (
 	github.com/go-sql-driver/mysql v1.7.1
-	github.com/prometheus/client_golang v1.17.0
-	github.com/redis/go-redis/v9 v9.5.1
 	github.com/stretchr/testify v1.11.1
 	google.golang.org/grpc v1.76.0
-	google.golang.org/protobuf v1.36.10
+	metargb/features-service v0.0.0
 	metargb/shared v0.0.0
 )
 
@@ -29,9 +25,11 @@ require (
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/prometheus/client_golang v1.17.0 // indirect
 	github.com/prometheus/client_model v0.4.1-0.20230718164431-9a2bf3000d16 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.11.1 // indirect
+	github.com/redis/go-redis/v9 v9.5.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/yaa110/go-persian-calendar v1.2.0 // indirect
@@ -40,7 +38,10 @@ require (
 	golang.org/x/sys v0.37.0 // indirect
 	golang.org/x/text v0.30.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251029180050-ab9386a59fda // indirect
+	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace metargb/shared => /workspace/metargb/shared
+replace metargb/features-service => ../../services/features-service
+
+replace metargb/shared => ../../shared

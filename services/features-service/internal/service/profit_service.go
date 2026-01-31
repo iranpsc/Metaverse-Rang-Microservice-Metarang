@@ -82,20 +82,7 @@ func (s *ProfitService) GetSingleProfit(ctx context.Context, profitID, userID ui
 
 		// Send notification if notification client is available
 		if s.notificationClient != nil {
-			data := map[string]string{
-				"asset":  profit.Asset,
-				"amount": fmt.Sprintf("%.6f", profit.Amount),
-			}
-			if profit.PropertiesID != "" {
-				data["id"] = profit.PropertiesID
-			}
-
-			// Get color name for notification
-			colorName := constants.GetColorPersian(profit.Karbari)
-			title := fmt.Sprintf("سود ساعتی %s", colorName)
-			message := fmt.Sprintf("مبلغ %.6f %s به کیف پول شما اضافه شد", profit.Amount, colorName)
-
-			if err := s.notificationClient.SendNotification(ctx, userID, "FeatureHourlyProfitDeposit", title, message, data); err != nil {
+			if err := s.notificationClient.SendFeatureHourlyProfitDeposit(ctx, userID, profit.Asset, profit.Amount, profit.Karbari, profit.PropertiesID); err != nil {
 				s.log.Warn("Failed to send notification", "error", err)
 			}
 		}
@@ -185,18 +172,7 @@ func (s *ProfitService) GetProfitsByApplication(ctx context.Context, userID uint
 
 		// Send notification if notification client is available
 		if s.notificationClient != nil {
-			karbariTitle := constants.GetKarbariTitle(karbari)
-			data := map[string]string{
-				"asset":   asset,
-				"amount":  fmt.Sprintf("%.6f", totalAmount),
-				"karbari": karbariTitle,
-			}
-
-			colorName := constants.GetColorPersian(karbari)
-			title := fmt.Sprintf("سود ساعتی %s", karbariTitle)
-			message := fmt.Sprintf("مبلغ %.6f %s به کیف پول شما اضافه شد", totalAmount, colorName)
-
-			if err := s.notificationClient.SendNotification(ctx, userID, "FeatureHourlyProfitDeposit", title, message, data); err != nil {
+			if err := s.notificationClient.SendFeatureHourlyProfitDeposit(ctx, userID, asset, totalAmount, karbari, ""); err != nil {
 				s.log.Warn("Failed to send notification", "error", err)
 			}
 		}

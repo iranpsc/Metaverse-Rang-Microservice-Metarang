@@ -63,3 +63,10 @@ func (r *LockedAssetRepository) DeleteAllForFeature(ctx context.Context, feature
 	_, err := r.db.ExecContext(ctx, query, featureID)
 	return err
 }
+
+// DeleteWithTx deletes within a transaction
+func (r *LockedAssetRepository) DeleteWithTx(ctx context.Context, tx *sql.Tx, buyRequestID uint64) error {
+	query := "DELETE FROM locked_wallets WHERE buy_feature_request_id = ?"
+	_, err := tx.ExecContext(ctx, query, buyRequestID)
+	return err
+}

@@ -98,6 +98,17 @@ func (r *PropertiesRepository) UpdateStatus(ctx context.Context, featureID uint6
 	return err
 }
 
+// UpdateStatusWithTx updates RGB status within a transaction
+func (r *PropertiesRepository) UpdateStatusWithTx(ctx context.Context, tx *sql.Tx, featureID uint64, rgb, owner, label string, minPercentage int) error {
+	query := `
+		UPDATE feature_properties
+		SET rgb = ?, owner = ?, label = ?, minimum_price_percentage = ?, updated_at = NOW()
+		WHERE feature_id = ?
+	`
+	_, err := tx.ExecContext(ctx, query, rgb, owner, label, minPercentage, featureID)
+	return err
+}
+
 func joinStrings(strs []string, sep string) string {
 	result := ""
 	for i, s := range strs {

@@ -7,10 +7,14 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
+	"time"
 
 	"metargb/features-service/internal/client"
+	"metargb/features-service/internal/events"
 	"metargb/features-service/internal/handler"
+	"metargb/features-service/internal/metrics"
 	"metargb/features-service/internal/repository"
 	"metargb/features-service/internal/service"
 	"metargb/features-service/pkg/threed_client"
@@ -18,7 +22,7 @@ import (
 	"metargb/shared/pkg/auth"
 	"metargb/shared/pkg/db"
 	"metargb/shared/pkg/logger"
-	"metargb/shared/pkg/metrics"
+	sharedmetrics "metargb/shared/pkg/metrics"
 
 	_ "github.com/go-sql-driver/mysql"
 	"google.golang.org/grpc"
@@ -85,6 +89,7 @@ func main() {
 	lockedAssetRepo := repository.NewLockedAssetRepository(database)
 	featureLimitRepo := repository.NewFeatureLimitRepository(database)
 	mapRepo := repository.NewMapRepository(database)
+	variableRepo := repository.NewVariableRepository(database)
 
 	// Initialize 3D client
 	threeDClient := threed_client.New(threeDMetaURL)
@@ -98,6 +103,18 @@ func main() {
 	} else {
 		log.Info("Connected to commercial service", "addr", commercialServiceAddr)
 		defer commercialClient.Close()
+
+		// Configure timeout and retries from environment
+		if timeoutStr := getEnv("COMMERCIAL_SERVICE_TIMEOUT", "3s"); timeoutStr != "" {
+			if timeout, err := time.ParseDuration(timeoutStr); err == nil {
+				commercialClient.SetTimeout(timeout)
+			}
+		}
+		if retriesStr := getEnv("COMMERCIAL_SERVICE_RETRIES", "3"); retriesStr != "" {
+			if retries, err := strconv.Atoi(retriesStr); err == nil && retries > 0 {
+				commercialClient.SetMaxRetries(retries)
+			}
+		}
 	}
 
 	// Initialize notification client for profit notifications
@@ -110,6 +127,22 @@ func main() {
 		log.Info("Connected to notification service", "addr", notificationServiceAddr)
 		defer notificationClient.Close()
 	}
+
+	// Initialize Redis event broadcaster
+	redisAddr := getEnv("REDIS_ADDR", "redis:6379")
+	redisPassword := getEnv("REDIS_PASSWORD", "")
+	broadcastChannel := getEnv("BROADCAST_CHANNEL", "feature-events")
+	eventBroadcaster, err := events.NewRedisBroadcaster(redisAddr, redisPassword, broadcastChannel)
+	if err != nil {
+		log.Warn("Failed to connect to Redis - event broadcasting disabled", "error", err)
+		eventBroadcaster = nil
+	} else {
+		log.Info("Connected to Redis for event broadcasting", "addr", redisAddr, "channel", broadcastChannel)
+		defer eventBroadcaster.Close()
+	}
+
+	// Initialize marketplace metrics
+	marketplaceMetrics := metrics.NewMarketplaceMetrics()
 
 	// Initialize pricing service
 	pricingService := service.NewFeaturePricingService(
@@ -143,8 +176,11 @@ func main() {
 		lockedAssetRepo,
 		hourlyProfitRepo,
 		featureLimitRepo,
+		variableRepo,
 		commercialClient,
 		notificationClient,
+		eventBroadcaster,
+		marketplaceMetrics,
 		database,
 		log,
 	)
@@ -202,12 +238,12 @@ func main() {
 	}
 
 	// Create gRPC server with interceptors
-	serviceMetrics := metrics.NewMetrics("features")
+	serviceMetrics := sharedmetrics.NewMetrics("features")
 
 	// Build interceptor chain
 	interceptors := []grpc.UnaryServerInterceptor{
 		logger.UnaryServerInterceptor(log),
-		metrics.UnaryServerInterceptor(serviceMetrics),
+		sharedmetrics.UnaryServerInterceptor(serviceMetrics),
 	}
 
 	// Add auth interceptor if token validator is available

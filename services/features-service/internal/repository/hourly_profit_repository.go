@@ -267,6 +267,36 @@ func (r *HourlyProfitRepository) TransferProfitToNewOwner(ctx context.Context, f
 	return err
 }
 
+// TransferProfitToNewOwnerWithTx transfers profit within a transaction
+func (r *HourlyProfitRepository) TransferProfitToNewOwnerWithTx(ctx context.Context, tx *sql.Tx, featureID, oldOwnerID, newOwnerID uint64, withdrawProfitDays int) error {
+	// Get existing profit for old owner
+	var profitID uint64
+	var amount float64
+	var asset string
+
+	query := "SELECT id, amount, asset FROM feature_hourly_profits WHERE feature_id = ? AND user_id = ?"
+	err := tx.QueryRowContext(ctx, query, featureID, oldOwnerID).Scan(&profitID, &amount, &asset)
+	if err != nil {
+		// No existing profit found, just create new one (outside tx for now)
+		// This is a limitation - Create doesn't support transactions yet
+		_, err := r.Create(ctx, newOwnerID, featureID, asset, withdrawProfitDays)
+		return err
+	}
+
+	// Update to new owner and reset
+	deadlineSeconds := withdrawProfitDays * 86400
+	newDeadline := time.Now().Add(time.Duration(deadlineSeconds) * time.Second)
+
+	updateQuery := `
+		UPDATE feature_hourly_profits
+		SET user_id = ?, amount = 0, dead_line = ?, is_active = 1, updated_at = NOW()
+		WHERE id = ?
+	`
+
+	_, err = tx.ExecContext(ctx, updateQuery, newOwnerID, newDeadline, profitID)
+	return err
+}
+
 // GetByFeatureAndUser retrieves profit for a specific feature and user
 func (r *HourlyProfitRepository) GetByFeatureAndUser(ctx context.Context, featureID, userID uint64) (*models.FeatureHourlyProfit, error) {
 	profit := &models.FeatureHourlyProfit{}

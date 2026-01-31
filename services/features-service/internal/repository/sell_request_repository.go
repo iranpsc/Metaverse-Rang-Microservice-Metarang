@@ -88,6 +88,13 @@ func (r *SellRequestRepository) UpdateAllForFeatureToCompleted(ctx context.Conte
 	return err
 }
 
+// UpdateAllForFeatureToCompletedWithTx updates within a transaction
+func (r *SellRequestRepository) UpdateAllForFeatureToCompletedWithTx(ctx context.Context, tx *sql.Tx, featureID uint64) error {
+	query := "UPDATE sell_feature_requests SET status = 1, updated_at = NOW() WHERE feature_id = ?"
+	_, err := tx.ExecContext(ctx, query, featureID)
+	return err
+}
+
 // IsUnderpriced checks if a feature's latest sell request is underpriced
 func (r *SellRequestRepository) IsUnderpriced(ctx context.Context, featureID uint64) (bool, error) {
 	query := `
