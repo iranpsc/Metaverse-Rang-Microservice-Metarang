@@ -44,18 +44,30 @@ func (r *BuildingRepository) UpsertBuildingModel(ctx context.Context, modelID st
 }
 
 // FindBuildingModelByModelID finds a building model by its model_id (from 3D API)
-func (r *BuildingRepository) FindBuildingModelByModelID(ctx context.Context, modelID uint64) (*pb.BuildingModel, error) {
+// modelID is a string that can be numeric (converted to uint64) or alphanumeric
+func (r *BuildingRepository) FindBuildingModelByModelID(ctx context.Context, modelID string) (*pb.BuildingModel, error) {
+	// Try to parse as uint64 for database query (database stores as int)
+	var dbModelID uint64
+	var err error
+	
+	// First try parsing as numeric
+	if _, parseErr := fmt.Sscanf(modelID, "%d", &dbModelID); parseErr != nil {
+		// If not numeric, we need to handle alphanumeric model_id
+		// For now, return error - this indicates schema mismatch that needs addressing
+		return nil, fmt.Errorf("model_id must be numeric (database constraint): %w", parseErr)
+	}
+
 	query := `
 		SELECT id, model_id, name, sku, images, attributes, file, required_satisfaction
 		FROM building_models
 		WHERE model_id = ?
 	`
 
-	var id, dbModelID uint64
+	var id uint64
 	var name, sku, images, attributes, file string
 	var requiredSatisfaction float64
 
-	err := r.db.QueryRowContext(ctx, query, modelID).Scan(
+	err = r.db.QueryRowContext(ctx, query, dbModelID).Scan(
 		&id, &dbModelID, &name, &sku, &images, &attributes, &file, &requiredSatisfaction,
 	)
 	if err == sql.ErrNoRows {
@@ -67,7 +79,7 @@ func (r *BuildingRepository) FindBuildingModelByModelID(ctx context.Context, mod
 
 	return &pb.BuildingModel{
 		Id:                   id,
-		ModelId:              fmt.Sprintf("%d", dbModelID),
+		ModelId:              modelID, // Return original string model_id
 		Name:                 name,
 		Sku:                  sku,
 		Images:               images,
@@ -89,7 +101,17 @@ func (r *BuildingRepository) HasBuilding(ctx context.Context, featureID uint64) 
 }
 
 // CreateBuilding creates a building record with all required fields
-func (r *BuildingRepository) CreateBuilding(ctx context.Context, featureID, buildingModelID uint64, launchedSatisfaction, rotation, position, information string, constructionStartDate, constructionEndDate time.Time, bubbleDiameter float64) error {
+// buildingModelID is the string model_id from 3D API - we need to find the database ID
+func (r *BuildingRepository) CreateBuilding(ctx context.Context, featureID uint64, buildingModelID string, launchedSatisfaction, rotation, position, information string, constructionStartDate, constructionEndDate time.Time, bubbleDiameter float64) error {
+	// First, find the building model by model_id string to get its database ID
+	buildingModel, err := r.FindBuildingModelByModelID(ctx, buildingModelID)
+	if err != nil {
+		return fmt.Errorf("failed to find building model: %w", err)
+	}
+	if buildingModel == nil {
+		return fmt.Errorf("building model not found: %s", buildingModelID)
+	}
+
 	query := `
 		INSERT INTO buildings (
 			feature_id, model_id, construction_start_date, construction_end_date,
@@ -99,8 +121,8 @@ func (r *BuildingRepository) CreateBuilding(ctx context.Context, featureID, buil
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
 	`
 
-	_, err := r.db.ExecContext(ctx, query,
-		featureID, buildingModelID, constructionStartDate, constructionEndDate,
+	_, err = r.db.ExecContext(ctx, query,
+		featureID, buildingModel.Id, constructionStartDate, constructionEndDate,
 		launchedSatisfaction, information, rotation, position, bubbleDiameter,
 	)
 	return err
@@ -226,7 +248,17 @@ func (r *BuildingRepository) FindByFeatureID(ctx context.Context, featureID uint
 }
 
 // UpdateBuilding updates a building and returns the updated building with model data
-func (r *BuildingRepository) UpdateBuilding(ctx context.Context, featureID, buildingModelID uint64, launchedSatisfaction, rotation, position, information string, constructionEndDate time.Time, bubbleDiameter float64) (*pb.Building, error) {
+// buildingModelID is the string model_id from 3D API - we need to find the database ID
+func (r *BuildingRepository) UpdateBuilding(ctx context.Context, featureID uint64, buildingModelID string, launchedSatisfaction, rotation, position, information string, constructionEndDate time.Time, bubbleDiameter float64) (*pb.Building, error) {
+	// First, find the building model by model_id string to get its database ID
+	buildingModel, err := r.FindBuildingModelByModelID(ctx, buildingModelID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find building model: %w", err)
+	}
+	if buildingModel == nil {
+		return nil, fmt.Errorf("building model not found: %s", buildingModelID)
+	}
+
 	query := `
 		UPDATE buildings
 		SET launched_satisfaction = ?, rotation = ?, position = ?, information = ?,
@@ -234,9 +266,9 @@ func (r *BuildingRepository) UpdateBuilding(ctx context.Context, featureID, buil
 		WHERE feature_id = ? AND model_id = ?
 	`
 
-	_, err := r.db.ExecContext(ctx, query,
+	_, err = r.db.ExecContext(ctx, query,
 		launchedSatisfaction, rotation, position, information,
-		constructionEndDate, bubbleDiameter, featureID, buildingModelID,
+		constructionEndDate, bubbleDiameter, featureID, buildingModel.Id,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update building: %w", err)
@@ -247,7 +279,17 @@ func (r *BuildingRepository) UpdateBuilding(ctx context.Context, featureID, buil
 }
 
 // FindBuildingByFeatureAndModel finds a building by feature_id and model_id
-func (r *BuildingRepository) FindBuildingByFeatureAndModel(ctx context.Context, featureID, buildingModelID uint64) (*pb.Building, error) {
+// buildingModelID is the string model_id from 3D API - we need to find the database ID
+func (r *BuildingRepository) FindBuildingByFeatureAndModel(ctx context.Context, featureID uint64, buildingModelID string) (*pb.Building, error) {
+	// First, find the building model by model_id string to get its database ID
+	buildingModel, err := r.FindBuildingModelByModelID(ctx, buildingModelID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find building model: %w", err)
+	}
+	if buildingModel == nil {
+		return nil, nil // Building model not found
+	}
+
 	query := `
 		SELECT 
 			b.id, 
@@ -279,7 +321,7 @@ func (r *BuildingRepository) FindBuildingByFeatureAndModel(ctx context.Context, 
 	var modelName, modelSKU, modelImages, modelAttributes, modelFile sql.NullString
 	var modelRequiredSatisfaction sql.NullFloat64
 
-	err := r.db.QueryRowContext(ctx, query, featureID, buildingModelID).Scan(
+	err = r.db.QueryRowContext(ctx, query, featureID, buildingModel.Id).Scan(
 		&id,
 		&constructionStartDate,
 		&constructionEndDate,
@@ -327,13 +369,11 @@ func (r *BuildingRepository) FindBuildingByFeatureAndModel(ctx context.Context, 
 		building.Information = information.String
 	}
 
-	// Build BuildingModel
+	// Build BuildingModel - use original string model_id
 	model := &pb.BuildingModel{
 		Id: modelID,
 	}
-	if modelModelID > 0 {
-		model.ModelId = fmt.Sprintf("%d", modelModelID)
-	}
+	model.ModelId = buildingModelID // Use original string model_id
 	if modelName.Valid {
 		model.Name = modelName.String
 	}
@@ -358,9 +398,19 @@ func (r *BuildingRepository) FindBuildingByFeatureAndModel(ctx context.Context, 
 }
 
 // DeleteBuilding removes a building
-func (r *BuildingRepository) DeleteBuilding(ctx context.Context, featureID, buildingModelID uint64) error {
+// buildingModelID is the string model_id from 3D API - we need to find the database ID
+func (r *BuildingRepository) DeleteBuilding(ctx context.Context, featureID uint64, buildingModelID string) error {
+	// First, find the building model by model_id string to get its database ID
+	buildingModel, err := r.FindBuildingModelByModelID(ctx, buildingModelID)
+	if err != nil {
+		return fmt.Errorf("failed to find building model: %w", err)
+	}
+	if buildingModel == nil {
+		return fmt.Errorf("building model not found: %s", buildingModelID)
+	}
+
 	query := "DELETE FROM buildings WHERE feature_id = ? AND model_id = ?"
-	_, err := r.db.ExecContext(ctx, query, featureID, buildingModelID)
+	_, err = r.db.ExecContext(ctx, query, featureID, buildingModel.Id)
 	if err != nil {
 		return fmt.Errorf("failed to delete building: %w", err)
 	}

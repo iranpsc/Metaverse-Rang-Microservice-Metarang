@@ -78,3 +78,4 @@ __pycache__/
 coverage-final.json
 .env
 /scripts/metargb_db.sql
+/.cursor/

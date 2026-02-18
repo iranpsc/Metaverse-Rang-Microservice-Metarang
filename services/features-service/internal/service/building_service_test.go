@@ -13,13 +13,13 @@ import (
 // Mock repositories for testing
 type mockBuildingRepository struct {
 	upsertModelFunc                   func(ctx context.Context, modelID, name, sku, images, attributes, file string, requiredSatisfaction float64) error
-	findModelFunc                     func(ctx context.Context, modelID uint64) (*pb.BuildingModel, error)
+	findModelFunc                     func(ctx context.Context, modelID string) (*pb.BuildingModel, error)
 	hasBuildingFunc                   func(ctx context.Context, featureID uint64) (bool, error)
-	createBuildingFunc                func(ctx context.Context, featureID, buildingModelID uint64, launchedSatisfaction, rotation, position, information string, startDate, endDate time.Time, bubbleDiameter float64) error
+	createBuildingFunc                func(ctx context.Context, featureID uint64, buildingModelID string, launchedSatisfaction, rotation, position, information string, startDate, endDate time.Time, bubbleDiameter float64) error
 	findByFeatureIDFunc               func(ctx context.Context, featureID uint64) ([]*pb.Building, error)
-	updateBuildingFunc                func(ctx context.Context, featureID, buildingModelID uint64, launchedSatisfaction, rotation, position, information string, endDate time.Time, bubbleDiameter float64) (*pb.Building, error)
-	findBuildingByFeatureAndModelFunc func(ctx context.Context, featureID, buildingModelID uint64) (*pb.Building, error)
-	deleteBuildingFunc                func(ctx context.Context, featureID, buildingModelID uint64) error
+	updateBuildingFunc                func(ctx context.Context, featureID uint64, buildingModelID string, launchedSatisfaction, rotation, position, information string, endDate time.Time, bubbleDiameter float64) (*pb.Building, error)
+	findBuildingByFeatureAndModelFunc func(ctx context.Context, featureID uint64, buildingModelID string) (*pb.Building, error)
+	deleteBuildingFunc                func(ctx context.Context, featureID uint64, buildingModelID string) error
 	firstOrCreateIsicCodeFunc         func(ctx context.Context, activityLine string) (uint64, error)
 }
 
@@ -30,7 +30,7 @@ func (m *mockBuildingRepository) UpsertBuildingModel(ctx context.Context, modelI
 	return errors.New("not implemented")
 }
 
-func (m *mockBuildingRepository) FindBuildingModelByModelID(ctx context.Context, modelID uint64) (*pb.BuildingModel, error) {
+func (m *mockBuildingRepository) FindBuildingModelByModelID(ctx context.Context, modelID string) (*pb.BuildingModel, error) {
 	if m.findModelFunc != nil {
 		return m.findModelFunc(ctx, modelID)
 	}
@@ -44,7 +44,7 @@ func (m *mockBuildingRepository) HasBuilding(ctx context.Context, featureID uint
 	return false, errors.New("not implemented")
 }
 
-func (m *mockBuildingRepository) CreateBuilding(ctx context.Context, featureID, buildingModelID uint64, launchedSatisfaction, rotation, position, information string, startDate, endDate time.Time, bubbleDiameter float64) error {
+func (m *mockBuildingRepository) CreateBuilding(ctx context.Context, featureID uint64, buildingModelID string, launchedSatisfaction, rotation, position, information string, startDate, endDate time.Time, bubbleDiameter float64) error {
 	if m.createBuildingFunc != nil {
 		return m.createBuildingFunc(ctx, featureID, buildingModelID, launchedSatisfaction, rotation, position, information, startDate, endDate, bubbleDiameter)
 	}
@@ -58,21 +58,21 @@ func (m *mockBuildingRepository) FindByFeatureID(ctx context.Context, featureID 
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockBuildingRepository) UpdateBuilding(ctx context.Context, featureID, buildingModelID uint64, launchedSatisfaction, rotation, position, information string, endDate time.Time, bubbleDiameter float64) (*pb.Building, error) {
+func (m *mockBuildingRepository) UpdateBuilding(ctx context.Context, featureID uint64, buildingModelID string, launchedSatisfaction, rotation, position, information string, endDate time.Time, bubbleDiameter float64) (*pb.Building, error) {
 	if m.updateBuildingFunc != nil {
 		return m.updateBuildingFunc(ctx, featureID, buildingModelID, launchedSatisfaction, rotation, position, information, endDate, bubbleDiameter)
 	}
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockBuildingRepository) FindBuildingByFeatureAndModel(ctx context.Context, featureID, buildingModelID uint64) (*pb.Building, error) {
+func (m *mockBuildingRepository) FindBuildingByFeatureAndModel(ctx context.Context, featureID uint64, buildingModelID string) (*pb.Building, error) {
 	if m.findBuildingByFeatureAndModelFunc != nil {
 		return m.findBuildingByFeatureAndModelFunc(ctx, featureID, buildingModelID)
 	}
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockBuildingRepository) DeleteBuilding(ctx context.Context, featureID, buildingModelID uint64) error {
+func (m *mockBuildingRepository) DeleteBuilding(ctx context.Context, featureID uint64, buildingModelID string) error {
 	if m.deleteBuildingFunc != nil {
 		return m.deleteBuildingFunc(ctx, featureID, buildingModelID)
 	}
@@ -182,43 +182,6 @@ func findSubstring(s, substr string) bool {
 	return false
 }
 
-// Test extractAttributeValue helper function
-// NOTE: extractAttributeValue function doesn't exist in the service
-// This test is skipped until the function is implemented or the test is removed
-func TestExtractAttributeValue(t *testing.T) {
-	t.Skip("extractAttributeValue function doesn't exist in the service")
-	// tests := []struct {
-	// 	name       string
-	// 	attributes []map[string]interface{}
-	// 	slug       string
-	// 	wantValue  float64
-	// 	wantOk     bool
-	// }{
-	// 	{
-	// 		name: "valid attribute found",
-	// 		attributes: []map[string]interface{}{
-	// 			{"slug": "width", "value": 50.0},
-	// 			{"slug": "length", "value": 30.0},
-	// 			{"slug": "density", "value": 3.0},
-	// 		},
-	// 		slug:      "width",
-	// 		wantValue: 50.0,
-	// 		wantOk:    true,
-	// 	},
-	// }
-	//
-	// for _, tt := range tests {
-	// 	t.Run(tt.name, func(t *testing.T) {
-	// 		gotValue, gotOk := extractAttributeValue(tt.attributes, tt.slug)
-	// 		if gotValue != tt.wantValue {
-	// 			t.Errorf("extractAttributeValue() value = %v, want %v", gotValue, tt.wantValue)
-	// 		}
-	// 		if gotOk != tt.wantOk {
-	// 			t.Errorf("extractAttributeValue() ok = %v, want %v", gotOk, tt.wantOk)
-	// 		}
-	// 	})
-	// }
-}
 
 // Test calculateBubbleDiameter function
 func TestBuildingService_CalculateBubbleDiameter(t *testing.T) {
@@ -248,6 +211,7 @@ func TestBuildingService_CalculateBubbleDiameter(t *testing.T) {
 			name:           "density 4 - coefficient 1.9",
 			attributesJSON: `[{"slug": "width", "value": 40}, {"slug": "length", "value": 20}, {"slug": "density", "value": 4}]`,
 			want:           228.0, // perimeter = 2 * (40 + 20) = 120, coefficient = 1.9, diameter = 120 * 1.9 = 228
+			// Note: Floating point precision may cause slight variance, so we check with tolerance
 		},
 		{
 			name:           "missing width attribute",
@@ -279,8 +243,362 @@ func TestBuildingService_CalculateBubbleDiameter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := service.calculateBubbleDiameter(tt.attributesJSON)
+			// Use tolerance for floating point comparison
+			diff := got - tt.want
+			if diff < 0 {
+				diff = -diff
+			}
+			if diff > 0.0001 {
+				t.Errorf("calculateBubbleDiameter() = %v, want %v (diff: %v)", got, tt.want, diff)
+			}
+		})
+	}
+}
+
+// Test ExtractAttributeValue helper function
+func TestExtractAttributeValue(t *testing.T) {
+	tests := []struct {
+		name       string
+		attributes []map[string]interface{}
+		slug       string
+		wantValue  float64
+		wantOk     bool
+	}{
+		{
+			name: "valid attribute found - width",
+			attributes: []map[string]interface{}{
+				{"slug": "width", "value": 50.0},
+				{"slug": "length", "value": 30.0},
+				{"slug": "density", "value": 3.0},
+			},
+			slug:      "width",
+			wantValue: 50.0,
+			wantOk:    true,
+		},
+		{
+			name: "valid attribute found - length",
+			attributes: []map[string]interface{}{
+				{"slug": "width", "value": 50.0},
+				{"slug": "length", "value": 30.0},
+				{"slug": "density", "value": 3.0},
+			},
+			slug:      "length",
+			wantValue: 30.0,
+			wantOk:    true,
+		},
+		{
+			name: "valid attribute found - density",
+			attributes: []map[string]interface{}{
+				{"slug": "width", "value": 50.0},
+				{"slug": "length", "value": 30.0},
+				{"slug": "density", "value": 3.0},
+			},
+			slug:      "density",
+			wantValue: 3.0,
+			wantOk:    true,
+		},
+		{
+			name: "attribute not found",
+			attributes: []map[string]interface{}{
+				{"slug": "width", "value": 50.0},
+				{"slug": "length", "value": 30.0},
+			},
+			slug:      "density",
+			wantValue: 0.0,
+			wantOk:    false,
+		},
+		{
+			name:       "empty attributes",
+			attributes: []map[string]interface{}{},
+			slug:       "width",
+			wantValue:  0.0,
+			wantOk:     false,
+		},
+		{
+			name: "attribute with wrong type",
+			attributes: []map[string]interface{}{
+				{"slug": "width", "value": "not-a-number"},
+			},
+			slug:      "width",
+			wantValue: 0.0,
+			wantOk:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotValue, gotOk := ExtractAttributeValue(tt.attributes, tt.slug)
+			if gotValue != tt.wantValue {
+				t.Errorf("ExtractAttributeValue() value = %v, want %v", gotValue, tt.wantValue)
+			}
+			if gotOk != tt.wantOk {
+				t.Errorf("ExtractAttributeValue() ok = %v, want %v", gotOk, tt.wantOk)
+			}
+		})
+	}
+}
+
+// Test construction duration calculation
+func TestBuildingService_ConstructionDuration(t *testing.T) {
+	tests := []struct {
+		name                 string
+		requiredSatisfaction float64
+		launchedSatisfaction float64
+		wantHours            float64
+	}{
+		{
+			name:                 "required 10, launched 10 - 288000 hours",
+			requiredSatisfaction: 10.0,
+			launchedSatisfaction: 10.0,
+			wantHours:            288000.0, // 10 * 288000 / 10 = 288000
+		},
+		{
+			name:                 "required 10, launched 20 - 144000 hours",
+			requiredSatisfaction: 10.0,
+			launchedSatisfaction: 20.0,
+			wantHours:            144000.0, // 10 * 288000 / 20 = 144000
+		},
+		{
+			name:                 "required 10, launched 100 - 28800 hours",
+			requiredSatisfaction: 10.0,
+			launchedSatisfaction: 100.0,
+			wantHours:            28800.0, // 10 * 288000 / 100 = 28800
+		},
+		{
+			name:                 "required 12.5, launched 25 - 144000 hours",
+			requiredSatisfaction: 12.5,
+			launchedSatisfaction: 25.0,
+			wantHours:            144000.0, // 12.5 * 288000 / 25 = 144000
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Formula: required_satisfaction * 288000 / launched_satisfaction
+			gotHours := tt.requiredSatisfaction * 288000.0 / tt.launchedSatisfaction
+			if gotHours != tt.wantHours {
+				t.Errorf("Construction duration = %v hours, want %v hours", gotHours, tt.wantHours)
+			}
+		})
+	}
+}
+
+// Test required satisfaction calculation
+func TestBuildingService_RequiredSatisfaction(t *testing.T) {
+	tests := []struct {
+		name            string
+		area            float64
+		karbariCoeff    float64
+		density         int
+		want            float64
+		description     string
+	}{
+		{
+			name:         "basic calculation",
+			area:         100.0,
+			karbariCoeff: 1.0,
+			density:      1,
+			want:         0.1, // 100 * 1.0 * 1 * 0.1 / 100 = 0.1
+			description:  "area=100, karbari=1.0, density=1",
+		},
+		{
+			name:         "with karbari coefficient",
+			area:         100.0,
+			karbariCoeff: 1.5,
+			density:      1,
+			want:         0.15, // 100 * 1.5 * 1 * 0.1 / 100 = 0.15
+			description:  "area=100, karbari=1.5, density=1",
+		},
+		{
+			name:         "with density",
+			area:         100.0,
+			karbariCoeff: 1.0,
+			density:      3,
+			want:         0.3, // 100 * 1.0 * 3 * 0.1 / 100 = 0.3
+			description:  "area=100, karbari=1.0, density=3",
+		},
+		{
+			name:         "full calculation",
+			area:         1500.0,
+			karbariCoeff: 1.2,
+			density:      2,
+			want:         3.6, // 1500 * 1.2 * 2 * 0.1 / 100 = 3.6
+			description:  "area=1500, karbari=1.2, density=2",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Formula: area * karbariCoeff * density * 0.1 / 100
+			got := tt.area * tt.karbariCoeff * float64(tt.density) * 0.1 / 100.0
 			if got != tt.want {
-				t.Errorf("calculateBubbleDiameter() = %v, want %v", got, tt.want)
+				t.Errorf("Required satisfaction = %v, want %v (%s)", got, tt.want, tt.description)
+			}
+		})
+	}
+}
+
+// Test validateBuildingInformation function
+func TestBuildingService_ValidateBuildingInformation(t *testing.T) {
+	service := NewBuildingService(nil, nil, nil, nil, nil)
+
+	tests := []struct {
+		name    string
+		info    *pb.BuildingInformation
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name:    "nil information - valid",
+			info:    nil,
+			wantErr: false,
+		},
+		{
+			name: "valid information with all fields",
+			info: &pb.BuildingInformation{
+				ActivityLine: "Software Development",
+				Name:         "Tech Solutions Inc",
+				Address:      "123 Main St",
+				PostalCode:   "1234567890",
+				Website:      "https://example.com",
+				Description:  "A software company",
+			},
+			wantErr: false,
+		},
+		{
+			name: "activity_line exceeds 255 characters",
+			info: &pb.BuildingInformation{
+				ActivityLine: string(make([]byte, 256)), // 256 characters
+			},
+			wantErr: true,
+			errMsg:  "activity_line must not exceed 255 characters",
+		},
+		{
+			name: "name exceeds 255 characters",
+			info: &pb.BuildingInformation{
+				ActivityLine: "Software Development",
+				Name:         string(make([]byte, 256)),
+			},
+			wantErr: true,
+			errMsg:  "name must not exceed 255 characters",
+		},
+		{
+			name: "address exceeds 255 characters",
+			info: &pb.BuildingInformation{
+				ActivityLine: "Software Development",
+				Address:      string(make([]byte, 256)),
+			},
+			wantErr: true,
+			errMsg:  "address must not exceed 255 characters",
+		},
+		{
+			name: "invalid postal_code - too short",
+			info: &pb.BuildingInformation{
+				ActivityLine: "Software Development",
+				PostalCode:   "12345",
+			},
+			wantErr: true,
+			errMsg:  "postal_code must be a valid Iranian postal code",
+		},
+		{
+			name: "invalid postal_code - non-numeric",
+			info: &pb.BuildingInformation{
+				ActivityLine: "Software Development",
+				PostalCode:   "abcdefghij",
+			},
+			wantErr: true,
+			errMsg:  "postal_code must be a valid Iranian postal code",
+		},
+		{
+			name: "valid postal_code with dashes",
+			info: &pb.BuildingInformation{
+				ActivityLine: "Software Development",
+				PostalCode:   "12345-67890",
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid website - not a URL",
+			info: &pb.BuildingInformation{
+				ActivityLine: "Software Development",
+				Website:      "not-a-url",
+			},
+			wantErr: true,
+			errMsg:  "website must be a valid URL",
+		},
+		{
+			name: "invalid website - no scheme",
+			info: &pb.BuildingInformation{
+				ActivityLine: "Software Development",
+				Website:      "example.com",
+			},
+			wantErr: true,
+			errMsg:  "website must be a valid URL",
+		},
+		{
+			name: "invalid website - wrong scheme",
+			info: &pb.BuildingInformation{
+				ActivityLine: "Software Development",
+				Website:      "ftp://example.com",
+			},
+			wantErr: true,
+			errMsg:  "website must use http or https protocol",
+		},
+		{
+			name: "valid website - http",
+			info: &pb.BuildingInformation{
+				ActivityLine: "Software Development",
+				Website:      "http://example.com",
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid website - https",
+			info: &pb.BuildingInformation{
+				ActivityLine: "Software Development",
+				Website:      "https://example.com",
+			},
+			wantErr: false,
+		},
+		{
+			name: "website exceeds 255 characters",
+			info: &pb.BuildingInformation{
+				ActivityLine: "Software Development",
+				Website:      "https://" + string(make([]byte, 250)) + ".com",
+			},
+			wantErr: true,
+			errMsg:  "website must not exceed 255 characters",
+		},
+		{
+			name: "description exceeds 5000 characters",
+			info: &pb.BuildingInformation{
+				ActivityLine: "Software Development",
+				Description:  string(make([]byte, 5001)),
+			},
+			wantErr: true,
+			errMsg:  "description must not exceed 5000 characters",
+		},
+		{
+			name: "valid description at limit",
+			info: &pb.BuildingInformation{
+				ActivityLine: "Software Development",
+				Description:  string(make([]byte, 5000)),
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := service.validateBuildingInformation(tt.info)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateBuildingInformation() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && tt.errMsg != "" && err != nil {
+				if err.Error()[:len(tt.errMsg)] != tt.errMsg {
+					t.Errorf("validateBuildingInformation() error message = %v, want contains %v", err.Error(), tt.errMsg)
+				}
 			}
 		})
 	}

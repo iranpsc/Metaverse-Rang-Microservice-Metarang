@@ -13,13 +13,13 @@ import (
 // Mock repositories for testing
 type mockBuildingRepository struct {
 	upsertModelFunc                   func(ctx context.Context, modelID, name, sku, images, attributes, file string, requiredSatisfaction float64) error
-	findModelFunc                     func(ctx context.Context, modelID uint64) (*pb.BuildingModel, error)
+	findModelFunc                     func(ctx context.Context, modelID string) (*pb.BuildingModel, error)
 	hasBuildingFunc                   func(ctx context.Context, featureID uint64) (bool, error)
-	createBuildingFunc                func(ctx context.Context, featureID, buildingModelID uint64, launchedSatisfaction, rotation, position, information string, startDate, endDate time.Time, bubbleDiameter float64) error
+	createBuildingFunc                func(ctx context.Context, featureID uint64, buildingModelID string, launchedSatisfaction, rotation, position, information string, startDate, endDate time.Time, bubbleDiameter float64) error
 	findByFeatureIDFunc               func(ctx context.Context, featureID uint64) ([]*pb.Building, error)
-	updateBuildingFunc                func(ctx context.Context, featureID, buildingModelID uint64, launchedSatisfaction, rotation, position, information string, endDate time.Time, bubbleDiameter float64) (*pb.Building, error)
-	findBuildingByFeatureAndModelFunc func(ctx context.Context, featureID, buildingModelID uint64) (*pb.Building, error)
-	deleteBuildingFunc                func(ctx context.Context, featureID, buildingModelID uint64) error
+	updateBuildingFunc                func(ctx context.Context, featureID uint64, buildingModelID string, launchedSatisfaction, rotation, position, information string, endDate time.Time, bubbleDiameter float64) (*pb.Building, error)
+	findBuildingByFeatureAndModelFunc func(ctx context.Context, featureID uint64, buildingModelID string) (*pb.Building, error)
+	deleteBuildingFunc                func(ctx context.Context, featureID uint64, buildingModelID string) error
 	firstOrCreateIsicCodeFunc         func(ctx context.Context, activityLine string) (uint64, error)
 }
 
@@ -30,7 +30,7 @@ func (m *mockBuildingRepository) UpsertBuildingModel(ctx context.Context, modelI
 	return errors.New("not implemented")
 }
 
-func (m *mockBuildingRepository) FindBuildingModelByModelID(ctx context.Context, modelID uint64) (*pb.BuildingModel, error) {
+func (m *mockBuildingRepository) FindBuildingModelByModelID(ctx context.Context, modelID string) (*pb.BuildingModel, error) {
 	if m.findModelFunc != nil {
 		return m.findModelFunc(ctx, modelID)
 	}
@@ -44,7 +44,7 @@ func (m *mockBuildingRepository) HasBuilding(ctx context.Context, featureID uint
 	return false, errors.New("not implemented")
 }
 
-func (m *mockBuildingRepository) CreateBuilding(ctx context.Context, featureID, buildingModelID uint64, launchedSatisfaction, rotation, position, information string, startDate, endDate time.Time, bubbleDiameter float64) error {
+func (m *mockBuildingRepository) CreateBuilding(ctx context.Context, featureID uint64, buildingModelID string, launchedSatisfaction, rotation, position, information string, startDate, endDate time.Time, bubbleDiameter float64) error {
 	if m.createBuildingFunc != nil {
 		return m.createBuildingFunc(ctx, featureID, buildingModelID, launchedSatisfaction, rotation, position, information, startDate, endDate, bubbleDiameter)
 	}
@@ -58,21 +58,21 @@ func (m *mockBuildingRepository) FindByFeatureID(ctx context.Context, featureID 
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockBuildingRepository) UpdateBuilding(ctx context.Context, featureID, buildingModelID uint64, launchedSatisfaction, rotation, position, information string, endDate time.Time, bubbleDiameter float64) (*pb.Building, error) {
+func (m *mockBuildingRepository) UpdateBuilding(ctx context.Context, featureID uint64, buildingModelID string, launchedSatisfaction, rotation, position, information string, endDate time.Time, bubbleDiameter float64) (*pb.Building, error) {
 	if m.updateBuildingFunc != nil {
 		return m.updateBuildingFunc(ctx, featureID, buildingModelID, launchedSatisfaction, rotation, position, information, endDate, bubbleDiameter)
 	}
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockBuildingRepository) FindBuildingByFeatureAndModel(ctx context.Context, featureID, buildingModelID uint64) (*pb.Building, error) {
+func (m *mockBuildingRepository) FindBuildingByFeatureAndModel(ctx context.Context, featureID uint64, buildingModelID string) (*pb.Building, error) {
 	if m.findBuildingByFeatureAndModelFunc != nil {
 		return m.findBuildingByFeatureAndModelFunc(ctx, featureID, buildingModelID)
 	}
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockBuildingRepository) DeleteBuilding(ctx context.Context, featureID, buildingModelID uint64) error {
+func (m *mockBuildingRepository) DeleteBuilding(ctx context.Context, featureID uint64, buildingModelID string) error {
 	if m.deleteBuildingFunc != nil {
 		return m.deleteBuildingFunc(ctx, featureID, buildingModelID)
 	}
@@ -161,13 +161,61 @@ func TestBuildingService_GetBuildPackage(t *testing.T) {
 		// For full testing, integration tests or a 3D client interface would be needed
 		service := NewBuildingService(mockBuildingRepo, mockFeatureRepo, mockGeometryRepo, mockProfitRepo, nil)
 
-		_, _, err := service.GetBuildPackage(ctx, 1, 1, 200) // Different user ID
+		_, _, err := service.GetBuildPackage(ctx, 1, 1) // featureID=1, page=1
 		if err == nil {
 			t.Error("Expected error for unauthorized user")
 		}
 		if err != nil && !contains(err.Error(), "unauthorized") && !contains(err.Error(), "does not own") {
 			t.Errorf("Expected authorization error, got: %v", err)
 		}
+	})
+}
+
+// Test complete building lifecycle
+func TestBuildingService_CompleteLifecycle(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("complete lifecycle - GetBuildPackage -> BuildFeature -> GetBuildings -> UpdateBuilding -> DestroyBuilding", func(t *testing.T) {
+		// This test demonstrates the full workflow
+		// In a real integration test, this would use actual database and services
+		t.Skip("Full integration test requires database setup and external services")
+		
+		// Workflow:
+		// 1. GetBuildPackage - fetch available models
+		// 2. BuildFeature - start construction
+		// 3. GetBuildings - check construction status
+		// 4. UpdateBuilding - modify construction
+		// 5. DestroyBuilding - remove building
+	})
+}
+
+// Test concurrent operations
+func TestBuildingService_ConcurrentOperations(t *testing.T) {
+	t.Run("multiple users trying to build on same feature", func(t *testing.T) {
+		// This test would verify that only one build succeeds
+		// In a real scenario, database transactions would handle this
+		t.Skip("Concurrent operations test requires database with transaction support")
+	})
+}
+
+// Test external service failures
+func TestBuildingService_ExternalServiceFailures(t *testing.T) {
+	t.Run("3D API timeout/failure handling", func(t *testing.T) {
+		// Test graceful degradation when 3D API is unavailable
+		t.Skip("Requires mock 3D API client with timeout simulation")
+	})
+
+	t.Run("commercial service (wallet) unavailable", func(t *testing.T) {
+		// Test behavior when wallet service is down
+		t.Skip("Requires mock commercial client with failure simulation")
+	})
+}
+
+// Test database transaction rollbacks
+func TestBuildingService_TransactionRollbacks(t *testing.T) {
+	t.Run("wallet debit succeeds but building creation fails", func(t *testing.T) {
+		// Verify wallet is refunded on building creation failure
+		t.Skip("Requires database transaction support and mock commercial client")
 	})
 }
 

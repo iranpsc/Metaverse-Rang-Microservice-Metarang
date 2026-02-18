@@ -49,11 +49,13 @@ func (h *BuildingHandler) BuildFeature(ctx context.Context, req *pb.BuildFeature
 	if req.FeatureId == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "feature_id is required")
 	}
+	// TODO: Change back to string check (== "") after proto regeneration
+	// Currently proto generated code has uint64, but proto file says string
 	if req.BuildingModelId == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "building_model_id is required")
 	}
 
-	err := h.service.BuildFeature(ctx, req)
+	_, err := h.service.BuildFeature(ctx, req)
 	if err != nil {
 		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "does not own") {
 			return nil, status.Errorf(codes.PermissionDenied, "%s", err.Error())
@@ -67,9 +69,11 @@ func (h *BuildingHandler) BuildFeature(ctx context.Context, req *pb.BuildFeature
 		return nil, status.Errorf(codes.Internal, "failed to build feature: %v", err)
 	}
 
+	// TODO: Change back to Feature field after proto regeneration
+	// Currently proto generated code has Success/Message, but proto file says Feature
 	return &pb.BuildFeatureResponse{
 		Success: true,
-		Message: "Building construction started successfully",
+		Message: "Building created successfully",
 	}, nil
 }
 
@@ -96,6 +100,8 @@ func (h *BuildingHandler) UpdateBuilding(ctx context.Context, req *pb.UpdateBuil
 	if req.FeatureId == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "feature_id is required")
 	}
+	// TODO: Change back to string check (== "") after proto regeneration
+	// Currently proto generated code has uint64, but proto file says string
 	if req.BuildingModelId == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "building_model_id is required")
 	}

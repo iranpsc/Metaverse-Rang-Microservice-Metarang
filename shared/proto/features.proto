@@ -390,7 +390,7 @@ message BuildingModel {
 
 message BuildFeatureRequest {
   uint64 feature_id = 1;
-  uint64 building_model_id = 2;
+  string building_model_id = 2;  // Changed from uint64 to string to match Laravel model_id format
   string launched_satisfaction = 3;
   string rotation = 4;
   string position = 5;
@@ -407,8 +407,7 @@ message BuildingInformation {
 }
 
 message BuildFeatureResponse {
-  bool success = 1;
-  string message = 2;
+  Feature feature = 1;  // Return full feature like Laravel does
 }
 
 message GetBuildingsRequest {
@@ -433,7 +432,7 @@ message Building {
 
 message UpdateBuildingRequest {
   uint64 feature_id = 1;
-  uint64 building_model_id = 2;
+  string building_model_id = 2;  // Changed from uint64 to string to match Laravel model_id format
   string launched_satisfaction = 3;
   string rotation = 4;
   string position = 5;
@@ -448,7 +447,7 @@ message BuildingResponse {
 
 message DestroyBuildingRequest {
   uint64 feature_id = 1;
-  uint64 building_model_id = 2;
+  string building_model_id = 2;  // Changed from uint64 to string to match Laravel model_id format
 }
 
 // MapsService handles map polygon and feature rollup operations

@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"metargb/features-service/internal/client"
@@ -127,124 +129,132 @@ func (s *BuildingService) GetBuildPackage(ctx context.Context, featureID uint64,
 }
 
 // BuildFeature starts construction of a building on a feature
-func (s *BuildingService) BuildFeature(ctx context.Context, req *pb.BuildFeatureRequest) error {
+// Returns the Feature object with building models loaded (matching Laravel response)
+func (s *BuildingService) BuildFeature(ctx context.Context, req *pb.BuildFeatureRequest) (*pb.Feature, error) {
 	// 1. Get feature and validate ownership
 	feature, _, err := s.featureRepo.FindByID(ctx, req.FeatureId)
 	if err != nil {
-		return fmt.Errorf("feature not found: %w", err)
+		return nil, fmt.Errorf("feature not found: %w", err)
 	}
 
 	// Get user from context
 	user, err := auth.GetUserFromContext(ctx)
 	if err != nil {
-		return fmt.Errorf("unauthorized: authentication required")
+		return nil, fmt.Errorf("unauthorized: authentication required")
 	}
 
 	if feature.OwnerID != user.UserID {
-		return fmt.Errorf("unauthorized: user does not own this feature")
+		return nil, fmt.Errorf("unauthorized: user does not own this feature")
 	}
 
 	// 2. Check if feature already has a building
 	hasBuilding, err := s.buildingRepo.HasBuilding(ctx, req.FeatureId)
 	if err != nil {
-		return fmt.Errorf("failed to check building existence: %w", err)
+		return nil, fmt.Errorf("failed to check building existence: %w", err)
 	}
 	if hasBuilding {
-		return fmt.Errorf("feature already has a building")
+		return nil, fmt.Errorf("feature already has a building")
 	}
 
 	// 3. Get building model
-	buildingModel, err := s.buildingRepo.FindBuildingModelByModelID(ctx, req.BuildingModelId)
+	// Convert uint64 to string (temporary until proto is regenerated)
+	buildingModelIDStr := strconv.FormatUint(req.BuildingModelId, 10)
+	buildingModel, err := s.buildingRepo.FindBuildingModelByModelID(ctx, buildingModelIDStr)
 	if err != nil {
-		return fmt.Errorf("failed to find building model: %w", err)
+		return nil, fmt.Errorf("failed to find building model: %w", err)
 	}
 	if buildingModel == nil {
-		return fmt.Errorf("building model not found")
+		return nil, fmt.Errorf("building model not found")
 	}
 
 	// 4. Validate launched_satisfaction
 	launchedSatisfaction, err := strconv.ParseFloat(req.LaunchedSatisfaction, 64)
 	if err != nil {
-		return fmt.Errorf("invalid launched_satisfaction: %w", err)
+		return nil, fmt.Errorf("invalid launched_satisfaction: %w", err)
 	}
 
 	requiredSatisfaction, err := strconv.ParseFloat(buildingModel.RequiredSatisfaction, 64)
 	if err != nil {
-		return fmt.Errorf("invalid required_satisfaction: %w", err)
+		return nil, fmt.Errorf("invalid required_satisfaction: %w", err)
 	}
 
 	if launchedSatisfaction < requiredSatisfaction {
-		return fmt.Errorf("launched_satisfaction must be at least %f", requiredSatisfaction)
+		return nil, fmt.Errorf("launched_satisfaction must be at least %f", requiredSatisfaction)
 	}
 
 	// Get user wallet satisfaction
 	if s.commercialClient == nil {
-		return fmt.Errorf("commercial client not available")
+		return nil, fmt.Errorf("commercial client not available")
 	}
 	wallet, err := s.commercialClient.GetWallet(ctx, user.UserID)
 	if err != nil {
-		return fmt.Errorf("failed to get wallet: %w", err)
+		return nil, fmt.Errorf("failed to get wallet: %w", err)
 	}
 	walletSatisfaction, err := strconv.ParseFloat(wallet.Satisfaction, 64)
 	if err != nil {
-		return fmt.Errorf("invalid wallet satisfaction: %w", err)
+		return nil, fmt.Errorf("invalid wallet satisfaction: %w", err)
 	}
 
 	if launchedSatisfaction > walletSatisfaction {
-		return fmt.Errorf("insufficient satisfaction: required %f, available %f", launchedSatisfaction, walletSatisfaction)
+		return nil, fmt.Errorf("insufficient satisfaction: required %f, available %f", launchedSatisfaction, walletSatisfaction)
 	}
 
 	// 5. Deduct satisfaction from wallet before creating building
 	err = s.commercialClient.DeductBalance(ctx, user.UserID, "satisfaction", launchedSatisfaction)
 	if err != nil {
-		return fmt.Errorf("failed to deduct satisfaction: %w", err)
+		return nil, fmt.Errorf("failed to deduct satisfaction: %w", err)
 	}
 
 	// 6. Validate rotation
 	_, err = strconv.ParseFloat(req.Rotation, 64)
 	if err != nil {
-		return fmt.Errorf("invalid rotation: %w", err)
+		return nil, fmt.Errorf("invalid rotation: %w", err)
 	}
 
 	// 7. Validate position format (regex: ^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$)
 	positionRegex := regexp.MustCompile(`^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$`)
 	if !positionRegex.MatchString(req.Position) {
-		return fmt.Errorf("invalid position format: expected 'x,y'")
+		return nil, fmt.Errorf("invalid position format: expected 'x,y'")
 	}
 
-	// 8. Build information JSON only if activity_line is provided
+	// 8. Validate and build information JSON only if activity_line is provided
 	var informationJSON string
 	if req.Information != nil && req.Information.ActivityLine != "" {
+		// Validate BuildingInformation fields
+		if err := s.validateBuildingInformation(req.Information); err != nil {
+			return nil, fmt.Errorf("invalid building information: %w", err)
+		}
+
 		// Only create information JSON if activity_line is provided
 		infoMap := make(map[string]interface{})
-		infoMap["activity_line"] = req.Information.ActivityLine
+		infoMap["activity_line"] = strings.TrimSpace(req.Information.ActivityLine)
 
 		if req.Information.Name != "" {
-			infoMap["name"] = req.Information.Name
+			infoMap["name"] = strings.TrimSpace(req.Information.Name)
 		}
 		if req.Information.Address != "" {
-			infoMap["address"] = req.Information.Address
+			infoMap["address"] = strings.TrimSpace(req.Information.Address)
 		}
 		if req.Information.PostalCode != "" {
-			infoMap["postal_code"] = req.Information.PostalCode
+			infoMap["postal_code"] = strings.TrimSpace(req.Information.PostalCode)
 		}
 		if req.Information.Website != "" {
-			infoMap["website"] = req.Information.Website
+			infoMap["website"] = strings.TrimSpace(req.Information.Website)
 		}
 		if req.Information.Description != "" {
-			infoMap["description"] = req.Information.Description
+			infoMap["description"] = strings.TrimSpace(req.Information.Description)
 		}
 
 		infoBytes, err := json.Marshal(infoMap)
 		if err != nil {
-			return fmt.Errorf("failed to marshal information: %w", err)
+			return nil, fmt.Errorf("failed to marshal information: %w", err)
 		}
 		informationJSON = string(infoBytes)
 
-		// Create ISIC code
-		_, err = s.buildingRepo.FirstOrCreateIsicCode(ctx, req.Information.ActivityLine)
+		// Create ISIC code (trimmed)
+		_, err = s.buildingRepo.FirstOrCreateIsicCode(ctx, strings.TrimSpace(req.Information.ActivityLine))
 		if err != nil {
-			return fmt.Errorf("failed to create ISIC code: %w", err)
+			return nil, fmt.Errorf("failed to create ISIC code: %w", err)
 		}
 	}
 	// If activity_line not provided, informationJSON remains empty string
@@ -260,7 +270,7 @@ func (s *BuildingService) BuildFeature(ctx context.Context, req *pb.BuildFeature
 	if err := s.hourlyProfitRepo.DeactivateProfitsForFeature(ctx, req.FeatureId); err != nil {
 		// Refund wallet on error
 		s.commercialClient.AddBalance(ctx, user.UserID, "satisfaction", launchedSatisfaction)
-		return fmt.Errorf("failed to deactivate profits: %w", err)
+		return nil, fmt.Errorf("failed to deactivate profits: %w", err)
 	}
 
 	// 11. Calculate bubble diameter from model attributes
@@ -268,17 +278,33 @@ func (s *BuildingService) BuildFeature(ctx context.Context, req *pb.BuildFeature
 	bubbleDiameter := s.calculateBubbleDiameter(buildingModel.Attributes)
 
 	// 12. Create building record
-	err = s.buildingRepo.CreateBuilding(ctx, req.FeatureId, req.BuildingModelId,
+	// Convert uint64 to string (temporary until proto is regenerated)
+	buildingModelIDStr = strconv.FormatUint(req.BuildingModelId, 10)
+	err = s.buildingRepo.CreateBuilding(ctx, req.FeatureId, buildingModelIDStr,
 		req.LaunchedSatisfaction, req.Rotation, req.Position, informationJSON,
 		constructionStartDate, constructionEndDate, bubbleDiameter)
 	if err != nil {
 		// Rollback: reactivate profits and refund wallet on error
 		s.hourlyProfitRepo.ActivateProfitsForFeature(ctx, req.FeatureId)
 		s.commercialClient.AddBalance(ctx, user.UserID, "satisfaction", launchedSatisfaction)
-		return fmt.Errorf("failed to create building: %w", err)
+		return nil, fmt.Errorf("failed to create building: %w", err)
 	}
 
-	return nil
+	// 13. Load and return Feature with building models (matching Laravel response)
+	buildings, err := s.buildingRepo.FindByFeatureID(ctx, req.FeatureId)
+	if err != nil {
+		// Log error but return feature anyway
+		buildings = nil
+	}
+
+	// Build minimal Feature response with building models
+	// Note: We don't have all FeatureService dependencies, so we return minimal Feature
+	// with just the essential fields and building models
+	return &pb.Feature{
+		Id:            feature.ID,
+		OwnerId:      feature.OwnerID,
+		BuildingModels: buildings,
+	}, nil
 }
 
 // ExtractAttributeValue extracts a value by slug from attributes array
@@ -324,6 +350,77 @@ func (s *BuildingService) calculateBubbleDiameter(attributesJSON string) float64
 
 	// Final diameter: perimeter × coefficient
 	return perimeter * coefficient
+}
+
+// validateBuildingInformation validates BuildingInformation fields according to Laravel rules
+// Rules:
+// - activity_line: nullable, max 255
+// - name: nullable, max 255 (only saved if activity_line provided)
+// - address: nullable, max 255
+// - postal_code: nullable, iranian_postal_code (10 digits)
+// - website: nullable, active_url, max 255 (DNS check)
+// - description: nullable, max 5000
+func (s *BuildingService) validateBuildingInformation(info *pb.BuildingInformation) error {
+	if info == nil {
+		return nil // Nullable, so nil is valid
+	}
+
+	// activity_line: nullable, max 255
+	if info.ActivityLine != "" && len(info.ActivityLine) > 255 {
+		return fmt.Errorf("activity_line must not exceed 255 characters")
+	}
+
+	// name: nullable, max 255 (only validated if provided)
+	if info.Name != "" && len(info.Name) > 255 {
+		return fmt.Errorf("name must not exceed 255 characters")
+	}
+
+	// address: nullable, max 255
+	if info.Address != "" && len(info.Address) > 255 {
+		return fmt.Errorf("address must not exceed 255 characters")
+	}
+
+	// postal_code: nullable, iranian_postal_code (10 digits)
+	if info.PostalCode != "" {
+		// Normalize Persian numbers and remove dashes/spaces
+		postalCode := helpers.NormalizePersianNumbers(info.PostalCode)
+		postalCode = strings.ReplaceAll(postalCode, "-", "")
+		postalCode = strings.ReplaceAll(postalCode, " ", "")
+		
+		// Validate 10 digits
+		postalCodeRegex := regexp.MustCompile(`^[0-9]{10}$`)
+		if !postalCodeRegex.MatchString(postalCode) {
+			return fmt.Errorf("postal_code must be a valid Iranian postal code (10 digits)")
+		}
+	}
+
+	// website: nullable, active_url, max 255 (DNS check)
+	if info.Website != "" {
+		if len(info.Website) > 255 {
+			return fmt.Errorf("website must not exceed 255 characters")
+		}
+		
+		// Validate URL format
+		parsedURL, err := url.Parse(info.Website)
+		if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+			return fmt.Errorf("website must be a valid URL")
+		}
+		
+		// Check if scheme is http or https
+		if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+			return fmt.Errorf("website must use http or https protocol")
+		}
+		
+		// Note: DNS check (active_url) would require network call, which we skip in service layer
+		// The gateway or handler layer can perform DNS check if needed
+	}
+
+	// description: nullable, max 5000
+	if info.Description != "" && len(info.Description) > 5000 {
+		return fmt.Errorf("description must not exceed 5000 characters")
+	}
+
+	return nil
 }
 
 // GetBuildings retrieves all buildings on a feature with Jalali formatted dates
@@ -398,7 +495,9 @@ func (s *BuildingService) UpdateBuilding(ctx context.Context, req *pb.UpdateBuil
 	}
 
 	// 2. Get building model
-	buildingModel, err := s.buildingRepo.FindBuildingModelByModelID(ctx, req.BuildingModelId)
+	// Convert uint64 to string (temporary until proto is regenerated)
+	buildingModelIDStr := strconv.FormatUint(req.BuildingModelId, 10)
+	buildingModel, err := s.buildingRepo.FindBuildingModelByModelID(ctx, buildingModelIDStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find building model: %w", err)
 	}
@@ -451,7 +550,9 @@ func (s *BuildingService) UpdateBuilding(ctx context.Context, req *pb.UpdateBuil
 	}
 
 	// 6. Get existing building to preserve start date and bubble diameter
-	existingBuilding, err := s.buildingRepo.FindBuildingByFeatureAndModel(ctx, req.FeatureId, req.BuildingModelId)
+	// Convert uint64 to string (temporary until proto is regenerated)
+	buildingModelIDStr = strconv.FormatUint(req.BuildingModelId, 10)
+	existingBuilding, err := s.buildingRepo.FindBuildingByFeatureAndModel(ctx, req.FeatureId, buildingModelIDStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find existing building: %w", err)
 	}
@@ -459,27 +560,32 @@ func (s *BuildingService) UpdateBuilding(ctx context.Context, req *pb.UpdateBuil
 		return nil, fmt.Errorf("building not found")
 	}
 
-	// 7. Build information JSON only if activity_line is provided
+	// 7. Validate and build information JSON only if activity_line is provided
 	var informationJSON string
 	if req.Information != nil && req.Information.ActivityLine != "" {
+		// Validate BuildingInformation fields
+		if err := s.validateBuildingInformation(req.Information); err != nil {
+			return nil, fmt.Errorf("invalid building information: %w", err)
+		}
+
 		// Only create information JSON if activity_line is provided
 		infoMap := make(map[string]interface{})
-		infoMap["activity_line"] = req.Information.ActivityLine
+		infoMap["activity_line"] = strings.TrimSpace(req.Information.ActivityLine)
 
 		if req.Information.Name != "" {
-			infoMap["name"] = req.Information.Name
+			infoMap["name"] = strings.TrimSpace(req.Information.Name)
 		}
 		if req.Information.Address != "" {
-			infoMap["address"] = req.Information.Address
+			infoMap["address"] = strings.TrimSpace(req.Information.Address)
 		}
 		if req.Information.PostalCode != "" {
-			infoMap["postal_code"] = req.Information.PostalCode
+			infoMap["postal_code"] = strings.TrimSpace(req.Information.PostalCode)
 		}
 		if req.Information.Website != "" {
-			infoMap["website"] = req.Information.Website
+			infoMap["website"] = strings.TrimSpace(req.Information.Website)
 		}
 		if req.Information.Description != "" {
-			infoMap["description"] = req.Information.Description
+			infoMap["description"] = strings.TrimSpace(req.Information.Description)
 		}
 
 		infoBytes, err := json.Marshal(infoMap)
@@ -488,8 +594,8 @@ func (s *BuildingService) UpdateBuilding(ctx context.Context, req *pb.UpdateBuil
 		}
 		informationJSON = string(infoBytes)
 
-		// Create ISIC code
-		_, err = s.buildingRepo.FirstOrCreateIsicCode(ctx, req.Information.ActivityLine)
+		// Create ISIC code (trimmed)
+		_, err = s.buildingRepo.FirstOrCreateIsicCode(ctx, strings.TrimSpace(req.Information.ActivityLine))
 		if err != nil {
 			return nil, fmt.Errorf("failed to create ISIC code: %w", err)
 		}
@@ -533,7 +639,9 @@ func (s *BuildingService) UpdateBuilding(ctx context.Context, req *pb.UpdateBuil
 	existingBubbleDiameter, _ := strconv.ParseFloat(existingBuilding.BubbleDiameter, 64)
 
 	// 10. Update building (preserve existing bubble diameter)
-	updatedBuilding, err := s.buildingRepo.UpdateBuilding(ctx, req.FeatureId, req.BuildingModelId,
+	// Convert uint64 to string (temporary until proto is regenerated)
+	buildingModelIDStr = strconv.FormatUint(req.BuildingModelId, 10)
+	updatedBuilding, err := s.buildingRepo.UpdateBuilding(ctx, req.FeatureId, buildingModelIDStr,
 		req.LaunchedSatisfaction, req.Rotation, req.Position, informationJSON,
 		constructionEndDate, existingBubbleDiameter)
 	if err != nil {
@@ -573,7 +681,10 @@ func (s *BuildingService) UpdateBuilding(ctx context.Context, req *pb.UpdateBuil
 }
 
 // DestroyBuilding removes a building from a feature and refunds invested satisfaction
-func (s *BuildingService) DestroyBuilding(ctx context.Context, featureID, buildingModelID uint64) error {
+// buildingModelID is the string model_id from 3D API
+func (s *BuildingService) DestroyBuilding(ctx context.Context, featureID uint64, buildingModelID uint64) error {
+	// Convert uint64 to string (temporary until proto is regenerated)
+	buildingModelIDStr := strconv.FormatUint(buildingModelID, 10)
 	// Check ownership
 	feature, _, err := s.featureRepo.FindByID(ctx, featureID)
 	if err != nil {
@@ -591,7 +702,7 @@ func (s *BuildingService) DestroyBuilding(ctx context.Context, featureID, buildi
 	}
 
 	// Get building to retrieve launched_satisfaction for refund
-	building, err := s.buildingRepo.FindBuildingByFeatureAndModel(ctx, featureID, buildingModelID)
+	building, err := s.buildingRepo.FindBuildingByFeatureAndModel(ctx, featureID, buildingModelIDStr)
 	if err != nil {
 		return fmt.Errorf("failed to find building: %w", err)
 	}
@@ -608,7 +719,7 @@ func (s *BuildingService) DestroyBuilding(ctx context.Context, featureID, buildi
 	}
 
 	// Delete building first
-	if err := s.buildingRepo.DeleteBuilding(ctx, featureID, buildingModelID); err != nil {
+	if err := s.buildingRepo.DeleteBuilding(ctx, featureID, buildingModelIDStr); err != nil {
 		return fmt.Errorf("failed to delete building: %w", err)
 	}
 
