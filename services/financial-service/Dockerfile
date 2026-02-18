@@ -4,9 +4,8 @@ FROM golang:1.21-alpine AS builder
 WORKDIR /app
 
 # Copy go mod files
-COPY go.mod go.sum ./
-COPY shared/go.mod shared/go.sum ./shared/
-COPY services/financial-service/go.mod services/financial-service/go.sum ./services/financial-service/
+COPY shared/go.mod shared/go.sum* ./shared/
+COPY services/financial-service/go.mod services/financial-service/go.sum* ./services/financial-service/
 
 # Download dependencies
 ENV GOPROXY=https://goproxy.io,direct
