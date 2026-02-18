@@ -1640,29 +1640,37 @@ func writeJSON(w http.ResponseWriter, status int, data interface{}, skipWrap ...
 	
 	// Check if we should wrap the response
 	if !shouldSkipWrap {
-		// Check if data is already wrapped or is an error response
-		if dataMap, ok := data.(map[string]interface{}); ok {
-			// Already has "data" key - don't wrap again
-			if _, hasData := dataMap["data"]; hasData {
-				shouldSkipWrap = true
-			}
-			// Has "error" key - don't wrap error responses
-			if _, hasError := dataMap["error"]; hasError {
-				shouldSkipWrap = true
-			}
-			// Has "message" and "errors" keys - validation error, don't wrap
-			if _, hasMessage := dataMap["message"]; hasMessage {
-				if _, hasErrors := dataMap["errors"]; hasErrors {
+		// Use reflection to check the type
+		dataType := reflect.TypeOf(data)
+		dataKind := dataType.Kind()
+		
+		// Check if data is a map (objects)
+		if dataKind == reflect.Map {
+			if dataMap, ok := data.(map[string]interface{}); ok {
+				// Already has "data" key - don't wrap again
+				if _, hasData := dataMap["data"]; hasData {
 					shouldSkipWrap = true
 				}
+				// Has "error" key - don't wrap error responses
+				if _, hasError := dataMap["error"]; hasError {
+					shouldSkipWrap = true
+				}
+				// Has "message" and "errors" keys - validation error, don't wrap
+				if _, hasMessage := dataMap["message"]; hasMessage {
+					if _, hasErrors := dataMap["errors"]; hasErrors {
+						shouldSkipWrap = true
+					}
+				}
+			} else if dataMap, ok := data.(map[string]string); ok {
+				// Check for error or special responses in map[string]string
+				if _, hasError := dataMap["error"]; hasError {
+					shouldSkipWrap = true
+				}
+				// Special case: /auth/redirect returns {"url": "..."} - handled by skipWrap parameter
 			}
-		} else if dataMap, ok := data.(map[string]string); ok {
-			// Check for error or special responses in map[string]string
-			if _, hasError := dataMap["error"]; hasError {
-				shouldSkipWrap = true
-			}
-			// Special case: /auth/redirect returns {"url": "..."} - handled by skipWrap parameter
 		}
+		// Arrays, slices, and other non-map types (including []map[string]interface{}) 
+		// will be wrapped in the "data" field below
 		
 		// Wrap in data field if not skipping
 		if !shouldSkipWrap {
