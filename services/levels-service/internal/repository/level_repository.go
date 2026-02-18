@@ -4,18 +4,57 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
+	"time"
 
 	pb "metargb/shared/pb/levels"
+	"metargb/shared/pkg/helpers"
 )
 
 // LevelRepository handles level database operations
 // Implements Laravel's Level model and relationships
 type LevelRepository struct {
-	db *sql.DB
+	db            *sql.DB
+	adminPanelURL string
 }
 
-func NewLevelRepository(db *sql.DB) *LevelRepository {
-	return &LevelRepository{db: db}
+func NewLevelRepository(db *sql.DB, adminPanelURL string) *LevelRepository {
+	return &LevelRepository{
+		db:            db,
+		adminPanelURL: strings.TrimSuffix(adminPanelURL, "/"),
+	}
+}
+
+// formatImageURL formats image URL with admin_panel_url + /uploads/ prefix
+// Implements Laravel: config('app.admin_panel_url') . '/uploads/' . $this->image->url
+func (r *LevelRepository) formatImageURL(imageURL string) string {
+	if imageURL == "" {
+		return ""
+	}
+	// If already a full URL, return as-is
+	if strings.HasPrefix(imageURL, "http://") || strings.HasPrefix(imageURL, "https://") {
+		return imageURL
+	}
+	// If admin_panel_url is not configured, return relative path
+	if r.adminPanelURL == "" {
+		path := strings.TrimPrefix(imageURL, "/")
+		if !strings.HasPrefix(path, "uploads/") {
+			return "/uploads/" + path
+		}
+		return "/" + path
+	}
+	// Prefix with admin_panel_url/uploads/
+	path := strings.TrimPrefix(imageURL, "/")
+	if !strings.HasPrefix(path, "uploads/") {
+		path = "uploads/" + path
+	}
+	return r.adminPanelURL + "/" + path
+}
+
+// formatJalaliDateTime formats time.Time to Jalali format Y/m/d H:i:s
+// Implements Laravel: jdate($this->created_at)->format('Y/m/d H:i:s')
+func (r *LevelRepository) formatJalaliDateTime(t time.Time) string {
+	return helpers.FormatJalaliDateTime(t)
 }
 
 // GetUserLatestLevel retrieves user's latest achieved level
@@ -52,8 +91,8 @@ func (r *LevelRepository) GetUserLatestLevel(ctx context.Context, userID uint64)
 		return nil, err
 	}
 
-	if imageURL.Valid {
-		level.ImageUrl = imageURL.String
+	if imageURL.Valid && imageURL.String != "" {
+		level.ImageUrl = r.formatImageURL(imageURL.String)
 	}
 	if backgroundImage.Valid {
 		level.BackgroundImage = backgroundImage.String
@@ -90,8 +129,8 @@ func (r *LevelRepository) GetLevelsBelowScore(ctx context.Context, score int32) 
 			return nil, err
 		}
 
-		if imageURL.Valid {
-			level.ImageUrl = imageURL.String
+		if imageURL.Valid && imageURL.String != "" {
+			level.ImageUrl = r.formatImageURL(imageURL.String)
 		}
 		if backgroundImage.Valid {
 			level.BackgroundImage = backgroundImage.String
@@ -136,8 +175,8 @@ func (r *LevelRepository) GetNextLevel(ctx context.Context, currentScore int32) 
 		return nil, err
 	}
 
-	if imageURL.Valid {
-		level.ImageUrl = imageURL.String
+	if imageURL.Valid && imageURL.String != "" {
+		level.ImageUrl = r.formatImageURL(imageURL.String)
 	}
 	if backgroundImage.Valid {
 		level.BackgroundImage = backgroundImage.String
@@ -173,8 +212,8 @@ func (r *LevelRepository) GetAllLevels(ctx context.Context) ([]*pb.Level, error)
 			return nil, err
 		}
 
-		if imageURL.Valid {
-			level.ImageUrl = imageURL.String
+		if imageURL.Valid && imageURL.String != "" {
+			level.ImageUrl = r.formatImageURL(imageURL.String)
 		}
 		if backgroundImage.Valid {
 			level.BackgroundImage = backgroundImage.String
@@ -332,6 +371,17 @@ func (r *LevelRepository) GetLevelGeneralInfo(ctx context.Context, levelID uint6
 	info.Lines = fmt.Sprintf("%d", linesInt)
 	info.HasAnimation = hasAnimationInt != 0
 
+	// Format file URLs with admin_panel_url prefix (for png_file, fbx_file, gif_file)
+	if info.PngFile != "" {
+		info.PngFile = r.formatImageURL(info.PngFile)
+	}
+	if info.FbxFile != "" {
+		info.FbxFile = r.formatImageURL(info.FbxFile)
+	}
+	if info.GifFile != "" {
+		info.GifFile = r.formatImageURL(info.GifFile)
+	}
+
 	return &info, nil
 }
 
@@ -378,9 +428,9 @@ func (r *LevelRepository) GetLevelPrize(ctx context.Context, levelID uint64) (*p
 	// Format satisfaction to 2 decimal places as per API docs
 	prize.Satisfaction = fmt.Sprintf("%.2f", satisfaction)
 
-	// Format created_at in Jalali format (for now, just format as ISO, will need Jalali conversion)
+	// Format created_at in Jalali format Y/m/d H:i:s as per API docs
 	if createdAt.Valid {
-		prize.CreatedAt = createdAt.Time.Format("2006-01-02 15:04:05")
+		prize.CreatedAt = r.formatJalaliDateTime(createdAt.Time)
 	}
 
 	return &prize, nil
@@ -593,8 +643,8 @@ func (r *LevelRepository) GetNextLevelForScore(ctx context.Context, userID uint6
 		return nil, err
 	}
 
-	if imageURL.Valid {
-		level.ImageUrl = imageURL.String
+	if imageURL.Valid && imageURL.String != "" {
+		level.ImageUrl = r.formatImageURL(imageURL.String)
 	}
 	if backgroundImage.Valid {
 		level.BackgroundImage = backgroundImage.String

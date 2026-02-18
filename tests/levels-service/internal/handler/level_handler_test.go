@@ -21,7 +21,7 @@ func TestLevelHandler_GetAllLevels(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	levelRepo := repository.NewLevelRepository(db)
+	levelRepo := repository.NewLevelRepository(db, "")
 	userLogRepo := repository.NewUserLogRepository(db)
 	levelService := service.NewLevelService(levelRepo, userLogRepo)
 	handler := NewLevelHandler(levelService)
@@ -53,7 +53,7 @@ func TestLevelHandler_GetLevel(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	levelRepo := repository.NewLevelRepository(db)
+	levelRepo := repository.NewLevelRepository(db, "")
 	userLogRepo := repository.NewUserLogRepository(db)
 	levelService := service.NewLevelService(levelRepo, userLogRepo)
 	handler := NewLevelHandler(levelService)
@@ -142,7 +142,7 @@ func TestLevelHandler_GetLevelGeneralInfo(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	levelRepo := repository.NewLevelRepository(db)
+	levelRepo := repository.NewLevelRepository(db, "")
 	userLogRepo := repository.NewUserLogRepository(db)
 	levelService := service.NewLevelService(levelRepo, userLogRepo)
 	handler := NewLevelHandler(levelService)
@@ -201,7 +201,7 @@ func TestLevelHandler_GetLevelGem(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	levelRepo := repository.NewLevelRepository(db)
+	levelRepo := repository.NewLevelRepository(db, "")
 	userLogRepo := repository.NewUserLogRepository(db)
 	levelService := service.NewLevelService(levelRepo, userLogRepo)
 	handler := NewLevelHandler(levelService)
@@ -235,7 +235,7 @@ func TestLevelHandler_GetLevelPrizes(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	levelRepo := repository.NewLevelRepository(db)
+	levelRepo := repository.NewLevelRepository(db, "")
 	userLogRepo := repository.NewUserLogRepository(db)
 	levelService := service.NewLevelService(levelRepo, userLogRepo)
 	handler := NewLevelHandler(levelService)
@@ -285,7 +285,7 @@ func TestLevelHandler_GetUserLevel(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	levelRepo := repository.NewLevelRepository(db)
+	levelRepo := repository.NewLevelRepository(db, "")
 	userLogRepo := repository.NewUserLogRepository(db)
 	levelService := service.NewLevelService(levelRepo, userLogRepo)
 	handler := NewLevelHandler(levelService)
@@ -310,7 +310,7 @@ func TestLevelHandler_ClaimPrize(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	levelRepo := repository.NewLevelRepository(db)
+	levelRepo := repository.NewLevelRepository(db, "")
 	userLogRepo := repository.NewUserLogRepository(db)
 	levelService := service.NewLevelService(levelRepo, userLogRepo)
 	handler := NewLevelHandler(levelService)

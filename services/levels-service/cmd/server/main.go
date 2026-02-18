@@ -66,8 +66,11 @@ func main() {
 
 	log.Info("Database connected and schema validated")
 
+	// Get admin_panel_url for image URL formatting
+	adminPanelURL := getEnv("ADMIN_PANEL_URL", "")
+
 	// Initialize repositories
-	levelRepo := repository.NewLevelRepository(database)
+	levelRepo := repository.NewLevelRepository(database, adminPanelURL)
 	activityRepo := repository.NewActivityRepository(database)
 	challengeRepo := repository.NewChallengeRepository(database)
 	userLogRepo := repository.NewUserLogRepository(database)

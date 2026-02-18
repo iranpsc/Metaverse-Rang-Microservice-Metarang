@@ -17,7 +17,7 @@ func TestLevelService_GetAllLevels(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	levelRepo := repository.NewLevelRepository(db)
+	levelRepo := repository.NewLevelRepository(db, "")
 	userLogRepo := repository.NewUserLogRepository(db)
 	service := NewLevelService(levelRepo, userLogRepo)
 
@@ -38,7 +38,8 @@ func TestLevelService_GetAllLevels(t *testing.T) {
 		assert.Equal(t, "Level 1", levels[0].Name)
 		assert.Equal(t, "level-1", levels[0].Slug)
 		assert.Equal(t, int32(100), levels[0].Score)
-		assert.Equal(t, "img1.jpg", levels[0].ImageUrl)
+		// Image URL should be formatted with admin_panel_url (empty in test, so relative path)
+		assert.Equal(t, "/uploads/img1.jpg", levels[0].ImageUrl)
 		assert.Equal(t, "bg1.jpg", levels[0].BackgroundImage)
 	})
 
@@ -60,7 +61,7 @@ func TestLevelService_GetLevel(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	levelRepo := repository.NewLevelRepository(db)
+	levelRepo := repository.NewLevelRepository(db, "")
 	userLogRepo := repository.NewUserLogRepository(db)
 	service := NewLevelService(levelRepo, userLogRepo)
 
@@ -131,7 +132,7 @@ func TestLevelService_GetLevelGeneralInfo(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	levelRepo := repository.NewLevelRepository(db)
+	levelRepo := repository.NewLevelRepository(db, "")
 	userLogRepo := repository.NewUserLogRepository(db)
 	service := NewLevelService(levelRepo, userLogRepo)
 
@@ -186,7 +187,7 @@ func TestLevelService_GetLevelGem(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	levelRepo := repository.NewLevelRepository(db)
+	levelRepo := repository.NewLevelRepository(db, "")
 	userLogRepo := repository.NewUserLogRepository(db)
 	service := NewLevelService(levelRepo, userLogRepo)
 
@@ -240,7 +241,7 @@ func TestLevelService_GetLevelGift(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	levelRepo := repository.NewLevelRepository(db)
+	levelRepo := repository.NewLevelRepository(db, "")
 	userLogRepo := repository.NewUserLogRepository(db)
 	service := NewLevelService(levelRepo, userLogRepo)
 
@@ -297,7 +298,7 @@ func TestLevelService_GetLevelLicenses(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	levelRepo := repository.NewLevelRepository(db)
+	levelRepo := repository.NewLevelRepository(db, "")
 	userLogRepo := repository.NewUserLogRepository(db)
 	service := NewLevelService(levelRepo, userLogRepo)
 
@@ -355,7 +356,7 @@ func TestLevelService_GetLevelPrizes(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	levelRepo := repository.NewLevelRepository(db)
+	levelRepo := repository.NewLevelRepository(db, "")
 	userLogRepo := repository.NewUserLogRepository(db)
 	service := NewLevelService(levelRepo, userLogRepo)
 
@@ -410,7 +411,7 @@ func TestLevelService_GetUserLevel(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	levelRepo := repository.NewLevelRepository(db)
+	levelRepo := repository.NewLevelRepository(db, "")
 	userLogRepo := repository.NewUserLogRepository(db)
 	service := NewLevelService(levelRepo, userLogRepo)
 
@@ -476,7 +477,7 @@ func TestLevelService_ClaimPrize(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	levelRepo := repository.NewLevelRepository(db)
+	levelRepo := repository.NewLevelRepository(db, "")
 	userLogRepo := repository.NewUserLogRepository(db)
 	service := NewLevelService(levelRepo, userLogRepo)
 
