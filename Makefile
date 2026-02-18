@@ -614,12 +614,7 @@ endif
 
 dev:
 	@echo "🚀 Starting development environment..."
-	@if [ ! -f .env ]; then \
-		echo "⚠️  .env file not found. Creating from .env.example..."; \
-		cp .env.example .env; \
-		echo "📝 Please edit .env file with your configuration"; \
-		exit 1; \
-	fi
+	@echo "ℹ️  Each service uses its own config.env (copy from config.env.sample)"
 	@echo "Starting MySQL and Redis..."
 	$(DOCKER_COMPOSE) up -d mysql redis
 	@echo "Waiting for database to be ready..."

@@ -24,9 +24,23 @@ import (
 )
 
 func main() {
-	// Load environment variables
-	if err := godotenv.Load(); err != nil {
-		log.Printf("Warning: .env file not found: %v", err)
+	// Load environment variables from config.env
+	configPaths := []string{
+		"config.env",
+		"./config.env",
+		"../config.env",
+		"../../config.env",
+		"services/commercial-service/config.env",
+	}
+	var configLoaded bool
+	for _, configPath := range configPaths {
+		if err := godotenv.Load(configPath); err == nil {
+			configLoaded = true
+			break
+		}
+	}
+	if !configLoaded {
+		log.Printf("Warning: config.env not found, using environment variables only")
 	}
 
 	// Database connection

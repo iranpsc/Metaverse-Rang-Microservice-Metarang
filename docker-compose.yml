@@ -68,7 +68,6 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_URL: redis://redis:6379/0
-      KAVENEGAR_API_KEY: ${KAVENEGAR_API_KEY:-}
       NOTIFICATIONS_SERVICE_ADDR: notifications-service:50058
       LEVELS_SERVICE_ADDR: levels-service:50054
       FEATURES_SERVICE_ADDR: features-service:50053
@@ -100,6 +99,8 @@ services:
     container_name: metargb-grpc-gateway
     ports:
       - "8080:8080"
+    env_file:
+      - ./services/grpc-gateway/config.env
     environment:
       HTTP_PORT: 8080
       AUTH_SERVICE_ADDR: auth-service:50051
@@ -139,6 +140,8 @@ services:
     container_name: metargb-commercial-service
     ports:
       - "50052:50052"
+    env_file:
+      - ./services/commercial-service/config.env
     environment:
       GRPC_PORT: 50052
       DB_HOST: mysql
@@ -146,7 +149,6 @@ services:
       DB_DATABASE: metargb_db
       DB_USER: metargb_user
       DB_PASSWORD: metargb_password
-      PARSIAN_PIN: ${PARSIAN_PIN:-}
     depends_on:
       mysql:
         condition: service_healthy
@@ -170,6 +172,8 @@ services:
     container_name: metargb-features-service
     ports:
       - "50053:50053"
+    env_file:
+      - ./services/features-service/config.env
     environment:
       GRPC_PORT: 50053
       DB_HOST: mysql
@@ -199,6 +203,8 @@ services:
     container_name: metargb-levels-service
     ports:
       - "50054:50054"
+    env_file:
+      - ./services/levels-service/config.env
     environment:
       GRPC_PORT: 50054
       DB_HOST: mysql
@@ -221,6 +227,8 @@ services:
     container_name: metargb-dynasty-service
     ports:
       - "50055:50055"
+    env_file:
+      - ./services/dynasty-service/config.env
     environment:
       GRPC_PORT: 50055
       DB_HOST: mysql
@@ -243,6 +251,8 @@ services:
     container_name: metargb-calendar-service
     ports:
       - "50059:50059"
+    env_file:
+      - ./services/calendar-service/config.env
     environment:
       GRPC_PORT: 50059
       DB_HOST: mysql
@@ -265,6 +275,8 @@ services:
     container_name: metargb-support-service
     ports:
       - "50056:50056"
+    env_file:
+      - ./services/support-service/config.env
     environment:
       GRPC_PORT: 50056
       DB_HOST: mysql
@@ -327,6 +339,8 @@ services:
     container_name: metargb-notifications-service
     ports:
       - "50058:50058"
+    env_file:
+      - ./services/notifications-service/config.env
     environment:
       GRPC_PORT: 50058
       DB_HOST: mysql
@@ -339,15 +353,6 @@ services:
       DB_CONN_MAX_LIFETIME: 5m
       REDIS_ADDR: redis:6379
       REDIS_DB: 0
-      SMS_PROVIDER: kavenegar
-      SMS_API_KEY: ${KAVENEGAR_API_KEY:-}
-      SMS_SENDER: ${KAVENEGAR_SENDER:-10008663}
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USERNAME: ${SMTP_USERNAME:-}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      SMTP_FROM_NAME: MetaRGB Notifications
-      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-}
     depends_on:
       mysql:
         condition: service_healthy
@@ -370,6 +375,8 @@ services:
     container_name: metargb-financial-service
     ports:
       - "50062:50062"
+    env_file:
+      - ./services/financial-service/config.env
     environment:
       GRPC_PORT: 50062
       DB_HOST: mysql
@@ -377,10 +384,6 @@ services:
       DB_DATABASE: metargb_db
       DB_USER: metargb_user
       DB_PASSWORD: metargb_password
-      PARSIAN_MERCHANT_ID: ${PARSIAN_MERCHANT_ID:-}
-      PARSIAN_LOAN_ACCOUNT_MERCHANT_ID: ${PARSIAN_LOAN_ACCOUNT_MERCHANT_ID:-}
-      PARSIAN_CALLBACK_URL: ${PARSIAN_CALLBACK_URL:-https://rgb.irpsc.com/api/parsian/callback}
-      FRONTEND_URL: ${FRONTEND_URL:-https://rgb.irpsc.com}
     depends_on:
       mysql:
         condition: service_healthy
@@ -404,6 +407,8 @@ services:
       - "8059:8059"    # HTTP REST API port
     volumes:
       - ./services/storage-service/uploads:/app/uploads
+    env_file:
+      - ./services/storage-service/config.env
     environment:
       GRPC_PORT: 50060
       HTTP_PORT: 8059
@@ -413,12 +418,6 @@ services:
       DB_USER: metargb_user
       DB_PASSWORD: metargb_password
       TEMP_DIR: /tmp/storage-chunks
-      FTP_HOST: ${FTP_HOST:-ftp.metargb.com}
-      FTP_PORT: ${FTP_PORT:-21}
-      FTP_USER: ${FTP_USER:-}
-      FTP_PASSWORD: ${FTP_PASSWORD:-}
-      FTP_BASE_PATH: /uploads
-      FTP_BASE_URL: ${FTP_BASE_URL:-https://cdn.metargb.com/uploads}
     depends_on:
       mysql:
         condition: service_healthy
@@ -438,12 +437,12 @@ services:
     container_name: metargb-websocket-gateway
     ports:
       - "3002:3002"
+    env_file:
+      - ./websocket-gateway/config.env
     environment:
       PORT: 3002
       REDIS_URL: redis://redis:6379
       AUTH_SERVICE_ADDR: auth-service:50051
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3002,http://localhost:8080}
-      NODE_ENV: ${NODE_ENV:-development}
     depends_on:
       redis:
         condition: service_healthy

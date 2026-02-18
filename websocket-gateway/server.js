@@ -1,3 +1,6 @@
+// Load config.env for local development (Docker injects env via env_file)
+require('dotenv').config({ path: 'config.env' });
+
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');

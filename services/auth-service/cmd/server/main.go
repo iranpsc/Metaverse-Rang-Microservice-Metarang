@@ -51,10 +51,7 @@ func main() {
 		}
 	}
 	if !configLoaded {
-		// Fallback to .env if config.env not found
-		if err2 := godotenv.Load(); err2 != nil {
-			log.Printf("Warning: config.env and .env files not found, using environment variables only")
-		}
+		log.Printf("Warning: config.env not found, using environment variables only")
 	}
 
 	// Database connection with proper UTF-8 encoding for Persian/Farsi text
