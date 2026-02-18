@@ -16,10 +16,11 @@ type smsService struct {
 	channel SMSChannel
 }
 
-// NewSMSService creates a default SMS service backed by the provided channel.
+// NewSMSService creates an SMS service backed by the provided channel.
+// Caller should pass the channel created in main from config (config.env).
 func NewSMSService(channel SMSChannel) SMSService {
 	if channel == nil {
-		channel = NewSMSChannel()
+		channel = NewSMSChannel(SMSChannelConfig{})
 	}
 	return &smsService{
 		channel: channel,

@@ -82,3 +82,4 @@ coverage-final.json
 .env
 /scripts/metargb_db.sql
 /.cursor/
+/docs/

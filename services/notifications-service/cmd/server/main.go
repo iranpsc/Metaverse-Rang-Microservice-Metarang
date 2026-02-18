@@ -55,19 +55,21 @@ func main() {
 	log.Println("Successfully connected to database")
 
 	notificationRepo := repository.NewNotificationRepository(db)
-	smsChannel := service.NewSMSChannel()
-	emailChannel := service.NewEmailChannel()
 
-	// Verify SMS configuration
-	smsProvider := getEnv("SMS_PROVIDER", "")
-	smsApiKey := getEnv("SMS_API_KEY", "")
-	smsSender := getEnv("SMS_SENDER", "")
-	if smsProvider == "" || smsApiKey == "" {
-		log.Printf("WARNING: SMS not fully configured (SMS_PROVIDER=%s, SMS_API_KEY set=%v). SMS features will not work and will return 'not implemented' errors.", smsProvider, smsApiKey != "")
-		log.Printf("Please set SMS_PROVIDER and SMS_API_KEY environment variables or ensure config.env is loaded.")
-	} else {
-		log.Printf("SMS configured: provider=%s, sender=%s", smsProvider, smsSender)
+	// SMS config from config.env (SMS_PROVIDER, SMS_API_KEY, SMS_SENDER)
+	smsCfg := service.SMSChannelConfig{
+		Provider: getEnv("SMS_PROVIDER", ""),
+		APIKey:   getEnv("SMS_API_KEY", ""),
+		Sender:   getEnv("SMS_SENDER", "10008663"),
 	}
+	if smsCfg.Provider == "" || smsCfg.APIKey == "" {
+		log.Printf("WARNING: SMS not fully configured (SMS_PROVIDER=%s, SMS_API_KEY set=%v). SMS features will not work and will return 'not implemented' errors.", smsCfg.Provider, smsCfg.APIKey != "")
+		log.Printf("Please set SMS_PROVIDER and SMS_API_KEY in config.env or environment.")
+	} else {
+		log.Printf("SMS configured: provider=%s, sender=%s", smsCfg.Provider, smsCfg.Sender)
+	}
+	smsChannel := service.NewSMSChannel(smsCfg)
+	emailChannel := service.NewEmailChannel()
 
 	notificationService := service.NewNotificationService(notificationRepo, smsChannel, emailChannel)
 	smsService := service.NewSMSService(smsChannel)
