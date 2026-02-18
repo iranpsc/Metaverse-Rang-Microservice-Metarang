@@ -61,6 +61,7 @@ logs/
 *.key
 *.pem
 config.env
+services/**/config.env
 
 # Docker / Compose overrides
 docker/*.env
