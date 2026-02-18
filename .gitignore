@@ -47,10 +47,8 @@ temp/
 coverage/
 *.coverage
 *.test
-services/**/server
 services/**/bin/
 services/**/tmp/
-services/*/*-service
 
 # Logs
 *.log
