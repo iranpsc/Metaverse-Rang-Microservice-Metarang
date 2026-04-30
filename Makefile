@@ -1,4 +1,4 @@
-.PHONY: proto clean-proto gen-auth gen-commercial gen-features gen-levels gen-dynasty gen-support gen-training gen-notifications gen-calendar gen-storage gen-financial gen-all help build-all deploy-all test up down restart logs ps build clean dev dev-up dev-down
+.PHONY: proto clean-proto gen-auth gen-commercial gen-features gen-levels gen-dynasty gen-support gen-training gen-notifications gen-calendar gen-storage gen-financial gen-all help build-all deploy-all test up down restart logs ps build clean clean-runtime dev dev-up dev-down
 
 # Proto generation
 PROTO_DIR=shared/proto
@@ -45,6 +45,7 @@ help:
 	@echo ""
 	@echo "Docker:"
 	@echo "  up, down, build, logs, ps - Compose lifecycle"
+	@echo "  clean-runtime   - Remove all local runtime/build artifacts for this project"
 	@echo "  dev-up, dev-down - Development with watch mode"
 
 
@@ -150,6 +151,13 @@ clean:
 	$(DOCKER_COMPOSE) down -v
 	docker system prune -f
 	@echo "✅ Cleanup complete"
+
+clean-runtime:
+	@echo "💥 Removing all local runtime/build artifacts for this project..."
+	$(DOCKER_COMPOSE) down --volumes --remove-orphans --rmi all
+	@echo "🧱 Pruning Docker build cache..."
+	docker builder prune -af
+	@echo "✅ Runtime cleanup complete"
 
 import-schema:
 	@echo "📥 Importing database schema..."
@@ -281,6 +289,7 @@ help-docker:
 	@echo "  make logs             - Follow all service logs"
 	@echo "  make build            - Build all services"
 	@echo "  make clean            - Stop services and remove volumes"
+	@echo "  make clean-runtime    - Full local cleanup (containers, volumes, images, build cache)"
 	@echo "  make import-schema    - Import database schema only"
 	@echo "  make import-database  - Import database with data (metargb_db.sql)"
 	@echo ""

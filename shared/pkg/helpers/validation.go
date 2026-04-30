@@ -171,23 +171,26 @@ func validateLuhn(number string) bool {
 	return sum%10 == 0
 }
 
-// ValidateIranianSheba is a standalone function to validate Iranian Sheba
-// Format: 25 digits (without IR prefix) - matches sample "6201600000000000080068121"
+// ValidateIranianSheba is a standalone function to validate Iranian Sheba (IBAN).
+// Accepts: 25 digits only, or "IR" (case-insensitive) + 24 digits (standard Iranian IBAN, 26 chars total).
 func ValidateIranianSheba(sheba string) bool {
 	sheba = strings.TrimSpace(sheba)
-
-	// Must be exactly 25 digits (matching sample format)
-	if len(sheba) != 25 {
+	if len(sheba) == 0 {
 		return false
 	}
-
-	// Check if all characters are digits
+	// Strip optional "IR" prefix (Iranian IBAN country code)
+	if len(sheba) >= 2 && (sheba[0] == 'I' || sheba[0] == 'i') && (sheba[1] == 'R' || sheba[1] == 'r') {
+		sheba = sheba[2:]
+	}
+	// Accept 24 digits (standard IBAN) or 25 digits (legacy/sample format)
+	if len(sheba) != 24 && len(sheba) != 25 {
+		return false
+	}
 	for _, char := range sheba {
 		if char < '0' || char > '9' {
 			return false
 		}
 	}
-
 	return true
 }
 
