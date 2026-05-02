@@ -1,4 +1,4 @@
-package policy
+package policy_test
 
 import (
 	"context"
@@ -186,4 +186,3 @@ func TestJoinRequestPolicy_CanReject(t *testing.T) {
 		assert.False(t, canReject)
 	})
 }
-

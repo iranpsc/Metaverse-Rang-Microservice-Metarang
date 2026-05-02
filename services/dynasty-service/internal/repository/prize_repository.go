@@ -154,13 +154,21 @@ func (r *PrizeRepository) GetUserReceivedPrizes(ctx context.Context, userID uint
 
 // DeleteReceivedPrize deletes a claimed prize
 func (r *PrizeRepository) DeleteReceivedPrize(ctx context.Context, receivedPrizeID uint64) error {
-	query := `DELETE FROM received_prizes WHERE id = ?`
+	return r.DeleteReceivedPrizeTx(ctx, nil, receivedPrizeID)
+}
 
-	_, err := r.db.ExecContext(ctx, query, receivedPrizeID)
+// DeleteReceivedPrizeTx deletes a received_prizes row inside an optional transaction.
+func (r *PrizeRepository) DeleteReceivedPrizeTx(ctx context.Context, tx *sql.Tx, receivedPrizeID uint64) error {
+	query := `DELETE FROM received_prizes WHERE id = ?`
+	var err error
+	if tx != nil {
+		_, err = tx.ExecContext(ctx, query, receivedPrizeID)
+	} else {
+		_, err = r.db.ExecContext(ctx, query, receivedPrizeID)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to delete received prize: %w", err)
 	}
-
 	return nil
 }
 

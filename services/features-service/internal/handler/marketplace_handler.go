@@ -34,7 +34,7 @@ func NewMarketplaceHandler(service MarketplaceServicePort, geometryRepo Geometry
 // Implements POST /api/features/buy/{feature}
 // Returns updated feature in response per documentation
 func (h *MarketplaceHandler) BuyFeature(ctx context.Context, req *pb.BuyFeatureRequest) (*pb.BuyFeatureResponse, error) {
-	locale := "en" // TODO: Get locale from config or context
+	locale := getProjectLocale()
 	validationErrors := mergeValidationErrors(
 		validateRequired("feature_id", req.FeatureId, locale),
 		validateRequired("buyer_id", req.BuyerId, locale),
@@ -69,7 +69,7 @@ func (h *MarketplaceHandler) BuyFeature(ctx context.Context, req *pb.BuyFeatureR
 // SendBuyRequest creates a buy request for a feature
 // Implements Laravel's BuyRequestsController@store
 func (h *MarketplaceHandler) SendBuyRequest(ctx context.Context, req *pb.SendBuyRequestRequest) (*pb.BuyRequestResponse, error) {
-	locale := "en" // TODO: Get locale from config or context
+	locale := getProjectLocale()
 	validationErrors := mergeValidationErrors(
 		validateRequired("feature_id", req.FeatureId, locale),
 		validateRequired("buyer_id", req.BuyerId, locale),
@@ -100,7 +100,7 @@ func (h *MarketplaceHandler) SendBuyRequest(ctx context.Context, req *pb.SendBuy
 // AcceptBuyRequest accepts a pending buy request
 // Implements Laravel's BuyRequestsController@acceptBuyRequest
 func (h *MarketplaceHandler) AcceptBuyRequest(ctx context.Context, req *pb.AcceptBuyRequestRequest) (*pb.BuyRequestResponse, error) {
-	locale := "en" // TODO: Get locale from config or context
+	locale := getProjectLocale()
 	validationErrors := mergeValidationErrors(
 		validateRequired("request_id", req.RequestId, locale),
 		validateRequired("seller_id", req.SellerId, locale),
@@ -131,7 +131,7 @@ func (h *MarketplaceHandler) AcceptBuyRequest(ctx context.Context, req *pb.Accep
 // CreateSellRequest creates a sell request for a feature
 // Implements POST /api/sell-requests/store/{feature}
 func (h *MarketplaceHandler) CreateSellRequest(ctx context.Context, req *pb.CreateSellRequestRequest) (*pb.SellRequestResponse, error) {
-	locale := "en" // TODO: Get locale from config or context
+	locale := getProjectLocale()
 	validationErrors := mergeValidationErrors(
 		validateRequired("feature_id", req.FeatureId, locale),
 		validateRequired("seller_id", req.SellerId, locale),

@@ -22,7 +22,7 @@ func TestJoinRequestService_SendJoinRequest(t *testing.T) {
 	dynastyRepo := repository.NewDynastyRepository(db)
 	familyRepo := repository.NewFamilyRepository(db)
 	prizeRepo := repository.NewPrizeRepository(db)
-	service := NewJoinRequestService(joinRequestRepo, dynastyRepo, familyRepo, prizeRepo, "localhost:50054")
+	service := NewJoinRequestService(joinRequestRepo, dynastyRepo, familyRepo, prizeRepo, nil, "localhost:50054")
 
 	ctx := context.Background()
 	fromUserID := uint64(1)
@@ -76,7 +76,7 @@ func TestJoinRequestService_AcceptJoinRequest(t *testing.T) {
 	dynastyRepo := repository.NewDynastyRepository(db)
 	familyRepo := repository.NewFamilyRepository(db)
 	prizeRepo := repository.NewPrizeRepository(db)
-	service := NewJoinRequestService(joinRequestRepo, dynastyRepo, familyRepo, prizeRepo, "localhost:50054")
+	service := NewJoinRequestService(joinRequestRepo, dynastyRepo, familyRepo, prizeRepo, nil, "localhost:50054")
 
 	ctx := context.Background()
 	requestID := uint64(1)
@@ -147,7 +147,7 @@ func TestJoinRequestService_RejectJoinRequest(t *testing.T) {
 	dynastyRepo := repository.NewDynastyRepository(db)
 	familyRepo := repository.NewFamilyRepository(db)
 	prizeRepo := repository.NewPrizeRepository(db)
-	service := NewJoinRequestService(joinRequestRepo, dynastyRepo, familyRepo, prizeRepo, "localhost:50054")
+	service := NewJoinRequestService(joinRequestRepo, dynastyRepo, familyRepo, prizeRepo, nil, "localhost:50054")
 
 	ctx := context.Background()
 	requestID := uint64(1)
@@ -182,7 +182,7 @@ func TestJoinRequestService_DeleteJoinRequest(t *testing.T) {
 	dynastyRepo := repository.NewDynastyRepository(db)
 	familyRepo := repository.NewFamilyRepository(db)
 	prizeRepo := repository.NewPrizeRepository(db)
-	service := NewJoinRequestService(joinRequestRepo, dynastyRepo, familyRepo, prizeRepo, "localhost:50054")
+	service := NewJoinRequestService(joinRequestRepo, dynastyRepo, familyRepo, prizeRepo, nil, "localhost:50054")
 
 	ctx := context.Background()
 	requestID := uint64(1)

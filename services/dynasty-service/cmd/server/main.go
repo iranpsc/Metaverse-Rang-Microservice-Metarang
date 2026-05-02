@@ -15,6 +15,7 @@ import (
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 
+	"metargb/dynasty-service/internal/client"
 	"metargb/dynasty-service/internal/handler"
 	"metargb/dynasty-service/internal/repository"
 	"metargb/dynasty-service/internal/service"
@@ -76,15 +77,41 @@ func main() {
 	familyRepo := repository.NewFamilyRepository(db)
 	prizeRepo := repository.NewPrizeRepository(db)
 	permissionRepo := repository.NewPermissionRepository(db)
+	variableRepo := repository.NewVariableRepository(db)
+	userVariableRepo := repository.NewUserVariableRepository(db)
 
 	// Notification service client (for sending notifications)
 	notificationServiceAddr := getEnv("NOTIFICATION_SERVICE_ADDR", "localhost:50058")
+	var notificationPort service.NotificationPort
+	if notif, err := client.NewNotificationClient(notificationServiceAddr); err != nil {
+		log.Printf("Warning: notification service unavailable (%v); dynasty join-request notifications disabled", err)
+	} else {
+		notificationPort = notif
+		defer func() {
+			if err := notif.Close(); err != nil {
+				log.Printf("notification client close: %v", err)
+			}
+		}()
+	}
+
+	var walletPort service.WalletPort
+	commercialAddr := getEnv("COMMERCIAL_SERVICE_ADDR", "localhost:50052")
+	if comm, err := client.NewCommercialClient(commercialAddr); err != nil {
+		log.Printf("Warning: commercial service unavailable (%v); dynasty prize claims will fail until it is reachable", err)
+	} else {
+		walletPort = comm
+		defer func() {
+			if err := comm.Close(); err != nil {
+				log.Printf("commercial client close: %v", err)
+			}
+		}()
+	}
 
 	// Initialize services
 	dynastyService := service.NewDynastyService(dynastyRepo, familyRepo, prizeRepo, notificationServiceAddr)
-	joinRequestService := service.NewJoinRequestService(joinRequestRepo, dynastyRepo, familyRepo, prizeRepo, notificationServiceAddr)
+	joinRequestService := service.NewJoinRequestService(joinRequestRepo, dynastyRepo, familyRepo, prizeRepo, notificationPort, notificationServiceAddr)
 	familyService := service.NewFamilyService(familyRepo, dynastyRepo)
-	prizeService := service.NewPrizeService(prizeRepo)
+	prizeService := service.NewPrizeService(db, prizeRepo, variableRepo, userVariableRepo, walletPort)
 	permissionService := service.NewPermissionService(permissionRepo, joinRequestRepo, familyRepo, dynastyRepo)
 	userSearchService := service.NewUserSearchService(db)
 
@@ -92,6 +119,7 @@ func main() {
 	grpcServer := grpc.NewServer()
 
 	// Create dedicated handlers for each service
+	handler.SetProjectLocale(getEnv("PROJECT_LOCALE", "EN"))
 	dynastyHandler := handler.NewDynastyHandler(dynastyService)
 	joinRequestHandler := handler.NewJoinRequestHandler(joinRequestService, permissionService, userSearchService)
 	familyHandler := handler.NewFamilyHandler(familyService, permissionService)

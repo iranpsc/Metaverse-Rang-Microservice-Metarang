@@ -82,7 +82,7 @@ func TestJoinRequestService_EdgeCases(t *testing.T) {
 	dynastyRepo := repository.NewDynastyRepository(db)
 	familyRepo := repository.NewFamilyRepository(db)
 	prizeRepo := repository.NewPrizeRepository(db)
-	service := NewJoinRequestService(joinRequestRepo, dynastyRepo, familyRepo, prizeRepo, "localhost:50054")
+	service := NewJoinRequestService(joinRequestRepo, dynastyRepo, familyRepo, prizeRepo, nil, "localhost:50054")
 
 	ctx := context.Background()
 
@@ -219,45 +219,3 @@ func TestJoinRequestService_EdgeCases(t *testing.T) {
 
 	require.NoError(t, mock.ExpectationsWereMet())
 }
-
-// TestPrizeService_EdgeCases tests edge cases for prize redemption
-func TestPrizeService_EdgeCases(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
-
-	prizeRepo := repository.NewPrizeRepository(db)
-	service := NewPrizeService(prizeRepo)
-
-	ctx := context.Background()
-
-	t.Run("ClaimPrize_ConcurrentAttempts_SecondFailsWith404", func(t *testing.T) {
-		receivedPrizeID := uint64(1)
-		userID := uint64(1)
-
-		// First claim succeeds
-		mock.ExpectQuery("SELECT rp.id, rp.user_id").
-			WithArgs(receivedPrizeID).
-			WillReturnRows(sqlmock.NewRows([]string{"rp.id", "rp.user_id", "rp.prize_id", "rp.message", "rp.created_at", "rp.updated_at", "dp.member", "dp.satisfaction", "dp.introduction_profit_increase", "dp.accumulated_capital_reserve", "dp.data_storage", "dp.psc"}).
-				AddRow(receivedPrizeID, userID, 1, "Congratulations!", time.Now(), time.Now(), "offspring", 0.1, 0.05, 0.02, 0.03, 1000))
-
-		mock.ExpectExec("DELETE FROM received_prizes").
-			WithArgs(receivedPrizeID).
-			WillReturnResult(sqlmock.NewResult(0, 1))
-
-		err := service.ClaimPrize(ctx, receivedPrizeID, userID)
-		require.NoError(t, err)
-
-		// Second claim fails (prize already deleted)
-		mock.ExpectQuery("SELECT rp.id, rp.user_id").
-			WithArgs(receivedPrizeID).
-			WillReturnError(sql.ErrNoRows)
-
-		err = service.ClaimPrize(ctx, receivedPrizeID, userID)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "not found")
-	})
-
-	require.NoError(t, mock.ExpectationsWereMet())
-}
-

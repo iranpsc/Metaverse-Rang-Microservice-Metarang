@@ -2,7 +2,9 @@ package handler_test
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"fmt"
 	"testing"
 
 	"metargb/features-service/internal/handler"
@@ -152,16 +154,28 @@ func TestFeatureHandler_GetFeature_MissingId(t *testing.T) {
 	assert.Equal(t, codes.InvalidArgument, st.Code())
 }
 
-func TestFeatureHandler_GetFeature_ServiceError(t *testing.T) {
+func TestFeatureHandler_GetFeature_NotFound(t *testing.T) {
 	ctx := context.Background()
 	m := &mockFeaturePort{}
 	m.getFeature = func(ctx context.Context, featureID uint64) (*pb.Feature, error) {
-		return nil, errors.New("no row")
+		return nil, fmt.Errorf("feature not found: %w", sql.ErrNoRows)
 	}
 	h := handler.NewFeatureHandler(m)
 	_, err := h.GetFeature(ctx, &pb.GetFeatureRequest{FeatureId: 99})
 	st, _ := status.FromError(err)
 	assert.Equal(t, codes.NotFound, st.Code())
+}
+
+func TestFeatureHandler_GetFeature_InternalError(t *testing.T) {
+	ctx := context.Background()
+	m := &mockFeaturePort{}
+	m.getFeature = func(ctx context.Context, featureID uint64) (*pb.Feature, error) {
+		return nil, errors.New("database timeout")
+	}
+	h := handler.NewFeatureHandler(m)
+	_, err := h.GetFeature(ctx, &pb.GetFeatureRequest{FeatureId: 99})
+	st, _ := status.FromError(err)
+	assert.Equal(t, codes.Internal, st.Code())
 }
 
 func TestFeatureHandler_ListFeatures_ServiceError(t *testing.T) {

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"metargb/dynasty-service/internal/models"
 	"metargb/dynasty-service/internal/repository"
@@ -107,6 +108,30 @@ func (s *DynastyService) UpdateDynastyFeature(ctx context.Context, dynastyID, fe
 	if dynasty.UserID != userID {
 		return fmt.Errorf("unauthorized: user does not own this dynasty")
 	}
+	if dynasty.FeatureID == featureID {
+		return fmt.Errorf("feature is already dynasty feature")
+	}
+
+	// Apply penalty rules if changing within 30 days.
+	if time.Since(dynasty.UpdatedAt) < 30*24*time.Hour {
+		karbari, stability, err := s.dynastyRepo.GetFeaturePenaltyData(ctx, dynasty.FeatureID)
+		if err != nil {
+			return fmt.Errorf("failed to get feature penalty data: %w", err)
+		}
+		colorType := featureColorByKarbari(karbari)
+		debtAmount := stability * 0.01
+		if debtAmount > 0 {
+			if err := s.dynastyRepo.CreateDebt(ctx, userID, colorType, debtAmount, "update-dynasty-feature"); err != nil {
+				return fmt.Errorf("failed to create debt: %w", err)
+			}
+		}
+		if err := s.dynastyRepo.LockFeature(ctx, dynasty.FeatureID, "dynasty-feature-change", time.Now().AddDate(0, 1, 0), 0); err != nil {
+			return fmt.Errorf("failed to lock feature: %w", err)
+		}
+		if err := s.dynastyRepo.SetFeatureLabel(ctx, dynasty.FeatureID, "locked"); err != nil {
+			return fmt.Errorf("failed to set feature label: %w", err)
+		}
+	}
 
 	// Update dynasty feature
 	if err := s.dynastyRepo.UpdateDynastyFeature(ctx, dynastyID, featureID); err != nil {
@@ -114,6 +139,19 @@ func (s *DynastyService) UpdateDynastyFeature(ctx context.Context, dynastyID, fe
 	}
 
 	return nil
+}
+
+func featureColorByKarbari(karbari string) string {
+	switch karbari {
+	case "m":
+		return "yellow"
+	case "t":
+		return "red"
+	case "a":
+		return "blue"
+	default:
+		return "yellow"
+	}
 }
 
 // GetFeatureDetails retrieves feature details for dynasty

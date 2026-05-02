@@ -160,7 +160,7 @@ func mapServiceError(err error) error {
 		return status.Errorf(codes.PermissionDenied, "%s", errStr)
 	case contains(errStr, "invalid") || contains(errStr, "validation"):
 		return status.Errorf(codes.InvalidArgument, "%s", errStr)
-	case contains(errStr, "already exists") || contains(errStr, "duplicate"):
+	case contains(errStr, "already exists") || contains(errStr, "already has") || contains(errStr, "duplicate"):
 		return status.Errorf(codes.AlreadyExists, "%s", errStr)
 	default:
 		return status.Errorf(codes.Internal, "%s", errStr)
@@ -181,4 +181,3 @@ func indexOfSubstring(s, substr string) int {
 	}
 	return -1
 }
-

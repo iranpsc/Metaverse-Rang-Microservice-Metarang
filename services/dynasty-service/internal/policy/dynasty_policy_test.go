@@ -1,4 +1,4 @@
-package policy
+package policy_test
 
 import (
 	"context"
@@ -130,4 +130,3 @@ func TestDynastyPolicy_CanUpdateDynastyFeature(t *testing.T) {
 
 	require.NoError(t, mock.ExpectationsWereMet())
 }
-

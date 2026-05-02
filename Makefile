@@ -60,7 +60,12 @@ test-unit:
 	@for service in services/*/; do \
 		if [ -f "$$service/go.mod" ]; then \
 			echo "Testing $$(basename $$service)..."; \
-			cd $$service && go test ./internal/... -v -race -coverprofile=coverage.out || exit 1; \
+			cd $$service && \
+			if [ -d internal ]; then \
+				go test ./internal/... -v -race -coverprofile=coverage.out || exit 1; \
+			else \
+				go test ./... -v -race -coverprofile=coverage.out || exit 1; \
+			fi; \
 			cd ../..; \
 		fi \
 	done

@@ -13,7 +13,7 @@ require (
 	metargb/shared v0.0.0
 )
 
-replace metargb/shared => /workspace/metargb/shared
+replace metargb/shared => ../../shared
 
 require (
 	github.com/gabriel-vasile/mimetype v1.4.12 // indirect
@@ -21,7 +21,6 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.16.0 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
-	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/yaa110/go-persian-calendar v1.2.0 // indirect
 	golang.org/x/crypto v0.43.0 // indirect
 	golang.org/x/net v0.46.0 // indirect

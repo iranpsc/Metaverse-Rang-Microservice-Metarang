@@ -1,10 +1,8 @@
-package validation
+package validation_test
 
 import (
 	"context"
-	"database/sql"
 	"testing"
-	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
@@ -15,14 +13,12 @@ import (
 )
 
 func TestFamilyValidator_ValidateRelationship(t *testing.T) {
-	db, mock, err := sqlmock.New()
+	db, _, err := sqlmock.New()
 	require.NoError(t, err)
 	defer db.Close()
 
 	validationRepo := repository.NewValidationRepository(db)
 	validator := validation.NewFamilyValidator(validationRepo)
-
-	ctx := context.Background()
 
 	validRelationships := []string{"father", "mother", "offspring", "husband", "wife", "brother", "sister"}
 	for _, rel := range validRelationships {
@@ -105,7 +101,7 @@ func TestFamilyValidator_ValidateRelationshipLimits(t *testing.T) {
 
 		err := validator.ValidateRelationshipLimits(ctx, familyID, "offspring")
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "offspring")
+		assert.Contains(t, err.Error(), "4")
 	})
 
 	require.NoError(t, mock.ExpectationsWereMet())
@@ -124,36 +120,40 @@ func TestFamilyValidator_ValidateAddFamilyMember(t *testing.T) {
 	toUserID := uint64(2)
 
 	t.Run("NoPendingRequest", func(t *testing.T) {
-		// Check pending request
+		// Order matches FamilyValidator.ValidateAddFamilyMember
+		mock.ExpectQuery("SELECT EXISTS").
+			WithArgs(fromUserID).
+			WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+
 		mock.ExpectQuery("SELECT EXISTS").
 			WithArgs(fromUserID, toUserID).
-			WillReturnRows(sqlmock.NewRows([]string{"EXISTS(SELECT 1 FROM join_requests"}).AddRow(false))
+			WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 
-		// Check rejected request
 		mock.ExpectQuery("SELECT EXISTS").
 			WithArgs(fromUserID, toUserID).
-			WillReturnRows(sqlmock.NewRows([]string{"EXISTS(SELECT 1 FROM join_requests"}).AddRow(false))
+			WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 
-		// Check user in family
 		mock.ExpectQuery("SELECT EXISTS").
 			WithArgs(toUserID).
-			WillReturnRows(sqlmock.NewRows([]string{"EXISTS(SELECT 1 FROM family_members"}).AddRow(false))
+			WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 
 		err := validator.ValidateAddFamilyMember(ctx, fromUserID, toUserID, "offspring", false)
 		assert.NoError(t, err)
 	})
 
 	t.Run("HasPendingRequest", func(t *testing.T) {
-		// Has pending request
+		mock.ExpectQuery("SELECT EXISTS").
+			WithArgs(fromUserID).
+			WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+
 		mock.ExpectQuery("SELECT EXISTS").
 			WithArgs(fromUserID, toUserID).
-			WillReturnRows(sqlmock.NewRows([]string{"EXISTS(SELECT 1 FROM join_requests"}).AddRow(true))
+			WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 
 		err := validator.ValidateAddFamilyMember(ctx, fromUserID, toUserID, "offspring", false)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "pending")
+		assert.Contains(t, err.Error(), "ارسال")
 	})
 
 	require.NoError(t, mock.ExpectationsWereMet())
 }
-

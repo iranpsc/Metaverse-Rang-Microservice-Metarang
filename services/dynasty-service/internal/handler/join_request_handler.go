@@ -235,7 +235,7 @@ func (h *JoinRequestHandler) GetDefaultPermissions(ctx context.Context, req *dyn
 	}
 
 	// Validate relationship - must be "offspring"
-	locale := "en" // TODO: Get locale from context or config
+	locale := getLocale(ctx)
 	if req.Relationship != "offspring" {
 		validationErrors := make(map[string]string)
 		t := helpers.GetLocaleTranslations(locale)
@@ -272,7 +272,7 @@ func (h *JoinRequestHandler) SearchUsers(ctx context.Context, req *dynastypb.Sea
 	}
 
 	// Validate search term
-	locale := "en" // TODO: Get locale from context or config
+	locale := getLocale(ctx)
 	if req.SearchTerm == "" {
 		validationErrors := validateRequired("search_term", req.SearchTerm, locale)
 		return nil, returnValidationError(validationErrors)

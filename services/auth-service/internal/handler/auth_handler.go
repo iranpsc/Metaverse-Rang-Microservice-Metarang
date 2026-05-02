@@ -60,7 +60,7 @@ func (h *authHandler) Register(ctx context.Context, req *pb.RegisterRequest) (*p
 			encodedError := helpers.EncodeValidationError(validationErrors)
 			return nil, status.Error(codes.InvalidArgument, encodedError)
 		}
-		return nil, status.Errorf(codes.Internal, lang.Tf(h.locale, "registration failed: %v", err))
+		return nil, status.Errorf(codes.Internal, "%s", lang.Tf(h.locale, "registration failed: %v", err))
 	}
 
 	return &pb.RegisterResponse{
@@ -71,7 +71,7 @@ func (h *authHandler) Register(ctx context.Context, req *pb.RegisterRequest) (*p
 func (h *authHandler) Redirect(ctx context.Context, req *pb.RedirectRequest) (*pb.RedirectResponse, error) {
 	url, _, err := h.authService.Redirect(ctx, req.RedirectTo, req.BackUrl)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, lang.Tf(h.locale, "redirect failed: %v", err))
+		return nil, status.Errorf(codes.Internal, "%s", lang.Tf(h.locale, "redirect failed: %v", err))
 	}
 
 	return &pb.RedirectResponse{
@@ -82,14 +82,14 @@ func (h *authHandler) Redirect(ctx context.Context, req *pb.RedirectRequest) (*p
 func (h *authHandler) Callback(ctx context.Context, req *pb.CallbackRequest) (*pb.CallbackResponse, error) {
 	// Extract IP from gRPC metadata if available
 	ip := extractIPFromContext(ctx)
-	
+
 	result, err := h.authService.Callback(ctx, req.State, req.Code, ip)
 	if err != nil {
 		// Map InvalidArgumentException to InvalidArgument status code
 		if strings.Contains(err.Error(), "invalid state value") {
-			return nil, status.Errorf(codes.InvalidArgument, lang.Tf(h.locale, "invalid state value: %v", err))
+			return nil, status.Errorf(codes.InvalidArgument, "%s", lang.Tf(h.locale, "invalid state value: %v", err))
 		}
-		return nil, status.Errorf(codes.Internal, lang.Tf(h.locale, "callback failed: %v", err))
+		return nil, status.Errorf(codes.Internal, "%s", lang.Tf(h.locale, "callback failed: %v", err))
 	}
 
 	return &pb.CallbackResponse{
@@ -102,7 +102,7 @@ func (h *authHandler) Callback(ctx context.Context, req *pb.CallbackRequest) (*p
 func (h *authHandler) GetMe(ctx context.Context, req *pb.GetMeRequest) (*pb.UserResponse, error) {
 	userDetails, err := h.authService.GetMe(ctx, req.Token)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, lang.Tf(h.locale, "authentication failed: %v", err))
+		return nil, status.Errorf(codes.Unauthenticated, "%s", lang.Tf(h.locale, "authentication failed: %v", err))
 	}
 
 	// Default automatic_logout to 55 if 0 (matching Laravel: settings->automatic_logout ?: 55)
@@ -142,7 +142,7 @@ func (h *authHandler) Logout(ctx context.Context, req *pb.LogoutRequest) (*empty
 	// Validate token and get user
 	user, err := h.tokenRepo.ValidateToken(ctx, req.Token)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, lang.Tf(h.locale, "invalid token: %v", err))
+		return nil, status.Errorf(codes.Unauthenticated, "%s", lang.Tf(h.locale, "invalid token: %v", err))
 	}
 
 	// Extract IP and UserAgent from request context (if available)
@@ -151,7 +151,7 @@ func (h *authHandler) Logout(ctx context.Context, req *pb.LogoutRequest) (*empty
 	userAgent := ""
 
 	if err := h.authService.Logout(ctx, user.ID, ip, userAgent); err != nil {
-		return nil, status.Errorf(codes.Internal, lang.Tf(h.locale, "logout failed: %v", err))
+		return nil, status.Errorf(codes.Internal, "%s", lang.Tf(h.locale, "logout failed: %v", err))
 	}
 
 	return &emptypb.Empty{}, nil
@@ -270,7 +270,7 @@ func mapAccountSecurityErrorWithFields(err error, locale string) error {
 	case errors.Is(err, service.ErrAccountSecurityAlreadyUnlocked):
 		return status.Errorf(codes.FailedPrecondition, "%v", err)
 	default:
-		return status.Errorf(codes.Internal, lang.Tf(locale, "account security operation failed: %v", err))
+		return status.Errorf(codes.Internal, "%s", lang.Tf(locale, "account security operation failed: %v", err))
 	}
 }
 

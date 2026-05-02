@@ -27,7 +27,7 @@ func NewProfitHandler(service service.ProfitServiceInterface) *ProfitHandler {
 // Implements Laravel's FeatureHourlyProfitController@index
 // Returns HourlyProfitResource format with feature_db_id, feature_id (properties.id), karbari, formatted amounts (3 decimals), and Jalali dates
 func (h *ProfitHandler) GetHourlyProfits(ctx context.Context, req *pb.GetHourlyProfitsRequest) (*pb.HourlyProfitsResponse, error) {
-	locale := "en" // TODO: Get locale from config or context
+	locale := getProjectLocale()
 	validationErrors := validateRequired("user_id", req.UserId, locale)
 	if len(validationErrors) > 0 {
 		return nil, returnValidationError(validationErrors)
@@ -83,7 +83,7 @@ func (h *ProfitHandler) GetHourlyProfits(ctx context.Context, req *pb.GetHourlyP
 // Implements Laravel's FeatureHourlyProfitController@getSingleProfit
 // Returns HourlyProfitResource format after crediting wallet and resetting profit
 func (h *ProfitHandler) GetSingleProfit(ctx context.Context, req *pb.GetSingleProfitRequest) (*pb.HourlyProfitResponse, error) {
-	locale := "en" // TODO: Get locale from config or context
+	locale := getProjectLocale()
 	validationErrors := mergeValidationErrors(
 		validateRequired("profit_id", req.ProfitId, locale),
 		validateRequired("user_id", req.UserId, locale),
@@ -124,7 +124,7 @@ func (h *ProfitHandler) GetSingleProfit(ctx context.Context, req *pb.GetSinglePr
 // Implements Laravel's FeatureHourlyProfitController@getProfitsByApplication
 // Returns empty JSON object {} (HTTP 200) as per Laravel implementation
 func (h *ProfitHandler) GetProfitsByApplication(ctx context.Context, req *pb.GetProfitsByApplicationRequest) (*pb.ProfitsByApplicationResponse, error) {
-	locale := "en" // TODO: Get locale from config or context
+	locale := getProjectLocale()
 	validationErrors := mergeValidationErrors(
 		validateRequired("user_id", req.UserId, locale),
 		validateRequired("karbari", req.Karbari, locale),
