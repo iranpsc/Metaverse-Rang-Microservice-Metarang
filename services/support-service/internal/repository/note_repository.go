@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"metargb/support-service/internal/models"
 )
@@ -24,16 +25,43 @@ func NewNoteRepository(db *sql.DB) NoteRepository {
 	return &noteRepository{db: db}
 }
 
+func scanAttachments(raw sql.NullString) ([]string, error) {
+	if !raw.Valid || raw.String == "" {
+		return nil, nil
+	}
+	var urls []string
+	if err := json.Unmarshal([]byte(raw.String), &urls); err != nil {
+		return nil, fmt.Errorf("decode attachments json: %w", err)
+	}
+	return urls, nil
+}
+
+func marshalAttachments(urls []string) (interface{}, error) {
+	if len(urls) == 0 {
+		return nil, nil
+	}
+	b, err := json.Marshal(urls)
+	if err != nil {
+		return nil, err
+	}
+	return string(b), nil
+}
+
 func (r *noteRepository) Create(ctx context.Context, note *models.Note) (*models.Note, error) {
+	attJSON, err := marshalAttachments(note.Attachments)
+	if err != nil {
+		return nil, fmt.Errorf("marshal attachments: %w", err)
+	}
+
 	query := `
-		INSERT INTO notes (title, content, attachment, user_id, created_at, updated_at)
+		INSERT INTO notes (title, content, attachments, user_id, created_at, updated_at)
 		VALUES (?, ?, ?, ?, NOW(), NOW())
 	`
 
 	result, err := r.db.ExecContext(ctx, query,
 		note.Title,
 		note.Content,
-		note.Attachment,
+		attJSON,
 		note.UserID,
 	)
 
@@ -52,14 +80,15 @@ func (r *noteRepository) Create(ctx context.Context, note *models.Note) (*models
 
 func (r *noteRepository) GetByID(ctx context.Context, noteID uint64) (*models.Note, error) {
 	query := `
-		SELECT id, title, content, attachment, user_id, created_at, updated_at
+		SELECT id, title, content, attachments, user_id, created_at, updated_at
 		FROM notes
 		WHERE id = ?
 	`
 
 	var note models.Note
+	var attRaw sql.NullString
 	err := r.db.QueryRowContext(ctx, query, noteID).Scan(
-		&note.ID, &note.Title, &note.Content, &note.Attachment,
+		&note.ID, &note.Title, &note.Content, &attRaw,
 		&note.UserID, &note.CreatedAt, &note.UpdatedAt,
 	)
 
@@ -70,12 +99,17 @@ func (r *noteRepository) GetByID(ctx context.Context, noteID uint64) (*models.No
 		return nil, fmt.Errorf("failed to get note: %w", err)
 	}
 
+	note.Attachments, err = scanAttachments(attRaw)
+	if err != nil {
+		return nil, err
+	}
+
 	return &note, nil
 }
 
 func (r *noteRepository) GetByUserID(ctx context.Context, userID uint64) ([]*models.Note, error) {
 	query := `
-		SELECT id, title, content, attachment, user_id, created_at, updated_at
+		SELECT id, title, content, attachments, user_id, created_at, updated_at
 		FROM notes
 		WHERE user_id = ?
 		ORDER BY updated_at DESC
@@ -90,12 +124,17 @@ func (r *noteRepository) GetByUserID(ctx context.Context, userID uint64) ([]*mod
 	var notes []*models.Note
 	for rows.Next() {
 		var note models.Note
+		var attRaw sql.NullString
 		err := rows.Scan(
-			&note.ID, &note.Title, &note.Content, &note.Attachment,
+			&note.ID, &note.Title, &note.Content, &attRaw,
 			&note.UserID, &note.CreatedAt, &note.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan note: %w", err)
+		}
+		note.Attachments, err = scanAttachments(attRaw)
+		if err != nil {
+			return nil, err
 		}
 		notes = append(notes, &note)
 	}
@@ -104,16 +143,21 @@ func (r *noteRepository) GetByUserID(ctx context.Context, userID uint64) ([]*mod
 }
 
 func (r *noteRepository) Update(ctx context.Context, note *models.Note) error {
+	attJSON, err := marshalAttachments(note.Attachments)
+	if err != nil {
+		return fmt.Errorf("marshal attachments: %w", err)
+	}
+
 	query := `
 		UPDATE notes 
-		SET title = ?, content = ?, attachment = ?, updated_at = NOW()
+		SET title = ?, content = ?, attachments = ?, updated_at = NOW()
 		WHERE id = ?
 	`
 
-	_, err := r.db.ExecContext(ctx, query,
+	_, err = r.db.ExecContext(ctx, query,
 		note.Title,
 		note.Content,
-		note.Attachment,
+		attJSON,
 		note.ID,
 	)
 

@@ -30,33 +30,52 @@ func RegisterNoteHandler(grpcServer *grpc.Server, noteService service.NoteServic
 	pb.RegisterNoteServiceServer(grpcServer, handler)
 }
 
+func handlerLocale(ctx context.Context) string {
+	_ = ctx
+	return "en"
+}
+
 func (h *NoteHandler) CreateNote(ctx context.Context, req *pb.CreateNoteRequest) (*pb.NoteResponse, error) {
-	if req.UserId == 0 {
-		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	locale := handlerLocale(ctx)
+	validationErrors := mergeValidationErrors(
+		validateRequired("user_id", req.UserId, locale),
+		validateRequired("title", req.Title, locale),
+		validateRequired("content", req.Content, locale),
+		validateMaxLen("title", req.Title, 130, locale),
+		validateMaxLen("content", req.Content, 2000, locale),
+	)
+	if len(req.Attachments) > 5 {
+		validationErrors = mergeValidationErrors(validationErrors, map[string]string{
+			"attachments": "The attachments field must not have more than 5 items",
+		})
 	}
-	if req.Title == "" {
-		return nil, status.Error(codes.InvalidArgument, "title is required")
-	}
-	if req.Content == "" {
-		return nil, status.Error(codes.InvalidArgument, "content is required")
+	if len(validationErrors) > 0 {
+		return nil, returnValidationError(validationErrors)
 	}
 
-	note, err := h.noteService.CreateNote(ctx, req.UserId, req.Title, req.Content, req.Attachment)
+	atts := req.Attachments
+	if atts == nil {
+		atts = nil
+	}
+
+	note, err := h.noteService.CreateNote(ctx, req.UserId, req.Title, req.Content, atts)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create note: %v", err)
+		return nil, MapServiceError(err)
 	}
 
 	return convertNoteToProto(note), nil
 }
 
 func (h *NoteHandler) GetNotes(ctx context.Context, req *pb.GetNotesRequest) (*pb.NotesResponse, error) {
-	if req.UserId == 0 {
-		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	locale := handlerLocale(ctx)
+	validationErrors := validateRequired("user_id", req.UserId, locale)
+	if len(validationErrors) > 0 {
+		return nil, returnValidationError(validationErrors)
 	}
 
 	notes, err := h.noteService.GetNotes(ctx, req.UserId)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get notes: %v", err)
+		return nil, MapServiceError(err)
 	}
 
 	response := &pb.NotesResponse{
@@ -71,16 +90,18 @@ func (h *NoteHandler) GetNotes(ctx context.Context, req *pb.GetNotesRequest) (*p
 }
 
 func (h *NoteHandler) GetNote(ctx context.Context, req *pb.GetNoteRequest) (*pb.NoteResponse, error) {
-	if req.NoteId == 0 {
-		return nil, status.Error(codes.InvalidArgument, "note_id is required")
-	}
-	if req.UserId == 0 {
-		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	locale := handlerLocale(ctx)
+	validationErrors := mergeValidationErrors(
+		validateRequired("note_id", req.NoteId, locale),
+		validateRequired("user_id", req.UserId, locale),
+	)
+	if len(validationErrors) > 0 {
+		return nil, returnValidationError(validationErrors)
 	}
 
 	note, err := h.noteService.GetNote(ctx, req.NoteId, req.UserId)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get note: %v", err)
+		return nil, MapServiceError(err)
 	}
 
 	if note == nil {
@@ -91,51 +112,65 @@ func (h *NoteHandler) GetNote(ctx context.Context, req *pb.GetNoteRequest) (*pb.
 }
 
 func (h *NoteHandler) UpdateNote(ctx context.Context, req *pb.UpdateNoteRequest) (*pb.NoteResponse, error) {
-	if req.NoteId == 0 {
-		return nil, status.Error(codes.InvalidArgument, "note_id is required")
+	locale := handlerLocale(ctx)
+	validationErrors := mergeValidationErrors(
+		validateRequired("note_id", req.NoteId, locale),
+		validateRequired("user_id", req.UserId, locale),
+		validateRequired("title", req.Title, locale),
+		validateRequired("content", req.Content, locale),
+		validateMaxLen("title", req.Title, 130, locale),
+		validateMaxLen("content", req.Content, 2000, locale),
+	)
+	if len(req.Attachments) > 5 {
+		validationErrors = mergeValidationErrors(validationErrors, map[string]string{
+			"attachments": "The attachments field must not have more than 5 items",
+		})
 	}
-	if req.UserId == 0 {
-		return nil, status.Error(codes.InvalidArgument, "user_id is required")
-	}
-	if req.Title == "" {
-		return nil, status.Error(codes.InvalidArgument, "title is required")
-	}
-	if req.Content == "" {
-		return nil, status.Error(codes.InvalidArgument, "content is required")
+	if len(validationErrors) > 0 {
+		return nil, returnValidationError(validationErrors)
 	}
 
-	note, err := h.noteService.UpdateNote(ctx, req.NoteId, req.UserId, req.Title, req.Content, req.Attachment)
+	atts := req.Attachments
+	note, err := h.noteService.UpdateNote(ctx, req.NoteId, req.UserId, req.Title, req.Content, atts, true)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update note: %v", err)
+		return nil, MapServiceError(err)
 	}
 
 	return convertNoteToProto(note), nil
 }
 
 func (h *NoteHandler) DeleteNote(ctx context.Context, req *pb.DeleteNoteRequest) (*pbCommon.Empty, error) {
-	if req.NoteId == 0 {
-		return nil, status.Error(codes.InvalidArgument, "note_id is required")
-	}
-	if req.UserId == 0 {
-		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	locale := handlerLocale(ctx)
+	validationErrors := mergeValidationErrors(
+		validateRequired("note_id", req.NoteId, locale),
+		validateRequired("user_id", req.UserId, locale),
+	)
+	if len(validationErrors) > 0 {
+		return nil, returnValidationError(validationErrors)
 	}
 
 	err := h.noteService.DeleteNote(ctx, req.NoteId, req.UserId)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to delete note: %v", err)
+		return nil, MapServiceError(err)
 	}
 
 	return &pbCommon.Empty{}, nil
 }
 
-// Helper function to convert note model to proto response
 func convertNoteToProto(note *models.Note) *pb.NoteResponse {
+	if note == nil {
+		return nil
+	}
+	atts := note.Attachments
+	if atts == nil {
+		atts = []string{}
+	}
 	return &pb.NoteResponse{
-		Id:         note.ID,
-		Title:      note.Title,
-		Content:    note.Content,
-		Attachment: note.Attachment,
-		Date:       utils.FormatJalaliDate(note.UpdatedAt),
-		Time:       utils.FormatJalaliTime(note.UpdatedAt),
+		Id:          note.ID,
+		Title:       note.Title,
+		Content:     note.Content,
+		Attachments: atts,
+		Date:        utils.FormatJalaliDate(note.UpdatedAt),
+		Time:        utils.FormatJalaliTime(note.UpdatedAt),
 	}
 }

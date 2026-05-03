@@ -14,11 +14,12 @@ import (
 
 type CategoryHandler struct {
 	trainingpb.UnimplementedCategoryServiceServer
-	service *service.CategoryService
+	service      *service.CategoryService
+	videoService *service.VideoService
 }
 
-func RegisterCategoryHandler(grpcServer *grpc.Server, svc *service.CategoryService) {
-	handler := &CategoryHandler{service: svc}
+func RegisterCategoryHandler(grpcServer *grpc.Server, catSvc *service.CategoryService, videoSvc *service.VideoService) {
+	handler := &CategoryHandler{service: catSvc, videoService: videoSvc}
 	trainingpb.RegisterCategoryServiceServer(grpcServer, handler)
 }
 
@@ -164,7 +165,17 @@ func (h *CategoryHandler) GetCategoryVideos(ctx context.Context, req *trainingpb
 		},
 	}
 
-	// Build video responses (would need video service for full details)
-	// For now, return basic structure
+	for _, v := range videos {
+		details, err := h.videoService.GetVideoWithDetails(ctx, v)
+		if err != nil {
+			continue
+		}
+		videoResp, err := VideoDetailsToProto(details)
+		if err != nil {
+			continue
+		}
+		response.Videos = append(response.Videos, videoResp)
+	}
+
 	return response, nil
 }

@@ -121,6 +121,7 @@ services:
       LEVELS_SERVICE_ADDR: levels-service:50054
       TRAINING_SERVICE_ADDR: training-service:50057
       SUPPORT_SERVICE_ADDR: support-service:50056
+      SOCIAL_SERVICE_ADDR: social-service:50061
       NOTIFICATION_SERVICE_ADDR: notifications-service:50058
       STORAGE_SERVICE_ADDR: storage-service:8059
     depends_on:
@@ -131,6 +132,8 @@ services:
       storage-service:
         condition: service_started
       levels-service:
+        condition: service_started
+      social-service:
         condition: service_started
     networks:
       - metargb-network
@@ -372,6 +375,48 @@ services:
       watch:
         - action: rebuild
           path: ./services/support-service
+          ignore:
+            - "**/_test.go"
+            - "**/tmp"
+            - "**/.git"
+        - action: rebuild
+          path: ./shared
+
+  # Social Service - Challenge quiz & user follow graph
+  social-service:
+    build:
+      context: .
+      dockerfile: ./services/social-service/Dockerfile
+    container_name: metargb-social-service
+    ports:
+      - "50061:50061"
+    env_file:
+      - ./services/social-service/config.env
+    environment:
+      GRPC_PORT: 50061
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: metargb_db
+      DB_USER: metargb_user
+      DB_PASSWORD: metargb_password
+      COMMERCIAL_SERVICE_ADDR: commercial-service:50052
+    depends_on:
+      mysql:
+        condition: service_healthy
+      commercial-service:
+        condition: service_healthy
+    networks:
+      - metargb-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50061"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    develop:
+      watch:
+        - action: rebuild
+          path: ./services/social-service
           ignore:
             - "**/_test.go"
             - "**/tmp"

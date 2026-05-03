@@ -2,15 +2,18 @@ package handler
 
 import (
 	"context"
+	"strings"
+
 	"metargb/support-service/internal/models"
 	"metargb/support-service/internal/service"
 	"metargb/support-service/internal/utils"
 
+	pbCommon "metargb/shared/pb/common"
+	pb "metargb/shared/pb/support"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	pbCommon "metargb/shared/pb/common"
-	pb "metargb/shared/pb/support"
 )
 
 type ReportHandler struct {
@@ -29,28 +32,50 @@ func RegisterReportHandler(grpcServer *grpc.Server, reportService service.Report
 	pb.RegisterReportServiceServer(grpcServer, handler)
 }
 
+func reportImagePublicURL(stored string) string {
+	if stored == "" {
+		return ""
+	}
+	if strings.HasPrefix(stored, "http://") || strings.HasPrefix(stored, "https://") {
+		return stored
+	}
+	stored = strings.TrimPrefix(stored, "/")
+	return "uploads/" + stored
+}
+
 func (h *ReportHandler) CreateReport(ctx context.Context, req *pb.CreateReportRequest) (*pb.ReportResponse, error) {
-	if req.UserId == 0 {
-		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	locale := handlerLocale(ctx)
+	validationErrors := mergeValidationErrors(
+		validateRequired("user_id", req.UserId, locale),
+		validateReportSubject(req.ReportableType, locale),
+		validateRequired("reason", req.Reason, locale),
+		validateMaxLen("reason", req.Reason, 130, locale),
+		validateRequired("description", req.Description, locale),
+		validateMaxLen("description", req.Description, 2000, locale),
+		validateRequired("url", req.Url, locale),
+	)
+	if len(req.ImageUrls) > 5 {
+		validationErrors = mergeValidationErrors(validationErrors, map[string]string{
+			"attachments": "The attachments field must not have more than 5 items",
+		})
 	}
-	if req.Reason == "" {
-		return nil, status.Error(codes.InvalidArgument, "reason is required")
+	if len(validationErrors) > 0 {
+		return nil, returnValidationError(validationErrors)
 	}
 
-	// Note: Laravel's Report model has different fields than what's in the proto
-	// The proto expects reportable_type/reportable_id, but Laravel Report has subject/title/content/url
-	// We'll map them appropriately
-	report, err := h.reportService.CreateReport(ctx, req.UserId, req.ReportableType, req.Reason, req.Description, "", nil)
+	report, err := h.reportService.CreateReport(ctx, req.UserId, req.ReportableType, req.Reason, req.Description, req.Url, req.ImageUrls)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create report: %v", err)
+		return nil, MapServiceError(err)
 	}
 
-	return convertReportToProto(&report.Report), nil
+	return convertReportWithImagesToProto(report), nil
 }
 
 func (h *ReportHandler) GetReports(ctx context.Context, req *pb.GetReportsRequest) (*pb.ReportsResponse, error) {
-	if req.UserId == 0 {
-		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	locale := handlerLocale(ctx)
+	validationErrors := validateRequired("user_id", req.UserId, locale)
+	if len(validationErrors) > 0 {
+		return nil, returnValidationError(validationErrors)
 	}
 
 	page := int32(1)
@@ -66,7 +91,7 @@ func (h *ReportHandler) GetReports(ctx context.Context, req *pb.GetReportsReques
 
 	reports, total, err := h.reportService.GetReports(ctx, req.UserId, page, perPage)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get reports: %v", err)
+		return nil, MapServiceError(err)
 	}
 
 	response := &pb.ReportsResponse{
@@ -87,31 +112,53 @@ func (h *ReportHandler) GetReports(ctx context.Context, req *pb.GetReportsReques
 }
 
 func (h *ReportHandler) GetReport(ctx context.Context, req *pb.GetReportRequest) (*pb.ReportResponse, error) {
-	if req.ReportId == 0 {
-		return nil, status.Error(codes.InvalidArgument, "report_id is required")
+	locale := handlerLocale(ctx)
+	validationErrors := mergeValidationErrors(
+		validateRequired("report_id", req.ReportId, locale),
+		validateRequired("user_id", req.UserId, locale),
+	)
+	if len(validationErrors) > 0 {
+		return nil, returnValidationError(validationErrors)
 	}
 
-	report, err := h.reportService.GetReport(ctx, req.ReportId)
+	report, err := h.reportService.GetReport(ctx, req.ReportId, req.UserId)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get report: %v", err)
+		return nil, MapServiceError(err)
 	}
 
 	if report == nil {
 		return nil, status.Error(codes.NotFound, "report not found")
 	}
 
-	return convertReportToProto(&report.Report), nil
+	return convertReportWithImagesToProto(report), nil
 }
 
-// Helper function to convert report model to proto response
 func convertReportToProto(report *models.Report) *pb.ReportResponse {
+	if report == nil {
+		return nil
+	}
 	return &pb.ReportResponse{
 		Id:             report.ID,
 		UserId:         report.UserID,
-		ReportableType: report.Subject, // Mapping subject to reportable_type
-		ReportableId:   0,              // Not stored in Laravel Report model
-		Reason:         report.Title,   // Mapping title to reason
-		Description:    report.Content, // Mapping content to description
+		ReportableType: report.Subject,
+		ReportableId:   0,
+		Reason:         report.Title,
+		Description:    report.Content,
 		CreatedAt:      utils.FormatJalaliDateTime(report.CreatedAt),
+		Url:            report.URL,
 	}
+}
+
+func convertReportWithImagesToProto(r *models.ReportWithImages) *pb.ReportResponse {
+	if r == nil {
+		return nil
+	}
+	out := convertReportToProto(&r.Report)
+	if out == nil {
+		return nil
+	}
+	for _, img := range r.Images {
+		out.AttachmentUrls = append(out.AttachmentUrls, reportImagePublicURL(img.URL))
+	}
+	return out
 }

@@ -79,8 +79,12 @@ func (r *CalendarRepository) GetEvents(ctx context.Context, eventType, search, d
 		}
 	}
 
-	// Add ordering
-	query += " ORDER BY starts_at DESC"
+	// Ordering: Laravel scopeVersions uses created_at DESC; scopeEvents uses starts_at DESC
+	if eventType == "version" {
+		query += " ORDER BY created_at DESC"
+	} else {
+		query += " ORDER BY starts_at DESC"
+	}
 
 	// Add pagination only if date filter is not provided
 	if !hasDateFilter {
@@ -254,17 +258,20 @@ func (r *CalendarRepository) GetLatestVersionTitle(ctx context.Context) (string,
 func (r *CalendarRepository) GetEventStats(ctx context.Context, eventID uint64) (*models.CalendarStats, error) {
 	stats := &models.CalendarStats{}
 
-	// Get views count
 	viewQuery := "SELECT COUNT(*) FROM views WHERE viewable_type = 'App\\\\Models\\\\Calendar' AND viewable_id = ?"
-	r.db.QueryRowContext(ctx, viewQuery, eventID).Scan(&stats.ViewsCount)
+	if err := r.db.QueryRowContext(ctx, viewQuery, eventID).Scan(&stats.ViewsCount); err != nil {
+		return nil, fmt.Errorf("failed to count views: %w", err)
+	}
 
-	// Get likes count
 	likeQuery := "SELECT COUNT(*) FROM interactions WHERE likeable_type = 'App\\\\Models\\\\Calendar' AND likeable_id = ? AND liked = 1"
-	r.db.QueryRowContext(ctx, likeQuery, eventID).Scan(&stats.LikesCount)
+	if err := r.db.QueryRowContext(ctx, likeQuery, eventID).Scan(&stats.LikesCount); err != nil {
+		return nil, fmt.Errorf("failed to count likes: %w", err)
+	}
 
-	// Get dislikes count
 	dislikeQuery := "SELECT COUNT(*) FROM interactions WHERE likeable_type = 'App\\\\Models\\\\Calendar' AND likeable_id = ? AND liked = 0"
-	r.db.QueryRowContext(ctx, dislikeQuery, eventID).Scan(&stats.DislikesCount)
+	if err := r.db.QueryRowContext(ctx, dislikeQuery, eventID).Scan(&stats.DislikesCount); err != nil {
+		return nil, fmt.Errorf("failed to count dislikes: %w", err)
+	}
 
 	return stats, nil
 }
@@ -320,10 +327,20 @@ func (r *CalendarRepository) AddInteraction(ctx context.Context, eventID, userID
 	return nil
 }
 
-// IncrementView adds a view for an event
+// IncrementView adds a view for an event (one row per IP per event, matching Laravel Calendar::incrementViews)
 func (r *CalendarRepository) IncrementView(ctx context.Context, eventID uint64, ipAddress string) error {
-	query := "INSERT INTO views (viewable_type, viewable_id, ip_address, created_at, updated_at) VALUES ('App\\\\Models\\\\Calendar', ?, ?, NOW(), NOW())"
-	_, err := r.db.ExecContext(ctx, query, eventID, ipAddress)
+	const morphType = "App\\Models\\Calendar"
+	var existing int
+	checkQuery := "SELECT COUNT(*) FROM views WHERE viewable_type = ? AND viewable_id = ? AND ip_address = ?"
+	if err := r.db.QueryRowContext(ctx, checkQuery, morphType, eventID, ipAddress).Scan(&existing); err != nil {
+		return fmt.Errorf("failed to check existing view: %w", err)
+	}
+	if existing > 0 {
+		return nil
+	}
+
+	insertQuery := "INSERT INTO views (viewable_type, viewable_id, ip_address, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())"
+	_, err := r.db.ExecContext(ctx, insertQuery, morphType, eventID, ipAddress)
 	if err != nil {
 		return fmt.Errorf("failed to increment view: %w", err)
 	}

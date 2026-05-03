@@ -56,7 +56,7 @@ func main() {
 	log.Printf("✅ Created auth service client for %s (connection will be established on first RPC call)", cfg.AuthServiceAddr)
 
 	// Create connections to other services (with fallback if not configured)
-	var calendarConn, commercialConn, dynastyConn, featuresConn, financialConn, levelsConn, trainingConn, supportConn, notificationConn *grpc.ClientConn
+	var calendarConn, commercialConn, dynastyConn, featuresConn, financialConn, levelsConn, trainingConn, supportConn, socialConn, notificationConn *grpc.ClientConn
 
 	if cfg.CalendarServiceAddr != "" {
 		calendarConn, err = grpc.NewClient(
@@ -166,6 +166,19 @@ func main() {
 		}
 	}
 
+	if cfg.SocialServiceAddr != "" {
+		socialConn, err = grpc.NewClient(
+			cfg.SocialServiceAddr,
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+		)
+		if err != nil {
+			log.Printf("⚠️  Failed to connect to social service: %v", err)
+		} else {
+			defer socialConn.Close()
+			log.Printf("✅ Connected to social service at %s", cfg.SocialServiceAddr)
+		}
+	}
+
 	if cfg.NotificationServiceAddr != "" {
 		notificationConn, err = grpc.NewClient(
 			cfg.NotificationServiceAddr,
@@ -232,6 +245,14 @@ func main() {
 	var supportHandler *handler.SupportHandler
 	if supportConn != nil {
 		supportHandler = handler.NewSupportHandler(supportConn, authConn)
+	}
+
+	var socialHandler *handler.SocialHandler
+	if socialConn != nil {
+		socialHandler = handler.NewSocialHandler(socialConn, authConn)
+		log.Printf("✅ Social handler created (challenge + follow routes)")
+	} else {
+		log.Printf("⚠️  Social handler NOT created — set SOCIAL_SERVICE_ADDR or start social-service")
 	}
 
 	var notificationHandler *handler.NotificationHandler
@@ -451,26 +472,48 @@ func main() {
 		}
 	})))
 
-	// User Events routes
-	mux.Handle("/api/events", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
-			authHandler.ListUserEvents(w, r)
-		} else {
-			http.NotFound(w, r)
-		}
-	})))
-	mux.Handle("/api/events/", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		path := r.URL.Path
-		if strings.Contains(path, "/report/response/") {
-			authHandler.SendReportResponse(w, r)
-		} else if strings.Contains(path, "/report/close/") {
-			authHandler.CloseEventReport(w, r)
-		} else if strings.Contains(path, "/report/") {
-			authHandler.ReportUserEvent(w, r)
-		} else {
-			authHandler.GetUserEvent(w, r)
-		}
-	})))
+	// User Events routes (support-service when available, else auth-service)
+	if supportHandler != nil {
+		mux.Handle("/api/events", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodGet {
+				supportHandler.ListUserEvents(w, r)
+			} else {
+				http.NotFound(w, r)
+			}
+		})))
+		mux.Handle("/api/events/", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			path := r.URL.Path
+			if strings.Contains(path, "/report/response/") {
+				supportHandler.SendUserEventReportResponse(w, r)
+			} else if strings.Contains(path, "/report/close/") {
+				supportHandler.CloseUserEventReport(w, r)
+			} else if strings.Contains(path, "/report/") {
+				supportHandler.ReportUserEvent(w, r)
+			} else {
+				supportHandler.GetUserEvent(w, r)
+			}
+		})))
+	} else {
+		mux.Handle("/api/events", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodGet {
+				authHandler.ListUserEvents(w, r)
+			} else {
+				http.NotFound(w, r)
+			}
+		})))
+		mux.Handle("/api/events/", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			path := r.URL.Path
+			if strings.Contains(path, "/report/response/") {
+				authHandler.SendReportResponse(w, r)
+			} else if strings.Contains(path, "/report/close/") {
+				authHandler.CloseEventReport(w, r)
+			} else if strings.Contains(path, "/report/") {
+				authHandler.ReportUserEvent(w, r)
+			} else {
+				authHandler.GetUserEvent(w, r)
+			}
+		})))
+	}
 
 	// Calendar routes
 	if calendarHandler != nil {
@@ -899,38 +942,108 @@ func main() {
 		log.Printf("   trainingConn value: %v", trainingConn)
 	}
 
+	// Social service — challenge + follow (Laravel-compatible paths)
+	if socialHandler != nil {
+		mux.Handle("/api/challenge/timings", authMiddleware(http.HandlerFunc(socialHandler.GetTimings)))
+		mux.Handle("/api/challenge/question", authMiddleware(http.HandlerFunc(socialHandler.GetQuestion)))
+		mux.Handle("/api/challenge/answer", authMiddleware(http.HandlerFunc(socialHandler.SubmitAnswer)))
+		mux.Handle("/api/followers", authMiddleware(http.HandlerFunc(socialHandler.GetFollowers)))
+		mux.Handle("/api/following", authMiddleware(http.HandlerFunc(socialHandler.GetFollowing)))
+		mux.Handle("/api/follow/", authMiddleware(http.HandlerFunc(socialHandler.Follow)))
+		mux.Handle("/api/unfollow/", authMiddleware(http.HandlerFunc(socialHandler.Unfollow)))
+		mux.Handle("/api/remove/", authMiddleware(http.HandlerFunc(socialHandler.Remove)))
+		log.Printf("✅ Social service routes registered")
+	}
+
 	// Support routes
 	if supportHandler != nil {
-		// Support service routes (with /support prefix)
-		mux.Handle("/api/support/tickets", authMiddleware(http.HandlerFunc(supportHandler.ListTickets)))
-		mux.Handle("/api/support/tickets/create", authMiddleware(http.HandlerFunc(supportHandler.CreateTicket)))
-		mux.Handle("/api/support/tickets/", authMiddleware(http.HandlerFunc(supportHandler.GetTicket)))
-		mux.Handle("/api/support/reports", authMiddleware(http.HandlerFunc(supportHandler.ListReports)))
-		mux.Handle("/api/support/reports/create", authMiddleware(http.HandlerFunc(supportHandler.CreateReport)))
+		mux.Handle("/api/support/tickets", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodGet {
+				supportHandler.ListTickets(w, r)
+			} else if r.Method == http.MethodPost {
+				supportHandler.CreateTicket(w, r)
+			} else {
+				http.NotFound(w, r)
+			}
+		})))
+		mux.Handle("/api/support/tickets/", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			path := r.URL.Path
+			if strings.Contains(path, "/response/") {
+				supportHandler.AddTicketResponse(w, r)
+			} else if strings.Contains(path, "/close/") {
+				supportHandler.CloseTicket(w, r)
+			} else if r.Method == http.MethodGet {
+				supportHandler.GetTicket(w, r)
+			} else if r.Method == http.MethodPut || r.Method == http.MethodPatch {
+				supportHandler.UpdateTicket(w, r)
+			} else {
+				http.NotFound(w, r)
+			}
+		})))
+		mux.Handle("/api/support/reports", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodGet {
+				supportHandler.ListReports(w, r)
+			} else if r.Method == http.MethodPost {
+				supportHandler.CreateReport(w, r)
+			} else {
+				http.NotFound(w, r)
+			}
+		})))
 		mux.Handle("/api/support/reports/", authMiddleware(http.HandlerFunc(supportHandler.GetReport)))
-		// Direct routes (without /support prefix) - for Kong compatibility
-		mux.Handle("/api/tickets", authMiddleware(http.HandlerFunc(supportHandler.ListTickets)))
+
+		// Direct routes (Laravel /api/... paths)
+		mux.Handle("/api/tickets", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodGet {
+				supportHandler.ListTickets(w, r)
+			} else if r.Method == http.MethodPost {
+				supportHandler.CreateTicket(w, r)
+			} else {
+				http.NotFound(w, r)
+			}
+		})))
 		mux.Handle("/api/tickets/", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			path := r.URL.Path
 			if strings.Contains(path, "/response/") {
-				// Response handler would go here
-				http.NotFound(w, r)
+				supportHandler.AddTicketResponse(w, r)
 			} else if strings.Contains(path, "/close/") {
-				// Close handler would go here
-				http.NotFound(w, r)
-			} else {
+				supportHandler.CloseTicket(w, r)
+			} else if r.Method == http.MethodGet {
 				supportHandler.GetTicket(w, r)
+			} else if r.Method == http.MethodPut || r.Method == http.MethodPatch {
+				supportHandler.UpdateTicket(w, r)
+			} else {
+				http.NotFound(w, r)
 			}
 		})))
-		mux.Handle("/api/reports", authMiddleware(http.HandlerFunc(supportHandler.ListReports)))
+		mux.Handle("/api/reports", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodGet {
+				supportHandler.ListReports(w, r)
+			} else if r.Method == http.MethodPost {
+				supportHandler.CreateReport(w, r)
+			} else {
+				http.NotFound(w, r)
+			}
+		})))
 		mux.Handle("/api/reports/", authMiddleware(http.HandlerFunc(supportHandler.GetReport)))
 		mux.Handle("/api/notes", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Notes handler would go here
-			http.NotFound(w, r)
+			if r.Method == http.MethodGet {
+				supportHandler.ListNotes(w, r)
+			} else if r.Method == http.MethodPost {
+				supportHandler.CreateNote(w, r)
+			} else {
+				http.NotFound(w, r)
+			}
 		})))
 		mux.Handle("/api/notes/", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Notes handler would go here
-			http.NotFound(w, r)
+			if r.Method == http.MethodGet {
+				supportHandler.GetNote(w, r)
+			} else if r.Method == http.MethodPut || r.Method == http.MethodPatch {
+				supportHandler.UpdateNote(w, r)
+			} else if r.Method == http.MethodDelete {
+				supportHandler.DeleteNote(w, r)
+			} else {
+				http.NotFound(w, r)
+			}
 		})))
 	}
 

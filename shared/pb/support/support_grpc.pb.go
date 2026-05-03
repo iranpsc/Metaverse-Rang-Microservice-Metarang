@@ -503,6 +503,7 @@ const (
 	UserEventReportService_GetUserEvent_FullMethodName            = "/support.UserEventReportService/GetUserEvent"
 	UserEventReportService_ReportUserEvent_FullMethodName         = "/support.UserEventReportService/ReportUserEvent"
 	UserEventReportService_SendEventReportResponse_FullMethodName = "/support.UserEventReportService/SendEventReportResponse"
+	UserEventReportService_CloseUserEventReport_FullMethodName    = "/support.UserEventReportService/CloseUserEventReport"
 )
 
 // UserEventReportServiceClient is the client API for UserEventReportService service.
@@ -515,7 +516,8 @@ type UserEventReportServiceClient interface {
 	GetUserEvents(ctx context.Context, in *GetUserEventsRequest, opts ...grpc.CallOption) (*UserEventsResponse, error)
 	GetUserEvent(ctx context.Context, in *GetUserEventRequest, opts ...grpc.CallOption) (*UserEventResponse, error)
 	ReportUserEvent(ctx context.Context, in *ReportUserEventRequest, opts ...grpc.CallOption) (*UserEventReportResponse, error)
-	SendEventReportResponse(ctx context.Context, in *SendEventReportResponseRequest, opts ...grpc.CallOption) (*common.Empty, error)
+	SendEventReportResponse(ctx context.Context, in *SendEventReportResponseRequest, opts ...grpc.CallOption) (*SendEventReportResponseReply, error)
+	CloseUserEventReport(ctx context.Context, in *CloseUserEventReportRequest, opts ...grpc.CallOption) (*common.Empty, error)
 }
 
 type userEventReportServiceClient struct {
@@ -566,10 +568,20 @@ func (c *userEventReportServiceClient) ReportUserEvent(ctx context.Context, in *
 	return out, nil
 }
 
-func (c *userEventReportServiceClient) SendEventReportResponse(ctx context.Context, in *SendEventReportResponseRequest, opts ...grpc.CallOption) (*common.Empty, error) {
+func (c *userEventReportServiceClient) SendEventReportResponse(ctx context.Context, in *SendEventReportResponseRequest, opts ...grpc.CallOption) (*SendEventReportResponseReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SendEventReportResponseReply)
+	err := c.cc.Invoke(ctx, UserEventReportService_SendEventReportResponse_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userEventReportServiceClient) CloseUserEventReport(ctx context.Context, in *CloseUserEventReportRequest, opts ...grpc.CallOption) (*common.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(common.Empty)
-	err := c.cc.Invoke(ctx, UserEventReportService_SendEventReportResponse_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, UserEventReportService_CloseUserEventReport_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -586,7 +598,8 @@ type UserEventReportServiceServer interface {
 	GetUserEvents(context.Context, *GetUserEventsRequest) (*UserEventsResponse, error)
 	GetUserEvent(context.Context, *GetUserEventRequest) (*UserEventResponse, error)
 	ReportUserEvent(context.Context, *ReportUserEventRequest) (*UserEventReportResponse, error)
-	SendEventReportResponse(context.Context, *SendEventReportResponseRequest) (*common.Empty, error)
+	SendEventReportResponse(context.Context, *SendEventReportResponseRequest) (*SendEventReportResponseReply, error)
+	CloseUserEventReport(context.Context, *CloseUserEventReportRequest) (*common.Empty, error)
 	mustEmbedUnimplementedUserEventReportServiceServer()
 }
 
@@ -609,8 +622,11 @@ func (UnimplementedUserEventReportServiceServer) GetUserEvent(context.Context, *
 func (UnimplementedUserEventReportServiceServer) ReportUserEvent(context.Context, *ReportUserEventRequest) (*UserEventReportResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ReportUserEvent not implemented")
 }
-func (UnimplementedUserEventReportServiceServer) SendEventReportResponse(context.Context, *SendEventReportResponseRequest) (*common.Empty, error) {
+func (UnimplementedUserEventReportServiceServer) SendEventReportResponse(context.Context, *SendEventReportResponseRequest) (*SendEventReportResponseReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method SendEventReportResponse not implemented")
+}
+func (UnimplementedUserEventReportServiceServer) CloseUserEventReport(context.Context, *CloseUserEventReportRequest) (*common.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method CloseUserEventReport not implemented")
 }
 func (UnimplementedUserEventReportServiceServer) mustEmbedUnimplementedUserEventReportServiceServer() {
 }
@@ -724,6 +740,24 @@ func _UserEventReportService_SendEventReportResponse_Handler(srv interface{}, ct
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserEventReportService_CloseUserEventReport_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CloseUserEventReportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserEventReportServiceServer).CloseUserEventReport(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserEventReportService_CloseUserEventReport_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserEventReportServiceServer).CloseUserEventReport(ctx, req.(*CloseUserEventReportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserEventReportService_ServiceDesc is the grpc.ServiceDesc for UserEventReportService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -750,6 +784,10 @@ var UserEventReportService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SendEventReportResponse",
 			Handler:    _UserEventReportService_SendEventReportResponse_Handler,
+		},
+		{
+			MethodName: "CloseUserEventReport",
+			Handler:    _UserEventReportService_CloseUserEventReport_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

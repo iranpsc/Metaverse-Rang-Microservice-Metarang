@@ -5,7 +5,6 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	commonpb "metargb/shared/pb/common"
@@ -92,7 +91,7 @@ func (h *CommentHandler) DeleteComment(ctx context.Context, req *trainingpb.Dele
 func (h *CommentHandler) AddCommentInteraction(ctx context.Context, req *trainingpb.AddCommentInteractionRequest) (*commonpb.Empty, error) {
 	ipAddress := req.IpAddress
 	if ipAddress == "" {
-		ipAddress = getIPAddress(ctx)
+		ipAddress = IPAddressFromGRPCContext(ctx)
 	}
 
 	if err := h.service.AddCommentInteraction(ctx, req.CommentId, req.UserId, req.Liked, ipAddress); err != nil {
@@ -159,16 +158,4 @@ func (h *CommentHandler) buildCommentResponse(comment *service.CommentDetails) *
 	}
 
 	return resp
-}
-
-func getIPAddress(ctx context.Context) string {
-	if md, ok := metadata.FromIncomingContext(ctx); ok {
-		if ips := md.Get("x-forwarded-for"); len(ips) > 0 {
-			return ips[0]
-		}
-		if ips := md.Get("x-real-ip"); len(ips) > 0 {
-			return ips[0]
-		}
-	}
-	return "unknown"
 }

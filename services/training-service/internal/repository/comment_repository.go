@@ -8,6 +8,23 @@ import (
 	"metargb/training-service/internal/models"
 )
 
+// CommentRepositoryInterface defines persistence for comments, replies, reports, and interactions.
+type CommentRepositoryInterface interface {
+	GetComments(ctx context.Context, videoID uint64, page, perPage int32) ([]*models.Comment, int32, error)
+	GetReplies(ctx context.Context, commentID uint64, page, perPage int32) ([]*models.Comment, int32, error)
+	GetCommentByID(ctx context.Context, commentID uint64) (*models.Comment, error)
+	AddComment(ctx context.Context, videoID, userID uint64, content string) (*models.Comment, error)
+	UpdateComment(ctx context.Context, commentID, userID uint64, content string) error
+	DeleteComment(ctx context.Context, commentID, userID uint64) error
+	AddReply(ctx context.Context, parentCommentID, userID uint64, content string) (*models.Comment, error)
+	UpdateReply(ctx context.Context, replyID, userID uint64, content string) error
+	DeleteReply(ctx context.Context, replyID, userID uint64) error
+	GetCommentStats(ctx context.Context, commentID uint64) (*models.CommentStats, error)
+	AddCommentInteraction(ctx context.Context, commentID, userID uint64, liked bool, ipAddress string) error
+	AddReplyInteraction(ctx context.Context, replyID, userID uint64, liked bool, ipAddress string) error
+	ReportComment(ctx context.Context, videoID, commentID, userID uint64, content string) error
+}
+
 type CommentRepository struct {
 	db *sql.DB
 }
@@ -22,7 +39,10 @@ func (r *CommentRepository) GetComments(ctx context.Context, videoID uint64, pag
 		SELECT id, user_id, parent_id, commentable_type, commentable_id, content, created_at, updated_at
 		FROM comments
 		WHERE commentable_type = 'App\\Models\\Video' AND commentable_id = ? AND parent_id IS NULL
-		ORDER BY id DESC
+		ORDER BY (
+			SELECT COUNT(*) FROM interactions i
+			WHERE i.likeable_type = 'App\\Models\\Comment' AND i.likeable_id = comments.id AND i.liked = 1
+		) DESC, comments.id DESC
 	`
 	countQuery := `
 		SELECT COUNT(*) 
@@ -278,11 +298,11 @@ func (r *CommentRepository) GetCommentStats(ctx context.Context, commentID uint6
 	stats := &models.CommentStats{}
 
 	// Get likes count
-	likeQuery := "SELECT COUNT(*) FROM interactions WHERE likeable_type = 'App\\\\Models\\\\Comment' AND likeable_id = ? AND liked = 1"
+	likeQuery := "SELECT COUNT(*) FROM interactions WHERE likeable_type = 'App\\Models\\Comment' AND likeable_id = ? AND liked = 1"
 	r.db.QueryRowContext(ctx, likeQuery, commentID).Scan(&stats.LikesCount)
 
 	// Get dislikes count
-	dislikeQuery := "SELECT COUNT(*) FROM interactions WHERE likeable_type = 'App\\\\Models\\\\Comment' AND likeable_id = ? AND liked = 0"
+	dislikeQuery := "SELECT COUNT(*) FROM interactions WHERE likeable_type = 'App\\Models\\Comment' AND likeable_id = ? AND liked = 0"
 	r.db.QueryRowContext(ctx, dislikeQuery, commentID).Scan(&stats.DislikesCount)
 
 	// Get replies count

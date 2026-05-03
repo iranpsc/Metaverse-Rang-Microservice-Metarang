@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -90,7 +91,10 @@ func (h *CalendarHandler) GetEvents(ctx context.Context, req *calendarpb.GetEven
 func (h *CalendarHandler) GetEvent(ctx context.Context, req *calendarpb.GetEventRequest) (*calendarpb.EventResponse, error) {
 	event, err := h.service.GetEvent(ctx, req.EventId, req.UserId)
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "event not found: %v", err)
+		if errors.Is(err, service.ErrEventNotFound) {
+			return nil, status.Errorf(codes.NotFound, "%s", err.Error())
+		}
+		return nil, status.Errorf(codes.Internal, "failed to get event: %v", err)
 	}
 
 	// Get client IP from metadata

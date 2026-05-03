@@ -9,7 +9,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	pb "metargb/shared/pb/social"
-	"metargb/shared/pkg/auth"
 	"metargb/social-service/internal/models"
 	"metargb/social-service/internal/service"
 )
@@ -26,13 +25,9 @@ func RegisterChallengeHandler(grpcServer *grpc.Server, challengeService service.
 }
 
 func (h *challengeHandler) GetTimings(ctx context.Context, req *pb.GetTimingsRequest) (*pb.GetTimingsResponse, error) {
-	// Get user ID from context (set by auth interceptor or gateway)
-	userID := getUserIDFromContext(ctx)
-	// If not in context, try to get from metadata (set by gateway)
+	userID := req.GetUserId()
 	if userID == 0 {
-		// Gateway should set user_id in metadata
-		// For now, return error if not found
-		return nil, status.Errorf(codes.Unauthenticated, "authentication required")
+		return nil, status.Errorf(codes.InvalidArgument, "user_id is required")
 	}
 
 	timings, err := h.challengeService.GetTimings(ctx, userID)
@@ -136,17 +131,4 @@ func mapChallengeError(err error) error {
 	default:
 		return status.Errorf(codes.Internal, "operation failed: %v", err)
 	}
-}
-
-// getUserIDFromContext extracts user ID from context (set by auth interceptor)
-func getUserIDFromContext(ctx context.Context) uint64 {
-	userCtx := ctx.Value(auth.UserContextKey{})
-	if userCtx == nil {
-		return 0
-	}
-	uc, ok := userCtx.(*auth.UserContext)
-	if !ok {
-		return 0
-	}
-	return uc.UserID
 }

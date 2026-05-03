@@ -2,13 +2,11 @@ package handler
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strings"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	commonpb "metargb/shared/pb/common"
@@ -80,7 +78,7 @@ func (h *VideoHandler) GetVideos(ctx context.Context, req *trainingpb.GetVideosR
 
 // GetVideo retrieves a video by slug and increments view
 func (h *VideoHandler) GetVideo(ctx context.Context, req *trainingpb.GetVideoRequest) (*trainingpb.VideoResponse, error) {
-	ipAddress := h.getIPAddress(ctx)
+	ipAddress := IPAddressFromGRPCContext(ctx)
 	var userID *uint64
 	if req.UserId > 0 {
 		userID = &req.UserId
@@ -103,7 +101,7 @@ func (h *VideoHandler) GetVideo(ctx context.Context, req *trainingpb.GetVideoReq
 func (h *VideoHandler) GetVideoByFileName(ctx context.Context, req *trainingpb.GetVideoByFileNameRequest) (*trainingpb.VideoResponse, error) {
 	ipAddress := req.IpAddress
 	if ipAddress == "" {
-		ipAddress = h.getIPAddress(ctx)
+		ipAddress = IPAddressFromGRPCContext(ctx)
 	}
 
 	video, err := h.service.GetVideoByFileName(ctx, req.FileName, ipAddress)
@@ -121,7 +119,10 @@ func (h *VideoHandler) GetVideoByFileName(ctx context.Context, req *trainingpb.G
 
 // SearchVideos searches videos by title
 func (h *VideoHandler) SearchVideos(ctx context.Context, req *trainingpb.SearchVideosRequest) (*trainingpb.VideosResponse, error) {
-	locale := "en" // TODO: Get locale from config or context
+	locale := strings.ToLower(strings.TrimSpace(os.Getenv("PROJECT_LOCALE")))
+	if locale == "" {
+		locale = "en"
+	}
 	validationErrors := validateRequired("query", req.Query, locale)
 	if len(validationErrors) > 0 {
 		return nil, returnValidationError(validationErrors)
@@ -173,7 +174,7 @@ func (h *VideoHandler) SearchVideos(ctx context.Context, req *trainingpb.SearchV
 func (h *VideoHandler) IncrementView(ctx context.Context, req *trainingpb.IncrementViewRequest) (*commonpb.Empty, error) {
 	ipAddress := req.IpAddress
 	if ipAddress == "" {
-		ipAddress = h.getIPAddress(ctx)
+		ipAddress = IPAddressFromGRPCContext(ctx)
 	}
 
 	if err := h.service.IncrementView(ctx, req.VideoId, ipAddress); err != nil {
@@ -187,7 +188,7 @@ func (h *VideoHandler) IncrementView(ctx context.Context, req *trainingpb.Increm
 func (h *VideoHandler) AddInteraction(ctx context.Context, req *trainingpb.AddInteractionRequest) (*commonpb.Empty, error) {
 	ipAddress := req.IpAddress
 	if ipAddress == "" {
-		ipAddress = h.getIPAddress(ctx)
+		ipAddress = IPAddressFromGRPCContext(ctx)
 	}
 
 	if err := h.service.AddInteraction(ctx, req.VideoId, req.UserId, req.Liked, ipAddress); err != nil {
@@ -202,114 +203,9 @@ func (h *VideoHandler) buildVideoResponse(ctx context.Context, video *service.Vi
 	if video == nil || video.Video == nil {
 		return nil, status.Errorf(codes.Internal, "invalid video data")
 	}
-
-	resp := &trainingpb.VideoResponse{
-		Id:          video.Video.ID,
-		Title:       video.Video.Title,
-		Slug:        getStringValue(video.Video.Slug),
-		Description: video.Video.Description,
-		FileName:    video.Video.FileName,
-		CreatorCode: video.Video.CreatorCode,
-		CreatedAt:   video.CreatedAtJalali,
+	resp, err := VideoDetailsToProto(video)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "%v", err)
 	}
-
-	// Set image_url and video_url (prepend APP_URL + /uploads/ if configured)
-	appURL := strings.TrimSuffix(os.Getenv("APP_URL"), "/")
-	
-	// Construct image_url (pattern: APP_URL + /uploads/{imagePath})
-	if video.Video.Image != "" {
-		if strings.HasPrefix(video.Video.Image, "http://") || strings.HasPrefix(video.Video.Image, "https://") {
-			// Already a full URL, use as-is
-			resp.ImageUrl = video.Video.Image
-		} else if appURL != "" {
-			// Ensure image path starts with /uploads/
-			imagePath := strings.TrimPrefix(video.Video.Image, "/")
-			if !strings.HasPrefix(imagePath, "uploads/") {
-				imagePath = "uploads/" + imagePath
-			}
-			resp.ImageUrl = fmt.Sprintf("%s/%s", appURL, imagePath)
-		} else {
-			// No APP_URL configured, use relative path
-			imagePath := strings.TrimPrefix(video.Video.Image, "/")
-			if !strings.HasPrefix(imagePath, "uploads/") {
-				imagePath = "uploads/" + imagePath
-			}
-			resp.ImageUrl = "/" + imagePath
-		}
-	} else {
-		resp.ImageUrl = ""
-	}
-	
-	// Construct video_url (pattern: APP_URL + /uploads/videos/{fileName})
-	if video.Video.FileName != "" {
-		videoPath := "/uploads/videos/" + video.Video.FileName
-		if appURL != "" {
-			resp.VideoUrl = fmt.Sprintf("%s%s", appURL, videoPath)
-		} else {
-			resp.VideoUrl = videoPath
-		}
-	} else {
-		resp.VideoUrl = ""
-	}
-
-	// Set creator
-	if video.Creator != nil {
-		resp.Creator = &commonpb.UserBasic{
-			Id:    video.Creator.ID,
-			Name:  video.Creator.Name,
-			Code:  video.Creator.Code,
-			Email: video.Creator.Email,
-		}
-		if video.Creator.ProfilePhoto != "" {
-			resp.Creator.ProfilePhoto = video.Creator.ProfilePhoto
-		}
-	}
-
-	// Set category and subcategory
-	if video.Category != nil {
-		resp.Category = &trainingpb.CategoryInfo{
-			Id:   video.Category.ID,
-			Name: video.Category.Name,
-			Slug: video.Category.Slug,
-		}
-	}
-	if video.SubCategory != nil {
-		resp.SubCategory = &trainingpb.SubCategoryInfo{
-			Id:   video.SubCategory.ID,
-			Name: video.SubCategory.Name,
-			Slug: video.SubCategory.Slug,
-		}
-	}
-
-	// Set stats
-	if video.Stats != nil {
-		resp.Stats = &trainingpb.VideoStats{
-			ViewsCount:    video.Stats.ViewsCount,
-			LikesCount:    video.Stats.LikesCount,
-			DislikesCount: video.Stats.DislikesCount,
-			CommentsCount: video.Stats.CommentsCount,
-		}
-	}
-
 	return resp, nil
-}
-
-func getStringValue(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
-}
-
-// getIPAddress extracts IP address from context metadata
-func (h *VideoHandler) getIPAddress(ctx context.Context) string {
-	if md, ok := metadata.FromIncomingContext(ctx); ok {
-		if ips := md.Get("x-forwarded-for"); len(ips) > 0 {
-			return ips[0]
-		}
-		if ips := md.Get("x-real-ip"); len(ips) > 0 {
-			return ips[0]
-		}
-	}
-	return "unknown"
 }

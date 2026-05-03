@@ -8,10 +8,17 @@ import (
 	"metargb/training-service/internal/models"
 )
 
-// CategoryRepositoryInterface defines the interface for category repository operations
+// CategoryRepositoryInterface defines the interface for category repository operations.
 type CategoryRepositoryInterface interface {
-	GetSubCategoryByID(ctx context.Context, subCategoryID uint64) (*models.VideoSubCategory, error)
+	GetCategories(ctx context.Context, page, perPage int32) ([]*models.VideoCategory, int32, error)
 	GetCategoryByID(ctx context.Context, categoryID uint64) (*models.VideoCategory, error)
+	GetCategoryBySlug(ctx context.Context, slug string) (*models.VideoCategory, error)
+	GetSubCategoryByID(ctx context.Context, subCategoryID uint64) (*models.VideoSubCategory, error)
+	GetSubCategoryBySlugs(ctx context.Context, categorySlug, subCategorySlug string) (*models.VideoSubCategory, error)
+	GetSubCategoriesByCategoryID(ctx context.Context, categoryID uint64) ([]*models.VideoSubCategory, error)
+	GetCategoryStats(ctx context.Context, categoryID uint64) (*models.CategoryStats, error)
+	GetSubCategoryStats(ctx context.Context, subCategoryID uint64) (*models.SubCategoryStats, error)
+	GetSubCategoryStatsByCategoryID(ctx context.Context, categoryID uint64) (map[uint64]*models.SubCategoryStats, error)
 }
 
 type CategoryRepository struct {

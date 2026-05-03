@@ -214,19 +214,19 @@ func (r *VideoRepository) GetVideoStats(ctx context.Context, videoID uint64) (*m
 	stats := &models.VideoStats{}
 
 	// Get views count
-	viewQuery := "SELECT COUNT(*) FROM views WHERE viewable_type = 'App\\\\Models\\\\Video' AND viewable_id = ?"
+	viewQuery := "SELECT COUNT(*) FROM views WHERE viewable_type = 'App\\Models\\Video' AND viewable_id = ?"
 	r.db.QueryRowContext(ctx, viewQuery, videoID).Scan(&stats.ViewsCount)
 
 	// Get likes count
-	likeQuery := "SELECT COUNT(*) FROM interactions WHERE likeable_type = 'App\\\\Models\\\\Video' AND likeable_id = ? AND liked = 1"
+	likeQuery := "SELECT COUNT(*) FROM interactions WHERE likeable_type = 'App\\Models\\Video' AND likeable_id = ? AND liked = 1"
 	r.db.QueryRowContext(ctx, likeQuery, videoID).Scan(&stats.LikesCount)
 
 	// Get dislikes count
-	dislikeQuery := "SELECT COUNT(*) FROM interactions WHERE likeable_type = 'App\\\\Models\\\\Video' AND likeable_id = ? AND liked = 0"
+	dislikeQuery := "SELECT COUNT(*) FROM interactions WHERE likeable_type = 'App\\Models\\Video' AND likeable_id = ? AND liked = 0"
 	r.db.QueryRowContext(ctx, dislikeQuery, videoID).Scan(&stats.DislikesCount)
 
 	// Get comments count
-	commentQuery := "SELECT COUNT(*) FROM comments WHERE commentable_type = 'App\\\\Models\\\\Video' AND commentable_id = ? AND parent_id IS NULL"
+	commentQuery := "SELECT COUNT(*) FROM comments WHERE commentable_type = 'App\\Models\\Video' AND commentable_id = ? AND parent_id IS NULL"
 	r.db.QueryRowContext(ctx, commentQuery, videoID).Scan(&stats.CommentsCount)
 
 	return stats, nil
@@ -234,7 +234,7 @@ func (r *VideoRepository) GetVideoStats(ctx context.Context, videoID uint64) (*m
 
 // IncrementView adds a view for a video
 func (r *VideoRepository) IncrementView(ctx context.Context, videoID uint64, ipAddress string) error {
-	query := "INSERT INTO views (viewable_type, viewable_id, ip_address, created_at, updated_at) VALUES ('App\\\\Models\\\\Video', ?, ?, NOW(), NOW())"
+	query := "INSERT INTO views (viewable_type, viewable_id, ip_address, created_at, updated_at) VALUES ('App\\Models\\Video', ?, ?, NOW(), NOW())"
 	_, err := r.db.ExecContext(ctx, query, videoID, ipAddress)
 	if err != nil {
 		return fmt.Errorf("failed to increment view: %w", err)

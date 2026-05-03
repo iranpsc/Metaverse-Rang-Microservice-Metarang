@@ -9,11 +9,11 @@ import (
 )
 
 type ReplyService struct {
-	commentRepo *repository.CommentRepository
-	userRepo    *repository.UserRepository
+	commentRepo repository.CommentRepositoryInterface
+	userRepo    repository.UserRepositoryInterface
 }
 
-func NewReplyService(commentRepo *repository.CommentRepository, userRepo *repository.UserRepository) *ReplyService {
+func NewReplyService(commentRepo repository.CommentRepositoryInterface, userRepo repository.UserRepositoryInterface) *ReplyService {
 	return &ReplyService{
 		commentRepo: commentRepo,
 		userRepo:    userRepo,

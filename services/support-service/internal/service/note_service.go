@@ -8,10 +8,10 @@ import (
 )
 
 type NoteService interface {
-	CreateNote(ctx context.Context, userID uint64, title, content, attachment string) (*models.Note, error)
+	CreateNote(ctx context.Context, userID uint64, title, content string, attachments []string) (*models.Note, error)
 	GetNotes(ctx context.Context, userID uint64) ([]*models.Note, error)
 	GetNote(ctx context.Context, noteID, userID uint64) (*models.Note, error)
-	UpdateNote(ctx context.Context, noteID, userID uint64, title, content, attachment string) (*models.Note, error)
+	UpdateNote(ctx context.Context, noteID, userID uint64, title, content string, attachments []string, replaceAttachments bool) (*models.Note, error)
 	DeleteNote(ctx context.Context, noteID, userID uint64) error
 }
 
@@ -25,12 +25,12 @@ func NewNoteService(noteRepo repository.NoteRepository) NoteService {
 	}
 }
 
-func (s *noteService) CreateNote(ctx context.Context, userID uint64, title, content, attachment string) (*models.Note, error) {
+func (s *noteService) CreateNote(ctx context.Context, userID uint64, title, content string, attachments []string) (*models.Note, error) {
 	note := &models.Note{
-		Title:      title,
-		Content:    content,
-		Attachment: attachment,
-		UserID:     userID,
+		Title:       title,
+		Content:     content,
+		Attachments: attachments,
+		UserID:      userID,
 	}
 
 	return s.noteRepo.Create(ctx, note)
@@ -41,7 +41,6 @@ func (s *noteService) GetNotes(ctx context.Context, userID uint64) ([]*models.No
 }
 
 func (s *noteService) GetNote(ctx context.Context, noteID, userID uint64) (*models.Note, error) {
-	// Check authorization - only owner can view
 	owned, err := s.noteRepo.CheckUserOwnership(ctx, noteID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check ownership: %w", err)
@@ -53,8 +52,7 @@ func (s *noteService) GetNote(ctx context.Context, noteID, userID uint64) (*mode
 	return s.noteRepo.GetByID(ctx, noteID)
 }
 
-func (s *noteService) UpdateNote(ctx context.Context, noteID, userID uint64, title, content, attachment string) (*models.Note, error) {
-	// Check authorization - only owner can update
+func (s *noteService) UpdateNote(ctx context.Context, noteID, userID uint64, title, content string, attachments []string, replaceAttachments bool) (*models.Note, error) {
 	owned, err := s.noteRepo.CheckUserOwnership(ctx, noteID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check ownership: %w", err)
@@ -63,7 +61,6 @@ func (s *noteService) UpdateNote(ctx context.Context, noteID, userID uint64, tit
 		return nil, fmt.Errorf("unauthorized: you don't have permission to update this note")
 	}
 
-	// Get existing note
 	note, err := s.noteRepo.GetByID(ctx, noteID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get note: %w", err)
@@ -72,21 +69,21 @@ func (s *noteService) UpdateNote(ctx context.Context, noteID, userID uint64, tit
 		return nil, fmt.Errorf("note not found")
 	}
 
-	// Update fields
 	note.Title = title
 	note.Content = content
-	note.Attachment = attachment
+	if replaceAttachments {
+		note.Attachments = attachments
+	}
 
 	err = s.noteRepo.Update(ctx, note)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update note: %w", err)
 	}
 
-	return note, nil
+	return s.noteRepo.GetByID(ctx, noteID)
 }
 
 func (s *noteService) DeleteNote(ctx context.Context, noteID, userID uint64) error {
-	// Check authorization - only owner can delete
 	owned, err := s.noteRepo.CheckUserOwnership(ctx, noteID, userID)
 	if err != nil {
 		return fmt.Errorf("failed to check ownership: %w", err)

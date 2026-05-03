@@ -5,6 +5,8 @@ go 1.24.0
 toolchain go1.24.3
 
 require (
+	github.com/go-sql-driver/mysql v1.7.1
+	github.com/joho/godotenv v1.5.1
 	google.golang.org/grpc v1.76.0
 	google.golang.org/protobuf v1.36.10
 )

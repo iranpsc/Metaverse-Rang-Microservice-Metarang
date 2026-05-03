@@ -132,7 +132,7 @@ func main() {
 
 	// Register handlers
 	handler.RegisterVideoHandler(grpcServer, videoService)
-	handler.RegisterCategoryHandler(grpcServer, categoryService)
+	handler.RegisterCategoryHandler(grpcServer, categoryService, videoService)
 	handler.RegisterCommentHandler(grpcServer, commentService)
 	handler.RegisterReplyHandler(grpcServer, replyService)
 

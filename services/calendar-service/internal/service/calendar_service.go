@@ -2,11 +2,15 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"metargb/calendar-service/internal/models"
 	"metargb/calendar-service/internal/repository"
 )
+
+// ErrEventNotFound is returned when a calendar entry does not exist.
+var ErrEventNotFound = errors.New("event not found")
 
 // CalendarServiceInterface defines the interface for calendar service operations
 type CalendarServiceInterface interface {
@@ -40,7 +44,7 @@ func (s *CalendarService) GetEvent(ctx context.Context, eventID, userID uint64) 
 		return nil, fmt.Errorf("failed to get event: %w", err)
 	}
 	if event == nil {
-		return nil, fmt.Errorf("event not found")
+		return nil, ErrEventNotFound
 	}
 
 	return event, nil

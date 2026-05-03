@@ -50,6 +50,17 @@ func (h *TrainingHandler) GetVideos(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
+	if v := r.URL.Query().Get("category_id"); v != "" {
+		if id, err := strconv.ParseUint(v, 10, 64); err == nil && id > 0 {
+			grpcReq.CategoryId = id
+		}
+	}
+	if v := r.URL.Query().Get("sub_category_id"); v != "" {
+		if id, err := strconv.ParseUint(v, 10, 64); err == nil && id > 0 {
+			grpcReq.SubCategoryId = id
+		}
+	}
+
 	resp, err := h.trainingClient.GetVideos(r.Context(), grpcReq)
 	if err != nil {
 		writeGRPCErrorTraining(w, err)
@@ -1181,6 +1192,12 @@ func buildRepliesResponse(resp *trainingpb.RepliesResponse) map[string]interface
 	if resp.Pagination != nil {
 		result["links"] = map[string]interface{}{
 			"next": nil, // Simple pagination
+		}
+		result["meta"] = map[string]interface{}{
+			"current_page": resp.Pagination.CurrentPage,
+			"per_page":     resp.Pagination.PerPage,
+			"total":        resp.Pagination.Total,
+			"last_page":    resp.Pagination.LastPage,
 		}
 	}
 

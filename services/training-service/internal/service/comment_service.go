@@ -10,11 +10,11 @@ import (
 )
 
 type CommentService struct {
-	commentRepo *repository.CommentRepository
-	userRepo    *repository.UserRepository
+	commentRepo repository.CommentRepositoryInterface
+	userRepo    repository.UserRepositoryInterface
 }
 
-func NewCommentService(commentRepo *repository.CommentRepository, userRepo *repository.UserRepository) *CommentService {
+func NewCommentService(commentRepo repository.CommentRepositoryInterface, userRepo repository.UserRepositoryInterface) *CommentService {
 	return &CommentService{
 		commentRepo: commentRepo,
 		userRepo:    userRepo,
