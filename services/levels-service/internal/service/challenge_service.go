@@ -4,17 +4,36 @@ import (
 	"context"
 	"fmt"
 
-	"metargb/levels-service/internal/repository"
+	"metargb/levels-service/internal/client"
 	pb "metargb/shared/pb/levels"
 )
 
-type ChallengeService struct {
-	challengeRepo *repository.ChallengeRepository
+type challengeRepository interface {
+	GetRandomUnansweredQuestion(ctx context.Context, userID uint64) (*pb.Question, error)
+	IncrementViews(ctx context.Context, questionID uint64) error
+	ValidateAnswer(ctx context.Context, questionID, answerID uint64) (bool, error)
+	HasUserAnsweredQuestion(ctx context.Context, userID, questionID uint64) (bool, error)
+	RecordUserAnswer(ctx context.Context, userID, questionID, answerID uint64) error
+	IncrementParticipants(ctx context.Context, questionID uint64) error
+	CheckAnswer(ctx context.Context, answerID, questionID uint64) (bool, string, error)
+	GetQuestionByID(ctx context.Context, questionID uint64) (*pb.Question, error)
+	GetChallengeIntervals(ctx context.Context) (int32, int32, int32, error)
+	GetUserAnswerCounts(ctx context.Context, userID uint64) (int32, int32, error)
+	GetTotalParticipants(ctx context.Context) (int32, error)
+	GetVariableRate(ctx context.Context, name string) (float64, error)
 }
 
-func NewChallengeService(challengeRepo *repository.ChallengeRepository) *ChallengeService {
+type ChallengeService struct {
+	challengeRepo    challengeRepository
+	commercialClient client.CommercialClient
+	defaultPSCRate   float64
+}
+
+func NewChallengeService(challengeRepo challengeRepository, commercialClient client.CommercialClient) *ChallengeService {
 	return &ChallengeService{
-		challengeRepo: challengeRepo,
+		challengeRepo:    challengeRepo,
+		commercialClient: commercialClient,
+		defaultPSCRate:   30000,
 	}
 }
 
@@ -82,9 +101,17 @@ func (s *ChallengeService) SubmitAnswer(ctx context.Context, userID, questionID,
 
 	prizeAwarded := "0"
 	if isCorrect {
-		// Award prize to user wallet
-		// Laravel: $request->user()->wallet->increment('psc', $question->prize)
-		// TODO: Call commercial service to increment wallet PSC
+		prizeAmount, parseErr := parseNumericString(prize)
+		if parseErr != nil {
+			return false, "", nil, parseErr
+		}
+		pscRate, err := s.challengeRepo.GetVariableRate(ctx, "psc")
+		if err != nil || pscRate <= 0 {
+			pscRate = s.defaultPSCRate
+		}
+		if err := s.commercialClient.AddBalance(ctx, userID, "psc", prizeAmount/pscRate); err != nil {
+			return false, "", nil, fmt.Errorf("failed to award challenge prize: %w", err)
+		}
 		prizeAwarded = prize
 	}
 

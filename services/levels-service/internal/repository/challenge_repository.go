@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 
 	pb "metargb/shared/pb/levels"
 )
@@ -12,6 +13,22 @@ import (
 // Implements Laravel's Challenge\Question, Challenge\Answer, Challenge\UserQuestionAnswer models
 type ChallengeRepository struct {
 	db *sql.DB
+}
+
+type ChallengeRepositoryInterface interface {
+	GetRandomUnansweredQuestion(ctx context.Context, userID uint64) (*pb.Question, error)
+	GetAnswersForQuestion(ctx context.Context, questionID uint64) ([]*pb.Answer, error)
+	IncrementViews(ctx context.Context, questionID uint64) error
+	ValidateAnswer(ctx context.Context, questionID, answerID uint64) (bool, error)
+	RecordUserAnswer(ctx context.Context, userID, questionID, answerID uint64) error
+	IncrementParticipants(ctx context.Context, questionID uint64) error
+	CheckAnswer(ctx context.Context, answerID, questionID uint64) (bool, string, error)
+	GetQuestionByID(ctx context.Context, questionID uint64) (*pb.Question, error)
+	GetChallengeIntervals(ctx context.Context) (int32, int32, int32, error)
+	GetUserAnswerCounts(ctx context.Context, userID uint64) (int32, int32, error)
+	GetTotalParticipants(ctx context.Context) (int32, error)
+	HasUserAnsweredQuestion(ctx context.Context, userID, questionID uint64) (bool, error)
+	GetVariableRate(ctx context.Context, name string) (float64, error)
 }
 
 func NewChallengeRepository(db *sql.DB) *ChallengeRepository {
@@ -269,4 +286,19 @@ func (r *ChallengeRepository) HasUserAnsweredQuestion(ctx context.Context, userI
 		return false, err
 	}
 	return count > 0, nil
+}
+
+// GetVariableRate returns numeric value from system_variables table.
+func (r *ChallengeRepository) GetVariableRate(ctx context.Context, name string) (float64, error) {
+	query := "SELECT value FROM system_variables WHERE name = ? LIMIT 1"
+	var value string
+	if err := r.db.QueryRowContext(ctx, query, name).Scan(&value); err != nil {
+		return 0, err
+	}
+
+	rate, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse variable %s rate: %w", name, err)
+	}
+	return rate, nil
 }

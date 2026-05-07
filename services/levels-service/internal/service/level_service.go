@@ -4,19 +4,48 @@ import (
 	"context"
 	"fmt"
 
-	"metargb/levels-service/internal/repository"
+	"metargb/levels-service/internal/client"
 	pb "metargb/shared/pb/levels"
 )
 
-type LevelService struct {
-	levelRepo   *repository.LevelRepository
-	userLogRepo *repository.UserLogRepository
+type levelRepository interface {
+	GetUserLatestLevel(ctx context.Context, userID uint64) (*pb.Level, error)
+	GetLevelsBelowScore(ctx context.Context, score int32) ([]*pb.Level, error)
+	GetNextLevel(ctx context.Context, currentScore int32) (*pb.Level, error)
+	GetAllLevels(ctx context.Context) ([]*pb.Level, error)
+	FindByID(ctx context.Context, id uint64) (*pb.Level, error)
+	FindBySlug(ctx context.Context, slug string) (*pb.Level, error)
+	GetLevelGeneralInfo(ctx context.Context, levelID uint64) (*pb.LevelGeneralInfo, error)
+	GetLevelGem(ctx context.Context, levelID uint64) (*pb.LevelGem, error)
+	GetLevelGift(ctx context.Context, levelID uint64) (*pb.LevelGift, error)
+	GetLevelLicenses(ctx context.Context, levelID uint64) (*pb.LevelLicense, error)
+	GetLevelPrize(ctx context.Context, levelID uint64) (*pb.LevelPrize, error)
+	HasUserReceivedPrize(ctx context.Context, userID, prizeID uint64) (bool, error)
+	RecordReceivedPrize(ctx context.Context, userID, prizeID uint64) error
+	GetVariableRate(ctx context.Context, name string) (float64, error)
 }
 
-func NewLevelService(levelRepo *repository.LevelRepository, userLogRepo *repository.UserLogRepository) *LevelService {
+type userLogRepository interface {
+	GetUserScore(ctx context.Context, userID uint64) (int32, error)
+}
+
+type LevelService struct {
+	levelRepo        levelRepository
+	userLogRepo      userLogRepository
+	commercialClient client.CommercialClient
+	defaultPSCRate   float64
+}
+
+func NewLevelService(
+	levelRepo levelRepository,
+	userLogRepo userLogRepository,
+	commercialClient client.CommercialClient,
+) *LevelService {
 	return &LevelService{
-		levelRepo:   levelRepo,
-		userLogRepo: userLogRepo,
+		levelRepo:        levelRepo,
+		userLogRepo:      userLogRepo,
+		commercialClient: commercialClient,
+		defaultPSCRate:   30000,
 	}
 }
 
@@ -179,14 +208,13 @@ func (s *LevelService) ClaimPrize(ctx context.Context, userID, levelID uint64) e
 		return fmt.Errorf("prize already claimed")
 	}
 
-	// TODO: Call commercial service to increment wallet
-	// This matches Laravel's prize award logic in UserObserver:
-	// $wallet->increment('psc', ($levelPrize->psc / Variable::getRate('psc')));
-	// $wallet->increment('blue', $levelPrize->blue);
-	// $wallet->increment('red', $levelPrize->red);
-	// $wallet->increment('yellow', $levelPrize->yellow);
-	// $wallet->update(['effect' => $levelPrize->effect]);
-	// $wallet->increment('satisfaction', $levelPrize->satisfaction);
+	pscRate, err := s.levelRepo.GetVariableRate(ctx, "psc")
+	if err != nil || pscRate <= 0 {
+		pscRate = s.defaultPSCRate
+	}
+	if err := applyLevelPrizeBalances(ctx, s.commercialClient, userID, prize, pscRate); err != nil {
+		return fmt.Errorf("failed to apply level prize balances: %w", err)
+	}
 
 	// Record that prize has been received
 	if err := s.levelRepo.RecordReceivedPrize(ctx, userID, prize.Id); err != nil {

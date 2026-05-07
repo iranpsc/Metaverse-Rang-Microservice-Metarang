@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"strconv"
 	"time"
 
 	pb "metargb/shared/pb/levels"
@@ -12,6 +14,17 @@ import (
 // Implements Laravel's UserActivity model
 type ActivityRepository struct {
 	db *sql.DB
+}
+
+type ActivityRepositoryInterface interface {
+	CreateActivity(ctx context.Context, req *pb.LogActivityRequest) (uint64, error)
+	FindByUserID(ctx context.Context, userID uint64, limit int32) ([]*pb.UserActivity, error)
+	GetLatestActivity(ctx context.Context, userID uint64) (*pb.UserActivity, error)
+	UpdateActivity(ctx context.Context, activityID uint64, endTime time.Time, totalMinutes int32) error
+	GetTotalActivityMinutes(ctx context.Context, userID uint64) (int32, error)
+	CreateUserEvent(ctx context.Context, userID uint64, event, ip, device string, status int8) error
+	GetVariableRate(ctx context.Context, name string) (float64, error)
+	GetSignificantTradeCount(ctx context.Context, userID uint64, minIrrAmount, minPscAmount float64) (int32, error)
 }
 
 func NewActivityRepository(db *sql.DB) *ActivityRepository {
@@ -158,4 +171,38 @@ func (r *ActivityRepository) CreateUserEvent(ctx context.Context, userID uint64,
 
 	_, err := r.db.ExecContext(ctx, query, userID, event, ip, device, status)
 	return err
+}
+
+// GetVariableRate returns numeric value from system_variables table.
+func (r *ActivityRepository) GetVariableRate(ctx context.Context, name string) (float64, error) {
+	query := "SELECT value FROM system_variables WHERE name = ? LIMIT 1"
+	var value string
+	if err := r.db.QueryRowContext(ctx, query, name).Scan(&value); err != nil {
+		return 0, err
+	}
+
+	rate, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse variable %s rate: %w", name, err)
+	}
+	return rate, nil
+}
+
+// GetSignificantTradeCount counts user trades above the significant threshold.
+func (r *ActivityRepository) GetSignificantTradeCount(ctx context.Context, userID uint64, minIrrAmount, minPscAmount float64) (int32, error) {
+	query := `
+		SELECT COUNT(*)
+		FROM trades
+		WHERE (buyer_id = ? AND (irr_amount > ? OR psc_amount > ?))
+		   OR (seller_id = ? AND (irr_amount > ? OR psc_amount > ?))
+	`
+
+	var count int32
+	err := r.db.QueryRowContext(
+		ctx,
+		query,
+		userID, minIrrAmount, minPscAmount,
+		userID, minIrrAmount, minPscAmount,
+	).Scan(&count)
+	return count, err
 }

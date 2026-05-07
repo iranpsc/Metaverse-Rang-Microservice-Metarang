@@ -4,7 +4,8 @@ import (
 	"context"
 	"testing"
 
-	pb "github.com/metargb/shared/proto/levels"
+	pb "metargb/shared/pb/levels"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -19,14 +20,14 @@ func TestUserLevelProgression(t *testing.T) {
 	// 5. Verify prize distribution
 	// 6. Compare with Laravel behavior
 
-	conn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial("localhost:50054", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Fatalf("Failed to connect: %v", err)
 	}
 	defer conn.Close()
 
 	client := pb.NewLevelServiceClient(conn)
-	
+
 	req := &pb.GetUserLevelRequest{
 		UserId: 1,
 	}
@@ -52,7 +53,7 @@ func TestScoreCalculation(t *testing.T) {
 	// followers_count = total_followers * 0.1
 	// deposit_amount = deposits * 0.0001
 	// activity_hours = total_hours * 0.1
-	
+
 	t.Skip("Full implementation pending")
 }
 
@@ -65,7 +66,7 @@ func TestChallengeQuiz(t *testing.T) {
 	// 4. Submit wrong answer
 	// 5. Verify no reward
 	// 6. Verify user can't answer same question twice
-	
+
 	t.Skip("Full implementation pending")
 }
 
@@ -77,7 +78,7 @@ func TestActivityLogging(t *testing.T) {
 	// 3. Verify total minutes calculated
 	// 4. Verify activity_hours updated in user_logs
 	// 5. Verify score updated
-	
+
 	t.Skip("Full implementation pending")
 }
 
@@ -90,7 +91,6 @@ func TestLevelPrizeDistribution(t *testing.T) {
 	// 4. Verify wallet incremented (PSC, blue, red, yellow)
 	// 5. Verify effect and satisfaction updated
 	// 6. Verify prize marked as received
-	
+
 	t.Skip("Full implementation pending")
 }
-
