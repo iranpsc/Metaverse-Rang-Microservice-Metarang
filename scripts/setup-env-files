@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+# Create services/*/config.env from each service's config.env.sample.
+# Existing config.env files are skipped unless --force is passed.
+#
+# Usage:
+#   ./scripts/setup-env-files           # from repository root
+#   bash scripts/setup-env-files --force
+#   bash scripts/setup-env-files --dry-run
+#
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+SERVICES_DIR="${REPO_ROOT}/services"
+
+FORCE=0
+DRY_RUN=0
+
+usage() {
+  cat <<'EOF'
+Create services/*/config.env from each service's config.env.sample.
+Existing config.env files are skipped unless --force is passed.
+
+Usage:
+  ./scripts/setup-env-files [--force] [--dry-run]
+
+Options:
+  --force     Overwrite existing config.env files
+  --dry-run   Print actions without writing files
+  -h, --help  Show this help
+EOF
+}
+
+for arg in "$@"; do
+  case "$arg" in
+    --force) FORCE=1 ;;
+    --dry-run) DRY_RUN=1 ;;
+    -h|--help) usage; exit 0 ;;
+    *)
+      echo "Unknown option: $arg" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+done
+
+if [[ ! -d "$SERVICES_DIR" ]]; then
+  echo "error: services directory not found: $SERVICES_DIR" >&2
+  exit 1
+fi
+
+shopt -s nullglob
+samples=("$SERVICES_DIR"/*/config.env.sample)
+shopt -u nullglob
+
+if [[ ${#samples[@]} -eq 0 ]]; then
+  echo "error: no config.env.sample files under $SERVICES_DIR" >&2
+  exit 1
+fi
+
+created=0
+skipped=0
+overwritten=0
+
+for sample in "${samples[@]}"; do
+  service_dir="$(dirname "$sample")"
+  service_name="$(basename "$service_dir")"
+  dest="${service_dir}/config.env"
+
+  if [[ -f "$dest" && "$FORCE" -eq 0 ]]; then
+    echo "skip (exists): $service_name -> config.env"
+    ((skipped++)) || true
+    continue
+  fi
+
+  if [[ -f "$dest" ]]; then
+    echo "overwrite: $service_name"
+    ((overwritten++)) || true
+  else
+    echo "create:  $service_name"
+    ((created++)) || true
+  fi
+
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    echo "  would copy: $sample -> $dest"
+    continue
+  fi
+
+  cp "$sample" "$dest"
+done
+
+echo ""
+echo "Done. created=$created overwritten=$overwritten skipped=$skipped"
+if [[ "$skipped" -gt 0 && "$FORCE" -eq 0 ]]; then
+  echo "Tip: use --force to replace existing config.env files from samples."
+fi

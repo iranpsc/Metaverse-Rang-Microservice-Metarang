@@ -15,6 +15,7 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -178,6 +179,19 @@ var servicePortMap = map[string]string{
 }
 
 func main() {
+	configPaths := []string{
+		"config.env",
+		"./config.env",
+		"../config.env",
+		"../../config.env",
+		"services/health-check-service/config.env",
+	}
+	for _, p := range configPaths {
+		if err := godotenv.Load(p); err == nil {
+			break
+		}
+	}
+
 	// Initialize Redis client for cache metrics
 	initRedisClient()
 
