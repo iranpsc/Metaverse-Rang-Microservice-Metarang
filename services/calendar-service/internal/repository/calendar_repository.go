@@ -11,11 +11,12 @@ import (
 
 // CalendarRepositoryInterface defines the interface for calendar repository operations
 type CalendarRepositoryInterface interface {
-	GetEvents(ctx context.Context, eventType, search, date string, userID uint64, page, perPage int32) ([]*models.Calendar, int32, error)
+	GetEvents(ctx context.Context, eventType, search, date string, userID uint64, page, perPage int32) ([]*models.Calendar, bool, error)
 	GetEventByID(ctx context.Context, id uint64) (*models.Calendar, error)
 	FilterByDateRange(ctx context.Context, startDate, endDate string) ([]*models.Calendar, error)
 	GetLatestVersionTitle(ctx context.Context) (string, error)
 	GetEventStats(ctx context.Context, eventID uint64) (*models.CalendarStats, error)
+	GetInteractionStats(ctx context.Context, eventID uint64) (*models.CalendarStats, error)
 	GetUserInteraction(ctx context.Context, eventID, userID uint64) (*models.Interaction, error)
 	AddInteraction(ctx context.Context, eventID, userID uint64, liked int32, ipAddress string) error
 	IncrementView(ctx context.Context, eventID uint64, ipAddress string) error
@@ -31,68 +32,50 @@ func NewCalendarRepository(db *sql.DB) *CalendarRepository {
 
 // GetEvents retrieves events with optional filtering
 // NOTE: When date is provided, returns all entries (no pagination) in descending order
-// When date is not provided, uses pagination
-func (r *CalendarRepository) GetEvents(ctx context.Context, eventType, search, date string, userID uint64, page, perPage int32) ([]*models.Calendar, int32, error) {
-	// Build query
+// When date is not provided, uses simplePaginate-style pagination (fetches perPage+1)
+func (r *CalendarRepository) GetEvents(ctx context.Context, eventType, search, date string, userID uint64, page, perPage int32) ([]*models.Calendar, bool, error) {
 	query := "SELECT id, slug, title, content, color, writer, is_version, version_title, btn_name, btn_link, image, starts_at, ends_at, created_at, updated_at FROM calendars WHERE 1=1"
-	countQuery := "SELECT COUNT(*) FROM calendars WHERE 1=1"
 	args := []interface{}{}
 
-	// Filter by type
 	if eventType == "version" {
 		query += " AND is_version = 1"
-		countQuery += " AND is_version = 1"
 	} else {
 		query += " AND is_version = 0"
-		countQuery += " AND is_version = 0"
 	}
 
-	// Search by title
 	if search != "" {
 		query += " AND title LIKE ?"
-		countQuery += " AND title LIKE ?"
-		searchTerm := "%" + search + "%"
-		args = append(args, searchTerm)
+		args = append(args, "%"+search+"%")
 	}
 
-	// Filter by date (events active on that date)
-	// When date is provided, no pagination - return all entries
 	hasDateFilter := date != ""
 	if hasDateFilter {
 		carbonDate, err := jalali.JalaliToCarbon(date)
 		if err != nil {
-			return nil, 0, fmt.Errorf("invalid jalali date: %w", err)
+			return nil, false, fmt.Errorf("invalid jalali date: %w", err)
 		}
+		dateStr := carbonDate.Format("2006-01-02")
 		query += " AND DATE(starts_at) <= ? AND (ends_at IS NULL OR DATE(ends_at) >= ?)"
-		countQuery += " AND DATE(starts_at) <= ? AND (ends_at IS NULL OR DATE(ends_at) >= ?)"
-		args = append(args, carbonDate.Format("2006-01-02"), carbonDate.Format("2006-01-02"))
+		args = append(args, dateStr, dateStr)
 	}
 
-	// Get total count (only needed for pagination)
-	var total int32
-	if !hasDateFilter {
-		countArgs := make([]interface{}, len(args))
-		copy(countArgs, args)
-		err := r.db.QueryRowContext(ctx, countQuery, countArgs...).Scan(&total)
-		if err != nil {
-			return nil, 0, fmt.Errorf("failed to count events: %w", err)
-		}
+	// Laravel: date filter and versions use latest() (created_at DESC); events use starts_at DESC
+	if hasDateFilter || eventType == "version" {
+		query += " ORDER BY created_at DESC"
+	} else {
+		query += " ORDER BY starts_at DESC"
 	}
 
-	// Add ordering
-	query += " ORDER BY starts_at DESC"
-
-	// Add pagination only if date filter is not provided
+	var hasMore bool
 	if !hasDateFilter {
 		offset := (page - 1) * perPage
 		query += " LIMIT ? OFFSET ?"
-		args = append(args, perPage, offset)
+		args = append(args, perPage+1, offset)
 	}
 
-	// Execute query
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to get events: %w", err)
+		return nil, false, fmt.Errorf("failed to get events: %w", err)
 	}
 	defer rows.Close()
 
@@ -116,17 +99,17 @@ func (r *CalendarRepository) GetEvents(ctx context.Context, eventType, search, d
 			&event.CreatedAt,
 			&event.UpdatedAt,
 		); err != nil {
-			return nil, 0, fmt.Errorf("failed to scan event: %w", err)
+			return nil, false, fmt.Errorf("failed to scan event: %w", err)
 		}
 		events = append(events, &event)
 	}
 
-	// If date filter is provided, total is the count of returned events
-	if hasDateFilter {
-		total = int32(len(events))
+	if !hasDateFilter && int32(len(events)) > perPage {
+		hasMore = true
+		events = events[:perPage]
 	}
 
-	return events, total, nil
+	return events, hasMore, nil
 }
 
 // GetEventByID retrieves a single event by ID
@@ -254,15 +237,25 @@ func (r *CalendarRepository) GetLatestVersionTitle(ctx context.Context) (string,
 func (r *CalendarRepository) GetEventStats(ctx context.Context, eventID uint64) (*models.CalendarStats, error) {
 	stats := &models.CalendarStats{}
 
-	// Get views count
 	viewQuery := "SELECT COUNT(*) FROM views WHERE viewable_type = 'App\\\\Models\\\\Calendar' AND viewable_id = ?"
 	r.db.QueryRowContext(ctx, viewQuery, eventID).Scan(&stats.ViewsCount)
 
-	// Get likes count
 	likeQuery := "SELECT COUNT(*) FROM interactions WHERE likeable_type = 'App\\\\Models\\\\Calendar' AND likeable_id = ? AND liked = 1"
 	r.db.QueryRowContext(ctx, likeQuery, eventID).Scan(&stats.LikesCount)
 
-	// Get dislikes count
+	dislikeQuery := "SELECT COUNT(*) FROM interactions WHERE likeable_type = 'App\\\\Models\\\\Calendar' AND likeable_id = ? AND liked = 0"
+	r.db.QueryRowContext(ctx, dislikeQuery, eventID).Scan(&stats.DislikesCount)
+
+	return stats, nil
+}
+
+// GetInteractionStats retrieves like/dislike counts only (used by interact endpoint)
+func (r *CalendarRepository) GetInteractionStats(ctx context.Context, eventID uint64) (*models.CalendarStats, error) {
+	stats := &models.CalendarStats{}
+
+	likeQuery := "SELECT COUNT(*) FROM interactions WHERE likeable_type = 'App\\\\Models\\\\Calendar' AND likeable_id = ? AND liked = 1"
+	r.db.QueryRowContext(ctx, likeQuery, eventID).Scan(&stats.LikesCount)
+
 	dislikeQuery := "SELECT COUNT(*) FROM interactions WHERE likeable_type = 'App\\\\Models\\\\Calendar' AND likeable_id = ? AND liked = 0"
 	r.db.QueryRowContext(ctx, dislikeQuery, eventID).Scan(&stats.DislikesCount)
 
@@ -320,8 +313,17 @@ func (r *CalendarRepository) AddInteraction(ctx context.Context, eventID, userID
 	return nil
 }
 
-// IncrementView adds a view for an event
+// IncrementView adds a view for an event (one view per IP, matching Laravel)
 func (r *CalendarRepository) IncrementView(ctx context.Context, eventID uint64, ipAddress string) error {
+	checkQuery := "SELECT COUNT(*) FROM views WHERE viewable_type = 'App\\\\Models\\\\Calendar' AND viewable_id = ? AND ip_address = ?"
+	var count int
+	if err := r.db.QueryRowContext(ctx, checkQuery, eventID, ipAddress).Scan(&count); err != nil {
+		return fmt.Errorf("failed to check existing view: %w", err)
+	}
+	if count > 0 {
+		return nil
+	}
+
 	query := "INSERT INTO views (viewable_type, viewable_id, ip_address, created_at, updated_at) VALUES ('App\\\\Models\\\\Calendar', ?, ?, NOW(), NOW())"
 	_, err := r.db.ExecContext(ctx, query, eventID, ipAddress)
 	if err != nil {

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"strconv"
@@ -12,11 +13,12 @@ import (
 	pb "metargb/shared/pb/auth"
 	calendarpb "metargb/shared/pb/calendar"
 	commonpb "metargb/shared/pb/common"
+	"metargb/shared/pkg/jalali"
 )
 
 type CalendarHandler struct {
 	calendarClient calendarpb.CalendarServiceClient
-	authClient     pb.AuthServiceClient // For token validation
+	authClient     pb.AuthServiceClient
 }
 
 func NewCalendarHandler(calendarConn *grpc.ClientConn, authConn *grpc.ClientConn) *CalendarHandler {
@@ -27,22 +29,19 @@ func NewCalendarHandler(calendarConn *grpc.ClientConn, authConn *grpc.ClientConn
 }
 
 // GetEvents handles GET /api/calendar
-// Query params: type (event|version), search, date (Jalali), page, per_page
 func (h *CalendarHandler) GetEvents(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
-	// Parse query parameters
 	eventType := r.URL.Query().Get("type")
 	if eventType == "" {
-		eventType = "event" // Default per API spec
+		eventType = "event"
 	}
 	search := r.URL.Query().Get("search")
 	date := r.URL.Query().Get("date")
 
-	// Parse pagination (only used when date is not provided)
 	var page, perPage int32 = 1, 10
 	if date == "" {
 		if p := r.URL.Query().Get("page"); p != "" {
@@ -57,14 +56,11 @@ func (h *CalendarHandler) GetEvents(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Extract user ID from context if authenticated (optional - calendar is public)
 	var userID uint64
-	userCtx, err := middleware.GetUserFromRequest(r)
-	if err == nil {
+	if userCtx, err := middleware.GetUserFromRequest(r); err == nil {
 		userID = userCtx.UserID
 	}
 
-	// Build gRPC request
 	grpcReq := &calendarpb.GetEventsRequest{
 		Type:   eventType,
 		Search: search,
@@ -79,68 +75,38 @@ func (h *CalendarHandler) GetEvents(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Call gRPC service
 	resp, err := h.calendarClient.GetEvents(r.Context(), grpcReq)
 	if err != nil {
 		writeGRPCError(w, err)
 		return
 	}
 
-	// Build response matching Laravel EventResource format
 	events := make([]map[string]interface{}, 0, len(resp.Events))
 	for _, event := range resp.Events {
-		eventMap := map[string]interface{}{
-			"id":          event.Id,
-			"title":       event.Title,
-			"description": event.Description,
-			"starts_at":   event.StartsAt,
-		}
-
-		// Conditional fields based on is_version (inferred from presence of version_title)
-		if event.VersionTitle != "" {
-			// Version entry
-			eventMap["version_title"] = event.VersionTitle
-		} else {
-			// Regular event
-			if event.EndsAt != "" {
-				eventMap["ends_at"] = event.EndsAt
-			}
-			eventMap["views"] = event.Views
-			eventMap["likes"] = event.Likes
-			eventMap["dislikes"] = event.Dislikes
-			if event.BtnName != "" {
-				eventMap["btn_name"] = event.BtnName
-			}
-			if event.BtnLink != "" {
-				eventMap["btn_link"] = event.BtnLink
-			}
-			eventMap["color"] = event.Color
-			if event.Image != "" {
-				eventMap["image"] = event.Image
-			}
-			if event.UserInteraction != nil {
-				eventMap["user_interaction"] = map[string]bool{
-					"has_liked":    event.UserInteraction.HasLiked,
-					"has_disliked": event.UserInteraction.HasDisliked,
-				}
-			}
-		}
-
-		events = append(events, eventMap)
+		events = append(events, buildCalendarEventMap(event, true))
 	}
 
-	// Build response with pagination (only when date is not provided)
 	response := map[string]interface{}{
 		"data": events,
 	}
 
 	if date == "" && resp.Pagination != nil {
-		response["links"] = buildPaginationLinks(r, resp.Pagination)
+		itemCount := len(events)
+		var from interface{}
+		var to interface{}
+		if itemCount > 0 {
+			fromVal := int((page-1)*perPage) + 1
+			from = fromVal
+			to = fromVal + itemCount - 1
+		}
+
+		response["links"] = buildSimplePaginationLinks(r, page, resp.HasMore)
 		response["meta"] = map[string]interface{}{
 			"current_page": resp.Pagination.CurrentPage,
+			"from":         from,
+			"path":         requestPath(r),
 			"per_page":     resp.Pagination.PerPage,
-			"total":        resp.Pagination.Total,
-			"last_page":    resp.Pagination.LastPage,
+			"to":           to,
 		}
 	}
 
@@ -154,7 +120,6 @@ func (h *CalendarHandler) GetEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Extract event ID from path
 	path := strings.TrimPrefix(r.URL.Path, "/api/calendar/")
 	eventID, err := strconv.ParseUint(path, 10, 64)
 	if err != nil {
@@ -162,108 +127,82 @@ func (h *CalendarHandler) GetEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Extract user ID from context if authenticated (optional - calendar is public)
 	var userID uint64
-	userCtx, err := middleware.GetUserFromRequest(r)
-	if err == nil {
+	if userCtx, err := middleware.GetUserFromRequest(r); err == nil {
 		userID = userCtx.UserID
 	}
 
-	// Build gRPC request
-	grpcReq := &calendarpb.GetEventRequest{
+	resp, err := h.calendarClient.GetEvent(r.Context(), &calendarpb.GetEventRequest{
 		EventId: eventID,
 		UserId:  userID,
-	}
-
-	// Call gRPC service
-	resp, err := h.calendarClient.GetEvent(r.Context(), grpcReq)
+	})
 	if err != nil {
 		writeGRPCError(w, err)
 		return
 	}
 
-	// Build response matching Laravel EventResource format
-	eventMap := map[string]interface{}{
-		"id":          resp.Id,
-		"title":       resp.Title,
-		"description": resp.Description,
-		"starts_at":   resp.StartsAt,
-	}
-
-	// Conditional fields based on is_version (inferred from presence of version_title)
-	if resp.VersionTitle != "" {
-		// Version entry
-		eventMap["version_title"] = resp.VersionTitle
-	} else {
-		// Regular event
-		if resp.EndsAt != "" {
-			eventMap["ends_at"] = resp.EndsAt
-		}
-		eventMap["views"] = resp.Views
-		eventMap["likes"] = resp.Likes
-		eventMap["dislikes"] = resp.Dislikes
-		if resp.BtnName != "" {
-			eventMap["btn_name"] = resp.BtnName
-		}
-		if resp.BtnLink != "" {
-			eventMap["btn_link"] = resp.BtnLink
-		}
-		eventMap["color"] = resp.Color
-		if resp.Image != "" {
-			eventMap["image"] = resp.Image
-		}
-		if resp.UserInteraction != nil {
-			eventMap["user_interaction"] = map[string]bool{
-				"has_liked":    resp.UserInteraction.HasLiked,
-				"has_disliked": resp.UserInteraction.HasDisliked,
-			}
-		}
-	}
-
-	writeJSON(w, http.StatusOK, map[string]interface{}{"data": eventMap})
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"data": buildCalendarEventMap(resp, true),
+	})
 }
 
 // FilterByDateRange handles GET /api/calendar/filter
-// Query params: start_date (Jalali), end_date (Jalali)
 func (h *CalendarHandler) FilterByDateRange(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
-	// Parse query parameters
 	startDate := r.URL.Query().Get("start_date")
 	endDate := r.URL.Query().Get("end_date")
 
 	if startDate == "" || endDate == "" {
-		writeValidationError(w, "start_date and end_date are required")
+		writeFieldValidationError(w, "start_date and end_date are required", map[string][]string{
+			"start_date": {"The start date field is required."},
+			"end_date":   {"The end date field is required."},
+		})
 		return
 	}
 
-	// Build gRPC request
-	grpcReq := &calendarpb.FilterByDateRangeRequest{
-		StartDate: startDate,
-		EndDate:   endDate,
+	start, err := jalali.JalaliToCarbon(startDate)
+	if err != nil {
+		writeFieldValidationError(w, "The start date field is invalid.", map[string][]string{
+			"start_date": {"The start date field is invalid."},
+		})
+		return
+	}
+	end, err := jalali.JalaliToCarbon(endDate)
+	if err != nil {
+		writeFieldValidationError(w, "The end date field is invalid.", map[string][]string{
+			"end_date": {"The end date field is invalid."},
+		})
+		return
+	}
+	if end.Before(start) {
+		writeFieldValidationError(w, "The end date field must be a date after or equal to start date.", map[string][]string{
+			"end_date": {"The end date field must be a date after or equal to start date."},
+		})
+		return
 	}
 
-	// Call gRPC service
-	resp, err := h.calendarClient.FilterByDateRange(r.Context(), grpcReq)
+	resp, err := h.calendarClient.FilterByDateRange(r.Context(), &calendarpb.FilterByDateRangeRequest{
+		StartDate: startDate,
+		EndDate:   endDate,
+	})
 	if err != nil {
 		writeGRPCError(w, err)
 		return
 	}
 
-	// Build simplified response matching API spec
 	events := make([]map[string]interface{}, 0, len(resp.Events))
 	for _, event := range resp.Events {
-		eventMap := map[string]interface{}{
+		events = append(events, map[string]interface{}{
 			"id":        event.Id,
 			"title":     event.Title,
 			"starts_at": event.StartsAt,
 			"ends_at":   event.EndsAt,
 			"color":     event.Color,
-		}
-		events = append(events, eventMap)
+		})
 	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{"data": events})
@@ -276,42 +215,37 @@ func (h *CalendarHandler) GetLatestVersion(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Build gRPC request
-	grpcReq := &calendarpb.GetLatestVersionRequest{}
-
-	// Call gRPC service
-	resp, err := h.calendarClient.GetLatestVersion(r.Context(), grpcReq)
+	resp, err := h.calendarClient.GetLatestVersion(r.Context(), &calendarpb.GetLatestVersionRequest{})
 	if err != nil {
 		writeGRPCError(w, err)
 		return
 	}
 
-	// Build response matching API spec
-	response := map[string]interface{}{
-		"data": map[string]interface{}{
-			"version_title": resp.VersionTitle,
-		},
+	var versionTitle interface{}
+	if resp.VersionTitle != "" {
+		versionTitle = resp.VersionTitle
 	}
 
-	writeJSON(w, http.StatusOK, response)
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"data": map[string]interface{}{
+			"version_title": versionTitle,
+		},
+	})
 }
 
 // AddInteraction handles POST /api/calendar/events/{event}/interact
-// Requires authentication
 func (h *CalendarHandler) AddInteraction(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
-	// Get user from context (set by auth middleware)
 	userCtx, err := middleware.GetUserFromRequest(r)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "authentication required")
 		return
 	}
 
-	// Extract event ID from path
 	path := strings.TrimPrefix(r.URL.Path, "/api/calendar/events/")
 	path = strings.TrimSuffix(path, "/interact")
 	eventID, err := strconv.ParseUint(path, 10, 64)
@@ -320,107 +254,122 @@ func (h *CalendarHandler) AddInteraction(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Parse request body
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if len(body) == 0 {
+		writeFieldValidationError(w, "The liked field is required.", map[string][]string{
+			"liked": {"The liked field is required."},
+		})
+		return
+	}
+
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(body, &raw); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if _, ok := raw["liked"]; !ok {
+		writeFieldValidationError(w, "The liked field is required.", map[string][]string{
+			"liked": {"The liked field is required."},
+		})
+		return
+	}
+
 	var req struct {
-		Liked int32 `json:"liked"` // 1=like, 0=dislike, -1=remove
+		Liked int32 `json:"liked"`
 	}
-
-	if err := decodeRequestBody(r, &req); err != nil {
-		if err == io.EOF {
-			writeError(w, http.StatusBadRequest, "request body is required")
-		} else {
-			writeError(w, http.StatusBadRequest, "invalid request body")
-		}
+	if err := json.Unmarshal(body, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
-	// Validate liked value
 	if req.Liked < -1 || req.Liked > 1 {
-		writeValidationError(w, "liked must be -1, 0, or 1")
+		writeFieldValidationError(w, "The liked field is invalid.", map[string][]string{
+			"liked": {"The liked field must be -1, 0, or 1."},
+		})
 		return
 	}
 
-	userID := userCtx.UserID
-
-	// Build gRPC request
-	grpcReq := &calendarpb.AddInteractionRequest{
+	resp, err := h.calendarClient.AddInteraction(r.Context(), &calendarpb.AddInteractionRequest{
 		EventId: eventID,
-		UserId:  userID,
+		UserId:  userCtx.UserID,
 		Liked:   req.Liked,
-	}
-
-	// Call gRPC service
-	resp, err := h.calendarClient.AddInteraction(r.Context(), grpcReq)
+	})
 	if err != nil {
 		writeGRPCError(w, err)
 		return
 	}
 
-	// Build response matching Laravel EventResource format
-	eventMap := map[string]interface{}{
-		"id":          resp.Id,
-		"title":       resp.Title,
-		"description": resp.Description,
-		"starts_at":   resp.StartsAt,
-	}
-
-	// Conditional fields
-	if resp.VersionTitle != "" {
-		eventMap["version_title"] = resp.VersionTitle
-	} else {
-		if resp.EndsAt != "" {
-			eventMap["ends_at"] = resp.EndsAt
-		}
-		eventMap["views"] = resp.Views
-		eventMap["likes"] = resp.Likes
-		eventMap["dislikes"] = resp.Dislikes
-		if resp.BtnName != "" {
-			eventMap["btn_name"] = resp.BtnName
-		}
-		if resp.BtnLink != "" {
-			eventMap["btn_link"] = resp.BtnLink
-		}
-		eventMap["color"] = resp.Color
-		if resp.Image != "" {
-			eventMap["image"] = resp.Image
-		}
-		if resp.UserInteraction != nil {
-			eventMap["user_interaction"] = map[string]bool{
-				"has_liked":    resp.UserInteraction.HasLiked,
-				"has_disliked": resp.UserInteraction.HasDisliked,
-			}
-		}
-	}
-
-	writeJSON(w, http.StatusOK, map[string]interface{}{"data": eventMap})
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"data": buildCalendarEventMap(resp, false),
+	})
 }
 
-// Helper function to build pagination links
-func buildPaginationLinks(r *http.Request, pagination *commonpb.PaginationMeta) map[string]interface{} {
-	baseURL := r.URL.Scheme + "://" + r.Host + r.URL.Path
+func buildCalendarEventMap(event *calendarpb.EventResponse, includeViews bool) map[string]interface{} {
+	eventMap := map[string]interface{}{
+		"id":          event.Id,
+		"title":       event.Title,
+		"description": event.Description,
+		"starts_at":   event.StartsAt,
+	}
+
+	if event.IsVersion {
+		if event.VersionTitle != "" {
+			eventMap["version_title"] = event.VersionTitle
+		}
+		return eventMap
+	}
+
+	if event.EndsAt != "" {
+		eventMap["ends_at"] = event.EndsAt
+	}
+	if includeViews {
+		eventMap["views"] = event.Views
+	}
+	eventMap["likes"] = event.Likes
+	eventMap["dislikes"] = event.Dislikes
+	if event.BtnName != "" {
+		eventMap["btn_name"] = event.BtnName
+	}
+	if event.BtnLink != "" {
+		eventMap["btn_link"] = event.BtnLink
+	}
+	eventMap["color"] = event.Color
+	if event.Image != "" {
+		eventMap["image"] = event.Image
+	}
+	if event.UserInteraction != nil {
+		eventMap["user_interaction"] = map[string]bool{
+			"has_liked":    event.UserInteraction.HasLiked,
+			"has_disliked": event.UserInteraction.HasDisliked,
+		}
+	}
+
+	return eventMap
+}
+
+func buildSimplePaginationLinks(r *http.Request, currentPage int32, hasMore bool) map[string]interface{} {
+	baseURL := requestBaseURL(r)
 	query := r.URL.Query()
 
 	links := map[string]interface{}{}
 
-	// First page
 	query.Set("page", "1")
 	links["first"] = baseURL + "?" + query.Encode()
+	links["last"] = nil
 
-	// Last page
-	query.Set("page", strconv.FormatInt(int64(pagination.LastPage), 10))
-	links["last"] = baseURL + "?" + query.Encode()
-
-	// Prev page
-	if pagination.CurrentPage > 1 {
-		query.Set("page", strconv.FormatInt(int64(pagination.CurrentPage-1), 10))
+	if currentPage > 1 {
+		query.Set("page", strconv.FormatInt(int64(currentPage-1), 10))
 		links["prev"] = baseURL + "?" + query.Encode()
 	} else {
 		links["prev"] = nil
 	}
 
-	// Next page
-	if pagination.CurrentPage < pagination.LastPage {
-		query.Set("page", strconv.FormatInt(int64(pagination.CurrentPage+1), 10))
+	if hasMore {
+		query.Set("page", strconv.FormatInt(int64(currentPage+1), 10))
 		links["next"] = baseURL + "?" + query.Encode()
 	} else {
 		links["next"] = nil
@@ -429,23 +378,33 @@ func buildPaginationLinks(r *http.Request, pagination *commonpb.PaginationMeta) 
 	return links
 }
 
-// extractTokenFromHeader extracts Bearer token from Authorization header
-func (h *CalendarHandler) extractTokenFromHeader(r *http.Request) string {
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		// Try cookie as fallback
-		cookie, err := r.Cookie("token")
-		if err == nil && cookie != nil {
-			return cookie.Value
-		}
-		return ""
+func requestBaseURL(r *http.Request) string {
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
 	}
-
-	// Check for Bearer token format
-	if strings.HasPrefix(authHeader, "Bearer ") {
-		return strings.TrimPrefix(authHeader, "Bearer ")
+	if forwarded := r.Header.Get("X-Forwarded-Proto"); forwarded != "" {
+		scheme = forwarded
 	}
+	return scheme + "://" + r.Host + r.URL.Path
+}
 
-	// Also support token as direct value
-	return authHeader
+func requestPath(r *http.Request) string {
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	if forwarded := r.Header.Get("X-Forwarded-Proto"); forwarded != "" {
+		scheme = forwarded
+	}
+	return scheme + "://" + r.Host + r.URL.Path
+}
+
+func writeFieldValidationError(w http.ResponseWriter, message string, errors map[string][]string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusUnprocessableEntity)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": message,
+		"errors":  errors,
+	})
 }

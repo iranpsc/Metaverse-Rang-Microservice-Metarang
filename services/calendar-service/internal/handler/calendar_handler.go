@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -25,10 +26,7 @@ func RegisterCalendarHandler(grpcServer *grpc.Server, svc service.CalendarServic
 	calendarpb.RegisterCalendarServiceServer(grpcServer, handler)
 }
 
-// GetEvents retrieves events with optional filtering
-// NOTE: When date is provided, returns all entries (no pagination) per API documentation
 func (h *CalendarHandler) GetEvents(ctx context.Context, req *calendarpb.GetEventsRequest) (*calendarpb.EventsResponse, error) {
-	// Default pagination (only used when date is not provided)
 	page := int32(1)
 	perPage := int32(10)
 	hasDateFilter := req.Date != ""
@@ -42,90 +40,55 @@ func (h *CalendarHandler) GetEvents(ctx context.Context, req *calendarpb.GetEven
 		}
 	}
 
-	// Get events
-	events, total, err := h.service.GetEvents(ctx, req.Type, req.Search, req.Date, req.UserId, page, perPage)
+	events, hasMore, err := h.service.GetEvents(ctx, req.Type, req.Search, req.Date, req.UserId, page, perPage)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get events: %v", err)
 	}
 
-	// Build response
 	response := &calendarpb.EventsResponse{
 		Events: make([]*calendarpb.EventResponse, 0, len(events)),
 	}
 
-	// Only include pagination metadata when date filter is not provided
 	if !hasDateFilter {
+		response.HasMore = hasMore
 		response.Pagination = &commonpb.PaginationMeta{
 			CurrentPage: page,
 			PerPage:     perPage,
-			Total:       total,
-			LastPage:    (total + perPage - 1) / perPage,
 		}
 	}
 
 	for _, event := range events {
-		// Get stats for each event
 		stats, _ := h.service.GetEventStats(ctx, event.ID)
 
-		// Get user interaction if user ID provided
 		var userInteraction *calendarpb.UserInteraction
 		if req.UserId > 0 {
 			interaction, _ := h.service.GetUserInteraction(ctx, event.ID, req.UserId)
 			if interaction != nil {
-				userInteraction = &calendarpb.UserInteraction{
-					HasLiked:    interaction.Liked,
-					HasDisliked: !interaction.Liked,
-				}
+				userInteraction = buildUserInteraction(interaction)
 			}
 		}
 
-		response.Events = append(response.Events, buildEventResponse(event, stats, userInteraction))
+		response.Events = append(response.Events, buildEventResponse(event, stats, userInteraction, true))
 	}
 
 	return response, nil
 }
 
-// GetEvent retrieves a single event
-// NOTE: Laravel auto-increments views on retrieval (CalendarController line 75)
 func (h *CalendarHandler) GetEvent(ctx context.Context, req *calendarpb.GetEventRequest) (*calendarpb.EventResponse, error) {
 	event, err := h.service.GetEvent(ctx, req.EventId, req.UserId)
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "event not found: %v", err)
-	}
-
-	// Get client IP from metadata
-	ipAddress := "unknown"
-	if md, ok := metadata.FromIncomingContext(ctx); ok {
-		if ips := md.Get("x-forwarded-for"); len(ips) > 0 {
-			ipAddress = ips[0]
-		} else if ips := md.Get("x-real-ip"); len(ips) > 0 {
-			ipAddress = ips[0]
+		if errors.Is(err, service.ErrEventNotFound) {
+			return nil, status.Errorf(codes.NotFound, "%s", err.Error())
 		}
+		return nil, status.Errorf(codes.Internal, "failed to get event: %v", err)
 	}
 
-	// Auto-increment view count (matching Laravel behavior)
+	ipAddress := clientIPFromContext(ctx)
 	_ = h.service.IncrementView(ctx, event.ID, ipAddress)
 
-	// Get stats
-	stats, _ := h.service.GetEventStats(ctx, event.ID)
-
-	// Get user interaction if user ID provided
-	var userInteraction *calendarpb.UserInteraction
-	if req.UserId > 0 {
-		interaction, _ := h.service.GetUserInteraction(ctx, event.ID, req.UserId)
-		if interaction != nil {
-			userInteraction = &calendarpb.UserInteraction{
-				HasLiked:    interaction.Liked,
-				HasDisliked: !interaction.Liked,
-			}
-		}
-	}
-
-	return buildEventResponse(event, stats, userInteraction), nil
+	return h.buildEventResponseForID(ctx, req.EventId, req.UserId, true)
 }
 
-// FilterByDateRange retrieves events within a date range
-// NOTE: Laravel returns simplified format (id, title, starts_at, ends_at, color only)
 func (h *CalendarHandler) FilterByDateRange(ctx context.Context, req *calendarpb.FilterByDateRangeRequest) (*calendarpb.SimplifiedEventsResponse, error) {
 	events, err := h.service.FilterByDateRange(ctx, req.StartDate, req.EndDate)
 	if err != nil {
@@ -140,11 +103,11 @@ func (h *CalendarHandler) FilterByDateRange(ctx context.Context, req *calendarpb
 		simplified := &calendarpb.SimplifiedEventResponse{
 			Id:       event.ID,
 			Title:    event.Title,
-			StartsAt: jalali.CarbonToJalali(event.StartsAt), // Date only Y/m/d
+			StartsAt: jalali.CarbonToJalali(event.StartsAt),
 			Color:    event.Color,
 		}
 		if event.EndsAt != nil {
-			simplified.EndsAt = jalali.CarbonToJalali(*event.EndsAt) // Date only Y/m/d
+			simplified.EndsAt = jalali.CarbonToJalali(*event.EndsAt)
 		}
 		response.Events = append(response.Events, simplified)
 	}
@@ -152,7 +115,6 @@ func (h *CalendarHandler) FilterByDateRange(ctx context.Context, req *calendarpb
 	return response, nil
 }
 
-// GetLatestVersion retrieves the latest version title
 func (h *CalendarHandler) GetLatestVersion(ctx context.Context, req *calendarpb.GetLatestVersionRequest) (*calendarpb.LatestVersionResponse, error) {
 	versionTitle, err := h.service.GetLatestVersionTitle(ctx)
 	if err != nil {
@@ -164,56 +126,72 @@ func (h *CalendarHandler) GetLatestVersion(ctx context.Context, req *calendarpb.
 	}, nil
 }
 
-// AddInteraction adds or updates a user's interaction with an event
-// NOTE: liked values: 1=like, 0=dislike, -1=remove interaction
 func (h *CalendarHandler) AddInteraction(ctx context.Context, req *calendarpb.AddInteractionRequest) (*calendarpb.EventResponse, error) {
-	// Validate liked value
 	if req.Liked < -1 || req.Liked > 1 {
 		return nil, status.Errorf(codes.InvalidArgument, "liked value must be -1, 0, or 1")
 	}
 
-	// Get client IP from metadata
-	ipAddress := "unknown"
-	if md, ok := metadata.FromIncomingContext(ctx); ok {
-		if ips := md.Get("x-forwarded-for"); len(ips) > 0 {
-			ipAddress = ips[0]
-		} else if ips := md.Get("x-real-ip"); len(ips) > 0 {
-			ipAddress = ips[0]
-		}
-	}
+	ipAddress := clientIPFromContext(ctx)
 
-	// Add interaction
-	err := h.service.AddInteraction(ctx, req.EventId, req.UserId, req.Liked, ipAddress)
-	if err != nil {
+	if err := h.service.AddInteraction(ctx, req.EventId, req.UserId, req.Liked, ipAddress); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to add interaction: %v", err)
 	}
 
-	// Return updated event
-	return h.GetEvent(ctx, &calendarpb.GetEventRequest{
-		EventId: req.EventId,
-		UserId:  req.UserId,
-	})
+	return h.buildEventResponseForID(ctx, req.EventId, req.UserId, false)
 }
 
-// Helper function to build event response matching Laravel EventResource format
-// Laravel uses conditional fields: events have ends_at, views, likes, etc. Versions only have version_title
-func buildEventResponse(event *models.Calendar, stats *models.CalendarStats, userInteraction *calendarpb.UserInteraction) *calendarpb.EventResponse {
+func (h *CalendarHandler) buildEventResponseForID(ctx context.Context, eventID, userID uint64, includeViews bool) (*calendarpb.EventResponse, error) {
+	event, err := h.service.GetEvent(ctx, eventID, userID)
+	if err != nil {
+		if errors.Is(err, service.ErrEventNotFound) {
+			return nil, status.Errorf(codes.NotFound, "%s", err.Error())
+		}
+		return nil, status.Errorf(codes.Internal, "failed to get event: %v", err)
+	}
+
+	var stats *models.CalendarStats
+	if includeViews {
+		stats, _ = h.service.GetEventStats(ctx, eventID)
+	} else {
+		stats, _ = h.service.GetInteractionStats(ctx, eventID)
+	}
+
+	var userInteraction *calendarpb.UserInteraction
+	if userID > 0 {
+		interaction, _ := h.service.GetUserInteraction(ctx, eventID, userID)
+		if interaction != nil {
+			userInteraction = buildUserInteraction(interaction)
+		}
+	}
+
+	return buildEventResponse(event, stats, userInteraction, includeViews), nil
+}
+
+func buildUserInteraction(interaction *models.Interaction) *calendarpb.UserInteraction {
+	return &calendarpb.UserInteraction{
+		HasLiked:    interaction.Liked,
+		HasDisliked: !interaction.Liked,
+	}
+}
+
+func buildEventResponse(event *models.Calendar, stats *models.CalendarStats, userInteraction *calendarpb.UserInteraction, includeViews bool) *calendarpb.EventResponse {
 	response := &calendarpb.EventResponse{
 		Id:          event.ID,
 		Title:       event.Title,
-		Description: event.Content,                                 // Laravel calls it "description" not "content"
-		StartsAt:    jalali.CarbonToJalaliDateTime(event.StartsAt), // Y/m/d H:i format
+		Description: event.Content,
+		StartsAt:    jalali.CarbonToJalaliDateTime(event.StartsAt),
+		IsVersion:   event.IsVersion,
 	}
 
-	// Conditional fields based on is_version
 	if !event.IsVersion {
-		// Event-specific fields
 		if event.EndsAt != nil {
-			response.EndsAt = jalali.CarbonToJalaliDateTime(*event.EndsAt) // Y/m/d H:i format
+			response.EndsAt = jalali.CarbonToJalaliDateTime(*event.EndsAt)
 		}
 
 		if stats != nil {
-			response.Views = stats.ViewsCount
+			if includeViews {
+				response.Views = stats.ViewsCount
+			}
 			response.Likes = stats.LikesCount
 			response.Dislikes = stats.DislikesCount
 		}
@@ -230,12 +208,21 @@ func buildEventResponse(event *models.Calendar, stats *models.CalendarStats, use
 		}
 
 		response.UserInteraction = userInteraction
-	} else {
-		// Version-specific fields
-		if event.VersionTitle != nil {
-			response.VersionTitle = *event.VersionTitle
-		}
+	} else if event.VersionTitle != nil {
+		response.VersionTitle = *event.VersionTitle
 	}
 
 	return response
+}
+
+func clientIPFromContext(ctx context.Context) string {
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		if ips := md.Get("x-forwarded-for"); len(ips) > 0 {
+			return ips[0]
+		}
+		if ips := md.Get("x-real-ip"); len(ips) > 0 {
+			return ips[0]
+		}
+	}
+	return "unknown"
 }

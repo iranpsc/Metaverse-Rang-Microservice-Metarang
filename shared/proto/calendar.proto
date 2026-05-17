@@ -60,11 +60,13 @@ message EventResponse {
   int32 dislikes = 12; // dislike count (only for events)
   UserInteraction user_interaction = 13; // null if user not authenticated (only for events)
   string version_title = 14; // only for versions
+  bool is_version = 15;
 }
 
 message EventsResponse {
   repeated EventResponse events = 1;
   common.PaginationMeta pagination = 2;
+  bool has_more = 3; // simplePaginate: true when another page may exist
 }
 
 // Simplified event response for date range filter

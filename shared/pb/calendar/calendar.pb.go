@@ -314,6 +314,7 @@ type EventResponse struct {
 	Dislikes        int32                  `protobuf:"varint,12,opt,name=dislikes,proto3" json:"dislikes,omitempty"`                                     // dislike count (only for events)
 	UserInteraction *UserInteraction       `protobuf:"bytes,13,opt,name=user_interaction,json=userInteraction,proto3" json:"user_interaction,omitempty"` // null if user not authenticated (only for events)
 	VersionTitle    string                 `protobuf:"bytes,14,opt,name=version_title,json=versionTitle,proto3" json:"version_title,omitempty"`          // only for versions
+	IsVersion       bool                   `protobuf:"varint,15,opt,name=is_version,json=isVersion,proto3" json:"is_version,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -446,10 +447,18 @@ func (x *EventResponse) GetVersionTitle() string {
 	return ""
 }
 
+func (x *EventResponse) GetIsVersion() bool {
+	if x != nil {
+		return x.IsVersion
+	}
+	return false
+}
+
 type EventsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Events        []*EventResponse       `protobuf:"bytes,1,rep,name=events,proto3" json:"events,omitempty"`
 	Pagination    *common.PaginationMeta `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	HasMore       bool                   `protobuf:"varint,3,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -496,6 +505,13 @@ func (x *EventsResponse) GetPagination() *common.PaginationMeta {
 		return x.Pagination
 	}
 	return nil
+}
+
+func (x *EventsResponse) GetHasMore() bool {
+	if x != nil {
+		return x.HasMore
+	}
+	return false
 }
 
 // Simplified event response for date range filter
