@@ -440,6 +440,7 @@ func (x *FollowResource) GetOnline() bool {
 
 type GetTimingsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        uint64                 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -472,6 +473,13 @@ func (x *GetTimingsRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use GetTimingsRequest.ProtoReflect.Descriptor instead.
 func (*GetTimingsRequest) Descriptor() ([]byte, []int) {
 	return file_social_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *GetTimingsRequest) GetUserId() uint64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
 }
 
 type GetTimingsResponse struct {
@@ -999,7 +1007,8 @@ const file_social_proto_rawDesc = "" +
 	"\x0eprofile_photos\x18\x04 \x03(\tR\rprofilePhotos\x12\x14\n" +
 	"\x05level\x18\x05 \x01(\tR\x05level\x12\x16\n" +
 	"\x06online\x18\x06 \x01(\bR\x06online\"\x13\n" +
-	"\x11GetTimingsRequest\"=\n" +
+	"\x11GetTimingsRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x04R\x06userId\"=\n" +
 	"\x12GetTimingsResponse\x12'\n" +
 	"\x04data\x18\x01 \x01(\v2\x13.social.TimingsDataR\x04data\"\xa3\x02\n" +
 	"\vTimingsData\x12.\n" +

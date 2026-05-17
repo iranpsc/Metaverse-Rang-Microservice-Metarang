@@ -56,7 +56,7 @@ func main() {
 	log.Printf("✅ Created auth service client for %s (connection will be established on first RPC call)", cfg.AuthServiceAddr)
 
 	// Create connections to other services (with fallback if not configured)
-	var calendarConn, dynastyConn, featuresConn, financialConn, levelsConn, trainingConn, supportConn, notificationConn *grpc.ClientConn
+	var calendarConn, dynastyConn, featuresConn, financialConn, socialConn, levelsConn, trainingConn, supportConn, notificationConn *grpc.ClientConn
 
 	if cfg.CalendarServiceAddr != "" {
 		calendarConn, err = grpc.NewClient(
@@ -108,6 +108,23 @@ func main() {
 			defer financialConn.Close()
 			log.Printf("✅ Connected to financial service at %s", cfg.FinancialServiceAddr)
 		}
+	}
+
+	if cfg.SocialServiceAddr != "" {
+		socialConn, err = grpc.NewClient(
+			cfg.SocialServiceAddr,
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+		)
+		if err != nil {
+			log.Printf("⚠️  Failed to connect to social service: %v", err)
+			log.Printf("⚠️  Social routes will not be available until service is running")
+			socialConn = nil
+		} else {
+			defer socialConn.Close()
+			log.Printf("✅ Connected to social service at %s", cfg.SocialServiceAddr)
+		}
+	} else {
+		log.Printf("⚠️  SOCIAL_SERVICE_ADDR not set - social routes will not be available")
 	}
 
 	if cfg.LevelsServiceAddr != "" {
@@ -217,6 +234,14 @@ func main() {
 	var supportHandler *handler.SupportHandler
 	if supportConn != nil {
 		supportHandler = handler.NewSupportHandler(supportConn, authConn)
+	}
+
+	var socialHandler *handler.SocialHandler
+	if socialConn != nil {
+		socialHandler = handler.NewSocialHandler(socialConn, authConn)
+		log.Printf("✅ Social handler created")
+	} else {
+		log.Printf("⚠️  Social handler NOT created - socialConn is nil (check SOCIAL_SERVICE_ADDR config)")
 	}
 
 	var notificationHandler *handler.NotificationHandler
@@ -905,6 +930,19 @@ func main() {
 			// Notes handler would go here
 			http.NotFound(w, r)
 		})))
+	}
+
+	// Social routes (follow & challenge)
+	if socialHandler != nil {
+		mux.Handle("/api/followers", authMiddleware(http.HandlerFunc(socialHandler.GetFollowers)))
+		mux.Handle("/api/following", authMiddleware(http.HandlerFunc(socialHandler.GetFollowing)))
+		mux.Handle("/api/follow/", authMiddleware(http.HandlerFunc(socialHandler.Follow)))
+		mux.Handle("/api/unfollow/", authMiddleware(http.HandlerFunc(socialHandler.Unfollow)))
+		mux.Handle("/api/remove/", authMiddleware(http.HandlerFunc(socialHandler.Remove)))
+		mux.Handle("/api/challenge/timings", authMiddleware(http.HandlerFunc(socialHandler.GetTimings)))
+		mux.Handle("/api/challenge/question", authMiddleware(http.HandlerFunc(socialHandler.GetQuestion)))
+		mux.Handle("/api/challenge/answer", authMiddleware(http.HandlerFunc(socialHandler.SubmitAnswer)))
+		log.Printf("✅ Registered social service routes")
 	}
 
 	// Notification routes

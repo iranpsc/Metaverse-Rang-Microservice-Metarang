@@ -225,12 +225,8 @@ func (h *SocialHandler) GetTimings(w http.ResponseWriter, r *http.Request) {
 		writeGRPCError(w, err)
 		return
 	}
-	_ = userID // Token validated but userID not used in request (service gets it from context)
 
-	// Note: The proto GetTimingsRequest doesn't have user_id field
-	// The service will get it from context via auth interceptor
-	// For now, we'll pass it through a custom context value
-	grpcReq := &socialpb.GetTimingsRequest{}
+	grpcReq := &socialpb.GetTimingsRequest{UserId: userID}
 	resp, err := h.challengeClient.GetTimings(r.Context(), grpcReq)
 	if err != nil {
 		writeGRPCError(w, err)
