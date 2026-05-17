@@ -674,8 +674,8 @@ func main() {
 
 		// Register more specific routes FIRST (before catch-all routes)
 
-		// V1 modal lookup route (completely separate path) - requires auth
-		mux.Handle("/api/video-tutorials", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// V1 modal lookup route (completely separate path) - public
+		mux.Handle("/api/video-tutorials", optionalAuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == http.MethodPost {
 				trainingHandler.GetVideoByFileName(w, r)
 			} else {
@@ -781,12 +781,21 @@ func main() {
 								http.NotFound(w, r)
 							}
 						}
+					} else if len(parts) == 3 && parts[1] == "comments" {
+						// /api/tutorials/{video}/comments/{comment}
+						if r.Method == http.MethodPut {
+							authMiddleware(http.HandlerFunc(trainingHandler.UpdateComment)).ServeHTTP(w, r)
+						} else if r.Method == http.MethodDelete {
+							authMiddleware(http.HandlerFunc(trainingHandler.DeleteComment)).ServeHTTP(w, r)
+						} else {
+							http.NotFound(w, r)
+						}
 					} else if len(parts) == 2 {
 						// /api/tutorials/{video}/comments
 						if r.Method == http.MethodGet {
 							trainingHandler.GetComments(w, r)
 						} else if r.Method == http.MethodPost {
-							trainingHandler.AddComment(w, r)
+							authMiddleware(http.HandlerFunc(trainingHandler.AddComment)).ServeHTTP(w, r)
 						} else {
 							http.NotFound(w, r)
 						}
@@ -853,10 +862,10 @@ func main() {
 				} else {
 					http.NotFound(w, r)
 				}
-			} else if len(parts) == 1 && strings.HasSuffix(path, "/reply") {
+			} else if len(parts) == 2 && parts[1] == "reply" {
 				// /api/comments/{comment}/reply
 				if r.Method == http.MethodPost {
-					trainingHandler.AddReply(w, r)
+					authMiddleware(http.HandlerFunc(trainingHandler.AddReply)).ServeHTTP(w, r)
 				} else {
 					http.NotFound(w, r)
 				}

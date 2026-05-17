@@ -10,8 +10,15 @@ import (
 
 // CategoryRepositoryInterface defines the interface for category repository operations
 type CategoryRepositoryInterface interface {
-	GetSubCategoryByID(ctx context.Context, subCategoryID uint64) (*models.VideoSubCategory, error)
+	GetCategories(ctx context.Context, page, perPage int32) ([]*models.VideoCategory, int32, error)
 	GetCategoryByID(ctx context.Context, categoryID uint64) (*models.VideoCategory, error)
+	GetCategoryBySlug(ctx context.Context, slug string) (*models.VideoCategory, error)
+	GetSubCategoriesByCategoryID(ctx context.Context, categoryID uint64) ([]*models.VideoSubCategory, error)
+	GetSubCategoryByID(ctx context.Context, subCategoryID uint64) (*models.VideoSubCategory, error)
+	GetSubCategoryBySlugs(ctx context.Context, categorySlug, subCategorySlug string) (*models.VideoSubCategory, error)
+	GetCategoryStats(ctx context.Context, categoryID uint64) (*models.CategoryStats, error)
+	GetSubCategoryStats(ctx context.Context, subCategoryID uint64) (*models.SubCategoryStats, error)
+	GetSubCategoryStatsByCategoryID(ctx context.Context, categoryID uint64) (map[uint64]*models.SubCategoryStats, error)
 }
 
 type CategoryRepository struct {
@@ -27,7 +34,13 @@ func (r *CategoryRepository) GetCategories(ctx context.Context, page, perPage in
 	query := `
 		SELECT id, name, slug, description, image, icon, created_at, updated_at
 		FROM video_categories
-		ORDER BY id DESC
+		ORDER BY (
+			SELECT COUNT(*)
+			FROM interactions i
+			INNER JOIN videos vid ON vid.id = i.likeable_id
+			INNER JOIN video_sub_categories vsc ON vsc.id = vid.video_sub_category_id
+			WHERE i.likeable_type = 'App\\Models\\Video' AND i.liked = 1 AND vsc.video_category_id = video_categories.id
+		) DESC
 	`
 	countQuery := "SELECT COUNT(*) FROM video_categories"
 

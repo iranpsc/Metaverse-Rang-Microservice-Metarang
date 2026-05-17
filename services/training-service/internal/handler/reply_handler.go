@@ -63,7 +63,7 @@ func (h *ReplyHandler) GetReplies(ctx context.Context, req *trainingpb.GetReplie
 func (h *ReplyHandler) AddReply(ctx context.Context, req *trainingpb.AddReplyRequest) (*trainingpb.CommentResponse, error) {
 	reply, err := h.service.AddReply(ctx, req.ParentCommentId, req.UserId, req.Content)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to add reply: %v", err)
+		return nil, mapServiceError(err)
 	}
 
 	return h.buildReplyResponse(reply), nil
@@ -73,7 +73,7 @@ func (h *ReplyHandler) AddReply(ctx context.Context, req *trainingpb.AddReplyReq
 func (h *ReplyHandler) UpdateReply(ctx context.Context, req *trainingpb.UpdateReplyRequest) (*trainingpb.CommentResponse, error) {
 	reply, err := h.service.UpdateReply(ctx, req.ReplyId, req.UserId, req.Content)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to update reply: %v", err)
+		return nil, mapServiceError(err)
 	}
 
 	return h.buildReplyResponse(reply), nil
@@ -96,7 +96,7 @@ func (h *ReplyHandler) AddReplyInteraction(ctx context.Context, req *trainingpb.
 	}
 
 	if err := h.service.AddReplyInteraction(ctx, req.ReplyId, req.UserId, req.Liked, ipAddress); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to add interaction: %v", err)
+		return nil, mapServiceError(err)
 	}
 
 	return &commonpb.Empty{}, nil

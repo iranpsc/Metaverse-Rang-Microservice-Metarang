@@ -9,11 +9,11 @@ import (
 )
 
 type ReplyService struct {
-	commentRepo *repository.CommentRepository
-	userRepo    *repository.UserRepository
+	commentRepo repository.CommentRepositoryInterface
+	userRepo    repository.UserRepositoryInterface
 }
 
-func NewReplyService(commentRepo *repository.CommentRepository, userRepo *repository.UserRepository) *ReplyService {
+func NewReplyService(commentRepo repository.CommentRepositoryInterface, userRepo repository.UserRepositoryInterface) *ReplyService {
 	return &ReplyService{
 		commentRepo: commentRepo,
 		userRepo:    userRepo,
@@ -57,7 +57,7 @@ func (s *ReplyService) AddReply(ctx context.Context, parentCommentID, userID uin
 		return nil, fmt.Errorf("parent comment not found")
 	}
 	if parentComment.UserID == userID {
-		return nil, fmt.Errorf("user cannot reply to their own comment")
+		return nil, fmt.Errorf("%w: reply to own comment", ErrNotAuthorized)
 	}
 
 	reply, err := s.commentRepo.AddReply(ctx, parentCommentID, userID, content)
@@ -86,7 +86,7 @@ func (s *ReplyService) UpdateReply(ctx context.Context, replyID, userID uint64, 
 		return nil, fmt.Errorf("reply not found")
 	}
 	if reply.UserID != userID {
-		return nil, fmt.Errorf("user not authorized to update this reply")
+		return nil, fmt.Errorf("%w: update reply", ErrNotAuthorized)
 	}
 
 	if err := s.commentRepo.UpdateReply(ctx, replyID, userID, content); err != nil {
@@ -118,7 +118,7 @@ func (s *ReplyService) AddReplyInteraction(ctx context.Context, replyID, userID 
 		return fmt.Errorf("reply not found")
 	}
 	if reply.UserID == userID {
-		return fmt.Errorf("user cannot react to their own reply")
+		return fmt.Errorf("%w: react to own reply", ErrNotAuthorized)
 	}
 
 	return s.commentRepo.AddReplyInteraction(ctx, replyID, userID, liked, ipAddress)

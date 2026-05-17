@@ -134,6 +134,8 @@ message CategoryResponse {
   string description = 4;
   int32 videos_count = 5;
   repeated SubCategoryInfo sub_categories = 6;
+  string image_url = 7;
+  string icon_url = 8;
 }
 
 message CategoriesResponse {
@@ -148,6 +150,8 @@ message SubCategoryResponse {
   string description = 4;
   CategoryInfo category = 5;
   int32 videos_count = 6;
+  string image_url = 7;
+  string icon_url = 8;
 }
 
 message CategoryInfo {

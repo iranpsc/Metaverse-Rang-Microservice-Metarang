@@ -22,7 +22,10 @@ func (r *CommentRepository) GetComments(ctx context.Context, videoID uint64, pag
 		SELECT id, user_id, parent_id, commentable_type, commentable_id, content, created_at, updated_at
 		FROM comments
 		WHERE commentable_type = 'App\\Models\\Video' AND commentable_id = ? AND parent_id IS NULL
-		ORDER BY id DESC
+		ORDER BY (
+			SELECT COUNT(*) FROM interactions
+			WHERE likeable_type = 'App\\Models\\Comment' AND likeable_id = comments.id AND liked = 1
+		) DESC
 	`
 	countQuery := `
 		SELECT COUNT(*) 

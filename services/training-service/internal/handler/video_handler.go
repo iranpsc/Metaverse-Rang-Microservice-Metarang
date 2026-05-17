@@ -2,9 +2,6 @@ package handler
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"strings"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -68,7 +65,7 @@ func (h *VideoHandler) GetVideos(ctx context.Context, req *trainingpb.GetVideosR
 		if err != nil {
 			continue // Skip videos with errors
 		}
-		videoResp, err := h.buildVideoResponse(ctx, details)
+		videoResp, err := buildVideoResponse(details)
 		if err != nil {
 			continue
 		}
@@ -96,7 +93,11 @@ func (h *VideoHandler) GetVideo(ctx context.Context, req *trainingpb.GetVideoReq
 		return nil, status.Errorf(codes.Internal, "failed to get video details: %v", err)
 	}
 
-	return h.buildVideoResponse(ctx, details)
+	resp, err := buildVideoResponse(details)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "%v", err)
+	}
+	return resp, nil
 }
 
 // GetVideoByFileName retrieves a video by partial file name and increments view
@@ -116,13 +117,16 @@ func (h *VideoHandler) GetVideoByFileName(ctx context.Context, req *trainingpb.G
 		return nil, status.Errorf(codes.Internal, "failed to get video details: %v", err)
 	}
 
-	return h.buildVideoResponse(ctx, details)
+	resp, err := buildVideoResponse(details)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "%v", err)
+	}
+	return resp, nil
 }
 
 // SearchVideos searches videos by title
 func (h *VideoHandler) SearchVideos(ctx context.Context, req *trainingpb.SearchVideosRequest) (*trainingpb.VideosResponse, error) {
-	locale := "en" // TODO: Get locale from config or context
-	validationErrors := validateRequired("query", req.Query, locale)
+	validationErrors := validateRequired("query", req.Query, getLocale(ctx))
 	if len(validationErrors) > 0 {
 		return nil, returnValidationError(validationErrors)
 	}
@@ -159,7 +163,7 @@ func (h *VideoHandler) SearchVideos(ctx context.Context, req *trainingpb.SearchV
 		if err != nil {
 			continue
 		}
-		videoResp, err := h.buildVideoResponse(ctx, details)
+		videoResp, err := buildVideoResponse(details)
 		if err != nil {
 			continue
 		}
@@ -195,103 +199,6 @@ func (h *VideoHandler) AddInteraction(ctx context.Context, req *trainingpb.AddIn
 	}
 
 	return &commonpb.Empty{}, nil
-}
-
-// buildVideoResponse builds a VideoResponse from a Video model
-func (h *VideoHandler) buildVideoResponse(ctx context.Context, video *service.VideoDetails) (*trainingpb.VideoResponse, error) {
-	if video == nil || video.Video == nil {
-		return nil, status.Errorf(codes.Internal, "invalid video data")
-	}
-
-	resp := &trainingpb.VideoResponse{
-		Id:          video.Video.ID,
-		Title:       video.Video.Title,
-		Slug:        getStringValue(video.Video.Slug),
-		Description: video.Video.Description,
-		FileName:    video.Video.FileName,
-		CreatorCode: video.Video.CreatorCode,
-		CreatedAt:   video.CreatedAtJalali,
-	}
-
-	// Set image_url and video_url (prepend APP_URL + /uploads/ if configured)
-	appURL := strings.TrimSuffix(os.Getenv("APP_URL"), "/")
-	
-	// Construct image_url (pattern: APP_URL + /uploads/{imagePath})
-	if video.Video.Image != "" {
-		if strings.HasPrefix(video.Video.Image, "http://") || strings.HasPrefix(video.Video.Image, "https://") {
-			// Already a full URL, use as-is
-			resp.ImageUrl = video.Video.Image
-		} else if appURL != "" {
-			// Ensure image path starts with /uploads/
-			imagePath := strings.TrimPrefix(video.Video.Image, "/")
-			if !strings.HasPrefix(imagePath, "uploads/") {
-				imagePath = "uploads/" + imagePath
-			}
-			resp.ImageUrl = fmt.Sprintf("%s/%s", appURL, imagePath)
-		} else {
-			// No APP_URL configured, use relative path
-			imagePath := strings.TrimPrefix(video.Video.Image, "/")
-			if !strings.HasPrefix(imagePath, "uploads/") {
-				imagePath = "uploads/" + imagePath
-			}
-			resp.ImageUrl = "/" + imagePath
-		}
-	} else {
-		resp.ImageUrl = ""
-	}
-	
-	// Construct video_url (pattern: APP_URL + /uploads/videos/{fileName})
-	if video.Video.FileName != "" {
-		videoPath := "/uploads/videos/" + video.Video.FileName
-		if appURL != "" {
-			resp.VideoUrl = fmt.Sprintf("%s%s", appURL, videoPath)
-		} else {
-			resp.VideoUrl = videoPath
-		}
-	} else {
-		resp.VideoUrl = ""
-	}
-
-	// Set creator
-	if video.Creator != nil {
-		resp.Creator = &commonpb.UserBasic{
-			Id:    video.Creator.ID,
-			Name:  video.Creator.Name,
-			Code:  video.Creator.Code,
-			Email: video.Creator.Email,
-		}
-		if video.Creator.ProfilePhoto != "" {
-			resp.Creator.ProfilePhoto = video.Creator.ProfilePhoto
-		}
-	}
-
-	// Set category and subcategory
-	if video.Category != nil {
-		resp.Category = &trainingpb.CategoryInfo{
-			Id:   video.Category.ID,
-			Name: video.Category.Name,
-			Slug: video.Category.Slug,
-		}
-	}
-	if video.SubCategory != nil {
-		resp.SubCategory = &trainingpb.SubCategoryInfo{
-			Id:   video.SubCategory.ID,
-			Name: video.SubCategory.Name,
-			Slug: video.SubCategory.Slug,
-		}
-	}
-
-	// Set stats
-	if video.Stats != nil {
-		resp.Stats = &trainingpb.VideoStats{
-			ViewsCount:    video.Stats.ViewsCount,
-			LikesCount:    video.Stats.LikesCount,
-			DislikesCount: video.Stats.DislikesCount,
-			CommentsCount: video.Stats.CommentsCount,
-		}
-	}
-
-	return resp, nil
 }
 
 func getStringValue(s *string) string {

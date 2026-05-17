@@ -10,11 +10,11 @@ import (
 )
 
 type CommentService struct {
-	commentRepo *repository.CommentRepository
-	userRepo    *repository.UserRepository
+	commentRepo repository.CommentRepositoryInterface
+	userRepo    repository.UserRepositoryInterface
 }
 
-func NewCommentService(commentRepo *repository.CommentRepository, userRepo *repository.UserRepository) *CommentService {
+func NewCommentService(commentRepo repository.CommentRepositoryInterface, userRepo repository.UserRepositoryInterface) *CommentService {
 	return &CommentService{
 		commentRepo: commentRepo,
 		userRepo:    userRepo,
@@ -75,7 +75,7 @@ func (s *CommentService) UpdateComment(ctx context.Context, commentID, userID ui
 		return nil, fmt.Errorf("comment not found")
 	}
 	if comment.UserID != userID {
-		return nil, fmt.Errorf("user not authorized to update this comment")
+		return nil, fmt.Errorf("%w: update comment", ErrNotAuthorized)
 	}
 
 	if err := s.commentRepo.UpdateComment(ctx, commentID, userID, content); err != nil {
@@ -107,7 +107,7 @@ func (s *CommentService) AddCommentInteraction(ctx context.Context, commentID, u
 		return fmt.Errorf("comment not found")
 	}
 	if comment.UserID == userID {
-		return fmt.Errorf("user cannot react to their own comment")
+		return fmt.Errorf("%w: react to own comment", ErrNotAuthorized)
 	}
 
 	return s.commentRepo.AddCommentInteraction(ctx, commentID, userID, liked, ipAddress)
@@ -131,7 +131,7 @@ func (s *CommentService) ReportComment(ctx context.Context, videoID, commentID, 
 		return fmt.Errorf("comment not found")
 	}
 	if comment.UserID == userID {
-		return fmt.Errorf("user cannot report their own comment")
+		return fmt.Errorf("%w: report own comment", ErrNotAuthorized)
 	}
 
 	return s.commentRepo.ReportComment(ctx, videoID, commentID, userID, content)

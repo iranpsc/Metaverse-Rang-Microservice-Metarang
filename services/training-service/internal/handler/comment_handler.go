@@ -63,7 +63,7 @@ func (h *CommentHandler) GetComments(ctx context.Context, req *trainingpb.GetCom
 func (h *CommentHandler) AddComment(ctx context.Context, req *trainingpb.AddCommentRequest) (*trainingpb.CommentResponse, error) {
 	comment, err := h.service.AddComment(ctx, req.VideoId, req.UserId, req.Content)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to add comment: %v", err)
+		return nil, mapServiceError(err)
 	}
 
 	return h.buildCommentResponse(comment), nil
@@ -73,7 +73,7 @@ func (h *CommentHandler) AddComment(ctx context.Context, req *trainingpb.AddComm
 func (h *CommentHandler) UpdateComment(ctx context.Context, req *trainingpb.UpdateCommentRequest) (*trainingpb.CommentResponse, error) {
 	comment, err := h.service.UpdateComment(ctx, req.CommentId, req.UserId, req.Content)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to update comment: %v", err)
+		return nil, mapServiceError(err)
 	}
 
 	return h.buildCommentResponse(comment), nil
@@ -96,7 +96,7 @@ func (h *CommentHandler) AddCommentInteraction(ctx context.Context, req *trainin
 	}
 
 	if err := h.service.AddCommentInteraction(ctx, req.CommentId, req.UserId, req.Liked, ipAddress); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to add interaction: %v", err)
+		return nil, mapServiceError(err)
 	}
 
 	return &commonpb.Empty{}, nil
@@ -118,7 +118,7 @@ func (h *CommentHandler) ReportComment(ctx context.Context, req *trainingpb.Repo
 	videoID := comment.Comment.CommentableID
 
 	if err := h.service.ReportComment(ctx, videoID, req.CommentId, req.UserId, req.Content); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to report comment: %v", err)
+		return nil, mapServiceError(err)
 	}
 
 	return &commonpb.Empty{}, nil

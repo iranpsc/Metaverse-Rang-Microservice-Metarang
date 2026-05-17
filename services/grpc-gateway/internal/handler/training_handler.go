@@ -237,7 +237,7 @@ func (h *TrainingHandler) GetVideoByFileName(w http.ResponseWriter, r *http.Requ
 	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"data": buildVideoResponse(resp),
+		"data": buildModalVideoResponse(resp),
 	})
 }
 
@@ -1025,6 +1025,23 @@ func buildVideosResponse(resp *trainingpb.VideosResponse) map[string]interface{}
 	return result
 }
 
+func buildModalVideoResponse(video *trainingpb.VideoResponse) map[string]interface{} {
+	resp := map[string]interface{}{
+		"id":           video.Id,
+		"title":        video.Title,
+		"description":  video.Description,
+		"video":        video.VideoUrl,
+		"image":        video.ImageUrl,
+		"creator_code": video.CreatorCode,
+	}
+	if video.Stats != nil {
+		resp["views"] = video.Stats.ViewsCount
+		resp["likes"] = video.Stats.LikesCount
+		resp["dislikes"] = video.Stats.DislikesCount
+	}
+	return resp
+}
+
 func buildCategoryResponse(category *trainingpb.CategoryResponse) map[string]interface{} {
 	resp := map[string]interface{}{
 		"id":   category.Id,
@@ -1034,6 +1051,13 @@ func buildCategoryResponse(category *trainingpb.CategoryResponse) map[string]int
 
 	if category.Description != "" {
 		resp["description"] = category.Description
+	}
+
+	if category.ImageUrl != "" {
+		resp["image"] = category.ImageUrl
+	}
+	if category.IconUrl != "" {
+		resp["icon"] = category.IconUrl
 	}
 
 	if category.VideosCount > 0 {
@@ -1089,6 +1113,13 @@ func buildSubCategoryResponse(subCategory *trainingpb.SubCategoryResponse) map[s
 		resp["description"] = subCategory.Description
 	}
 
+	if subCategory.ImageUrl != "" {
+		resp["image"] = subCategory.ImageUrl
+	}
+	if subCategory.IconUrl != "" {
+		resp["icon"] = subCategory.IconUrl
+	}
+
 	if subCategory.Category != nil {
 		resp["category"] = map[string]interface{}{
 			"id":   subCategory.Category.Id,
@@ -1110,6 +1141,9 @@ func buildCommentResponse(comment *trainingpb.CommentResponse) map[string]interf
 		"video_id":   comment.VideoId,
 		"content":    comment.Content,
 		"created_at": comment.CreatedAt,
+	}
+	if comment.UpdatedAt != "" {
+		resp["updated_at"] = comment.UpdatedAt
 	}
 
 	if comment.ParentId > 0 {

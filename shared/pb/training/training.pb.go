@@ -828,6 +828,8 @@ type CategoryResponse struct {
 	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
 	VideosCount   int32                  `protobuf:"varint,5,opt,name=videos_count,json=videosCount,proto3" json:"videos_count,omitempty"`
 	SubCategories []*SubCategoryInfo     `protobuf:"bytes,6,rep,name=sub_categories,json=subCategories,proto3" json:"sub_categories,omitempty"`
+	ImageUrl      string                 `protobuf:"bytes,7,opt,name=image_url,json=imageUrl,proto3" json:"image_url,omitempty"`
+	IconUrl       string                 `protobuf:"bytes,8,opt,name=icon_url,json=iconUrl,proto3" json:"icon_url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -904,6 +906,20 @@ func (x *CategoryResponse) GetSubCategories() []*SubCategoryInfo {
 	return nil
 }
 
+func (x *CategoryResponse) GetImageUrl() string {
+	if x != nil {
+		return x.ImageUrl
+	}
+	return ""
+}
+
+func (x *CategoryResponse) GetIconUrl() string {
+	if x != nil {
+		return x.IconUrl
+	}
+	return ""
+}
+
 type CategoriesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Categories    []*CategoryResponse    `protobuf:"bytes,1,rep,name=categories,proto3" json:"categories,omitempty"`
@@ -964,6 +980,8 @@ type SubCategoryResponse struct {
 	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
 	Category      *CategoryInfo          `protobuf:"bytes,5,opt,name=category,proto3" json:"category,omitempty"`
 	VideosCount   int32                  `protobuf:"varint,6,opt,name=videos_count,json=videosCount,proto3" json:"videos_count,omitempty"`
+	ImageUrl      string                 `protobuf:"bytes,7,opt,name=image_url,json=imageUrl,proto3" json:"image_url,omitempty"`
+	IconUrl       string                 `protobuf:"bytes,8,opt,name=icon_url,json=iconUrl,proto3" json:"icon_url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1038,6 +1056,20 @@ func (x *SubCategoryResponse) GetVideosCount() int32 {
 		return x.VideosCount
 	}
 	return 0
+}
+
+func (x *SubCategoryResponse) GetImageUrl() string {
+	if x != nil {
+		return x.ImageUrl
+	}
+	return ""
+}
+
+func (x *SubCategoryResponse) GetIconUrl() string {
+	if x != nil {
+		return x.IconUrl
+	}
+	return ""
 }
 
 type CategoryInfo struct {

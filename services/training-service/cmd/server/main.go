@@ -121,6 +121,9 @@ func main() {
 	commentRepo := repository.NewCommentRepository(db)
 	userRepo := repository.NewUserRepository(db, authClient)
 
+	// Set project locale for validation messages
+	handler.SetProjectLocale(getEnv("PROJECT_LOCALE", "EN"))
+
 	// Initialize services
 	videoService := service.NewVideoService(videoRepo, categoryRepo, userRepo)
 	categoryService := service.NewCategoryService(categoryRepo, videoRepo)
@@ -132,7 +135,7 @@ func main() {
 
 	// Register handlers
 	handler.RegisterVideoHandler(grpcServer, videoService)
-	handler.RegisterCategoryHandler(grpcServer, categoryService)
+	handler.RegisterCategoryHandler(grpcServer, categoryService, videoService)
 	handler.RegisterCommentHandler(grpcServer, commentService)
 	handler.RegisterReplyHandler(grpcServer, replyService)
 

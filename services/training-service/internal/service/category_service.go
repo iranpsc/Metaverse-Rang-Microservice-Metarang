@@ -9,11 +9,11 @@ import (
 )
 
 type CategoryService struct {
-	categoryRepo *repository.CategoryRepository
-	videoRepo    *repository.VideoRepository
+	categoryRepo repository.CategoryRepositoryInterface
+	videoRepo    repository.VideoRepositoryInterface
 }
 
-func NewCategoryService(categoryRepo *repository.CategoryRepository, videoRepo *repository.VideoRepository) *CategoryService {
+func NewCategoryService(categoryRepo repository.CategoryRepositoryInterface, videoRepo repository.VideoRepositoryInterface) *CategoryService {
 	return &CategoryService{
 		categoryRepo: categoryRepo,
 		videoRepo:    videoRepo,
