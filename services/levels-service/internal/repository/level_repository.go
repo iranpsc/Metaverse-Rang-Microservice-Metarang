@@ -253,8 +253,8 @@ func (r *LevelRepository) FindByID(ctx context.Context, id uint64) (*pb.Level, e
 		return nil, err
 	}
 
-	if imageURL.Valid {
-		level.ImageUrl = imageURL.String
+	if imageURL.Valid && imageURL.String != "" {
+		level.ImageUrl = r.formatImageURL(imageURL.String)
 	}
 	if backgroundImage.Valid {
 		level.BackgroundImage = backgroundImage.String
@@ -297,8 +297,8 @@ func (r *LevelRepository) FindBySlug(ctx context.Context, slug string) (*pb.Leve
 		return nil, err
 	}
 
-	if imageURL.Valid {
-		level.ImageUrl = imageURL.String
+	if imageURL.Valid && imageURL.String != "" {
+		level.ImageUrl = r.formatImageURL(imageURL.String)
 	}
 	if backgroundImage.Valid {
 		level.BackgroundImage = backgroundImage.String
@@ -328,29 +328,29 @@ func (r *LevelRepository) GetLevelGeneralInfo(ctx context.Context, levelID uint6
 	`
 
 	var info pb.LevelGeneralInfo
-	var subcategoriesInt int
-	var pointsInt, linesInt int
-	var fileVolumeFloat float64
-	var hasAnimationInt int8
-	var rankInt int
+	var rank sql.NullInt64
+	var description, persianFont, englishFont, usedColors, designer, modelDesigner, creationDate sql.NullString
+	var subcategories, points, lines sql.NullInt64
+	var fileVolume sql.NullFloat64
+	var hasAnimation sql.NullInt64
 
 	err := r.db.QueryRowContext(ctx, query, levelID).Scan(
 		&info.Id,
 		&info.LevelId,
 		&info.Score,
-		&rankInt,
-		&info.Description,
-		&subcategoriesInt,
-		&info.PersianFont,
-		&info.EnglishFont,
-		&fileVolumeFloat,
-		&info.UsedColors,
-		&pointsInt,
-		&linesInt,
-		&hasAnimationInt,
-		&info.Designer,
-		&info.ModelDesigner,
-		&info.CreationDate,
+		&rank,
+		&description,
+		&subcategories,
+		&persianFont,
+		&englishFont,
+		&fileVolume,
+		&usedColors,
+		&points,
+		&lines,
+		&hasAnimation,
+		&designer,
+		&modelDesigner,
+		&creationDate,
 		&info.PngFile,
 		&info.FbxFile,
 		&info.GifFile,
@@ -363,13 +363,44 @@ func (r *LevelRepository) GetLevelGeneralInfo(ctx context.Context, levelID uint6
 		return nil, err
 	}
 
-	// Convert types to match proto (strings where needed)
-	info.Rank = fmt.Sprintf("%d", rankInt)
-	info.Subcategories = fmt.Sprintf("%d", subcategoriesInt)
-	info.FileVolume = fmt.Sprintf("%g", fileVolumeFloat)
-	info.Points = fmt.Sprintf("%d", pointsInt)
-	info.Lines = fmt.Sprintf("%d", linesInt)
-	info.HasAnimation = hasAnimationInt != 0
+	// Convert nullable fields to proto string/bool types
+	if rank.Valid {
+		info.Rank = fmt.Sprintf("%d", rank.Int64)
+	}
+	if description.Valid {
+		info.Description = description.String
+	}
+	if subcategories.Valid {
+		info.Subcategories = fmt.Sprintf("%d", subcategories.Int64)
+	}
+	if persianFont.Valid {
+		info.PersianFont = persianFont.String
+	}
+	if englishFont.Valid {
+		info.EnglishFont = englishFont.String
+	}
+	if fileVolume.Valid {
+		info.FileVolume = fmt.Sprintf("%g", fileVolume.Float64)
+	}
+	if usedColors.Valid {
+		info.UsedColors = usedColors.String
+	}
+	if points.Valid {
+		info.Points = fmt.Sprintf("%d", points.Int64)
+	}
+	if lines.Valid {
+		info.Lines = fmt.Sprintf("%d", lines.Int64)
+	}
+	info.HasAnimation = hasAnimation.Valid && hasAnimation.Int64 != 0
+	if designer.Valid {
+		info.Designer = designer.String
+	}
+	if modelDesigner.Valid {
+		info.ModelDesigner = modelDesigner.String
+	}
+	if creationDate.Valid {
+		info.CreationDate = creationDate.String
+	}
 
 	// Format file URLs with admin_panel_url prefix (for png_file, fbx_file, gif_file)
 	if info.PngFile != "" {

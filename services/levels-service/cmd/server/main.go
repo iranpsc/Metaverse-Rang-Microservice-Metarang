@@ -7,7 +7,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/joho/godotenv"
 	"metargb/levels-service/internal/handler"
 	"metargb/levels-service/internal/repository"
 	"metargb/levels-service/internal/service"
@@ -22,6 +24,20 @@ import (
 )
 
 func main() {
+	// Load environment variables from config.env
+	configPaths := []string{
+		"config.env",
+		"./config.env",
+		"../config.env",
+		"../../config.env",
+		"services/levels-service/config.env",
+	}
+	for _, configPath := range configPaths {
+		if err := godotenv.Load(configPath); err == nil {
+			break
+		}
+	}
+
 	// Initialize logger
 	log := logger.NewLogger("levels-service")
 	log.Info("Starting Levels Service...")
@@ -44,6 +60,10 @@ func main() {
 		log.Fatal("Failed to connect to database", "error", err)
 	}
 	defer database.Close()
+
+	database.SetMaxOpenConns(25)
+	database.SetMaxIdleConns(5)
+	database.SetConnMaxLifetime(5 * time.Minute)
 
 	// Test database connection
 	if err := database.Ping(); err != nil {

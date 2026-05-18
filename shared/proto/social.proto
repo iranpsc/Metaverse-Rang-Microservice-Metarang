@@ -59,9 +59,9 @@ message FollowResource {
   uint64 id = 1;
   string name = 2;
   string code = 3;
-  repeated string profile_photos = 4;
-  string level = 5;
-  bool online = 6;
+  string level = 4;
+  bool online = 5;
+  repeated string profile_photos = 6;
 }
 
 // ============== Challenge Messages ==============

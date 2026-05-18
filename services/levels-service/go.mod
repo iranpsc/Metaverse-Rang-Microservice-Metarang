@@ -6,6 +6,7 @@ toolchain go1.24.3
 
 require (
 	github.com/go-sql-driver/mysql v1.7.1
+	github.com/joho/godotenv v1.5.1
 	google.golang.org/grpc v1.76.0
 	metargb/shared v0.0.0
 )

@@ -31,7 +31,7 @@ FROM alpine:latest
 
 # Iran-accessible Alpine package mirror (MobinHost)
 RUN sed -i 's|https://dl-cdn.alpinelinux.org|https://mirror.mobinhost.com|g' /etc/apk/repositories
-RUN apk update && apk --no-cache add ca-certificates
+RUN apk update && apk --no-cache add ca-certificates wget
 
 WORKDIR /app
 
