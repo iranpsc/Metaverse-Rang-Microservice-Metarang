@@ -13,18 +13,19 @@ import (
 )
 
 type StorageService struct {
-	ftpClient    ftp.FTPClientInterface
-	chunkManager *ChunkManager
-	storageBase  string // Deprecated: Files are now stored in uploads/ directory at service root
+	ftpClient     ftp.FTPClientInterface
+	chunkManager  *ChunkManager
+	uploadBaseDir string
 }
 
-func NewStorageService(ftpClient ftp.FTPClientInterface, chunkManager *ChunkManager, storageBase string) *StorageService {
-	// storageBase is kept for backward compatibility but not used
-	// Files are stored in uploads/ directory relative to service root
+func NewStorageService(ftpClient ftp.FTPClientInterface, chunkManager *ChunkManager, uploadBaseDir string) *StorageService {
+	if uploadBaseDir == "" {
+		uploadBaseDir = "uploads"
+	}
 	return &StorageService{
-		ftpClient:    ftpClient,
-		chunkManager: chunkManager,
-		storageBase:  storageBase,
+		ftpClient:     ftpClient,
+		chunkManager:  chunkManager,
+		uploadBaseDir: uploadBaseDir,
 	}
 }
 
@@ -92,8 +93,11 @@ func (s *StorageService) DeleteFile(filePath string) error {
 // HandleChunkUpload processes a chunk upload
 // Returns: isFinished, progress, filePath (relative path like "uploads/mime/date/"), finalFilename, mimeType, error
 func (s *StorageService) HandleChunkUpload(uploadID, filename, contentType string, chunkData []byte, chunkIndex, totalChunks int32, totalSize int64, uploadPath string) (bool, float64, string, string, string, error) {
+	uploadSubdir := normalizeUploadSubdir(uploadPath)
+	customUpload := uploadSubdir != ""
+
 	// Get or create session
-	session, err := s.chunkManager.GetOrCreateSession(uploadID, filename, contentType, totalChunks, totalSize, uploadPath)
+	session, err := s.chunkManager.GetOrCreateSession(uploadID, filename, contentType, totalChunks, totalSize, uploadSubdir)
 	if err != nil {
 		return false, 0, "", "", "", fmt.Errorf("failed to create session: %w", err)
 	}
@@ -118,10 +122,7 @@ func (s *StorageService) HandleChunkUpload(uploadID, filename, contentType strin
 		return false, 0, "", "", "", fmt.Errorf("failed to assemble file: %w", err)
 	}
 
-	// Save file locally to uploads/{mime}/{date}/
-	// The relativePath is already in format "uploads/{mime}/{date}/{filename}"
-	// Use relativePath directly (it's already relative to service root)
-	localPath := relativePath
+	localPath := resolveChunkLocalPath(s.uploadBaseDir, relativePath, customUpload)
 	localDir := filepath.Dir(localPath)
 
 	// Create directory if it doesn't exist
@@ -140,14 +141,8 @@ func (s *StorageService) HandleChunkUpload(uploadID, filename, contentType strin
 	mimeType := strings.Split(contentType, ";")[0]
 	mimeType = strings.TrimSpace(mimeType)
 
-	// Return relative path in format "uploads/{mime}/{date}/" (directory path, not file path)
-	// This matches Laravel's response format
-	pathDir := filepath.Dir(relativePath)
-	// Normalize path separators to forward slashes for consistency
-	pathDir = strings.ReplaceAll(pathDir, "\\", "/")
-	if !strings.HasSuffix(pathDir, "/") {
-		pathDir += "/"
-	}
+	// Return directory path for API consumers (e.g. "/uploads/profile/" or "uploads/image-jpeg/2024-01-01/")
+	pathDir := resolveChunkPublicDir(relativePath, uploadSubdir, customUpload)
 
 	// Cleanup session
 	s.chunkManager.CleanupSession(uploadID)

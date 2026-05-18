@@ -2,6 +2,17 @@ _format_version: "3.0"
 _transform: true
 
 services:
+  # Static uploaded files (profile photos, KYC, etc.) — not API calls
+  - name: storage-uploads
+    url: http://storage-service:8059
+    protocol: http
+    host: storage-service
+    port: 8059
+    connect_timeout: 60000
+    write_timeout: 60000
+    read_timeout: 60000
+    retries: 3
+
   - name: grpc-gateway
     url: http://grpc-gateway:8080
     protocol: http
@@ -14,6 +25,22 @@ services:
     retries: 5
 
 routes:
+  # Higher priority: serve files from storage-service, never grpc-gateway
+  - name: uploads-static
+    service: storage-uploads
+    paths:
+      - /uploads
+    strip_path: false
+    preserve_host: false
+    regex_priority: 100
+    protocols:
+      - http
+      - https
+    methods:
+      - GET
+      - HEAD
+      - OPTIONS
+
   - name: api-routes
     service: grpc-gateway
     paths:

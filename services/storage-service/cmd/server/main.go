@@ -86,16 +86,14 @@ func main() {
 	// Initialize repositories
 	imageRepo := repository.NewImageRepository(db)
 
-	// Ensure uploads directory exists
-	uploadsDir := "uploads"
+	uploadsDir := getEnv("UPLOAD_DIR", "uploads")
 	if err := os.MkdirAll(uploadsDir, 0755); err != nil {
 		log.Fatalf("Failed to create uploads directory: %v", err)
 	}
 	log.Printf("✅ Uploads directory initialized: %s", uploadsDir)
 
 	// Initialize services
-	// Storage base is no longer used - files are stored in uploads/ directory at service root
-	storageService := service.NewStorageService(ftpClient, chunkManager, "")
+	storageService := service.NewStorageService(ftpClient, chunkManager, uploadsDir)
 	imageService := service.NewImageService(imageRepo, ftpClient)
 
 	// Create gRPC server
@@ -108,7 +106,7 @@ func main() {
 	handler.RegisterImageHandler(grpcServer, imageService)
 
 	// Create HTTP handler for REST API
-	httpHandler := handler.NewHTTPHandler(storageService)
+	httpHandler := handler.NewHTTPHandler(storageService, uploadsDir)
 
 	// Start gRPC server
 	grpcPort := getEnv("GRPC_PORT", "50059")
@@ -129,6 +127,7 @@ func main() {
 	httpPort := getEnv("HTTP_PORT", "8059")
 	log.Printf("✅ HTTP server listening on port %s", httpPort)
 	log.Printf("📤 Chunk upload endpoint: http://localhost:%s/upload", httpPort)
+	log.Printf("📁 Static uploads: http://localhost:%s/uploads/", httpPort)
 
 	go func() {
 		if err := handler.StartHTTPServer(httpHandler, httpPort); err != nil {

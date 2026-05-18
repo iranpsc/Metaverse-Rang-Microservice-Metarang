@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"metargb/storage-service/internal/service"
 )
@@ -13,12 +15,14 @@ import (
 // HTTPHandler handles HTTP REST requests for chunk uploads
 type HTTPHandler struct {
 	storageService *service.StorageService
+	uploadRoot     string
 }
 
 // NewHTTPHandler creates a new HTTP handler
-func NewHTTPHandler(storageService *service.StorageService) *HTTPHandler {
+func NewHTTPHandler(storageService *service.StorageService, uploadRoot string) *HTTPHandler {
 	return &HTTPHandler{
 		storageService: storageService,
+		uploadRoot:     uploadRoot,
 	}
 }
 
@@ -181,11 +185,37 @@ func (h *HTTPHandler) sendError(w http.ResponseWriter, statusCode int, message s
 	})
 }
 
+// ServeUploads serves GET /uploads/{path} from the local upload directory.
+// Example: /uploads/profile/abc.png -> {uploadRoot}/profile/abc.png
+func (h *HTTPHandler) ServeUploads(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		w.Header().Set("Allow", "GET, HEAD")
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	rel := strings.TrimPrefix(r.URL.Path, "/uploads")
+	rel = strings.TrimPrefix(rel, "/")
+	if rel == "" || strings.Contains(rel, "..") {
+		http.NotFound(w, r)
+		return
+	}
+
+	root := h.uploadRoot
+	if root == "" {
+		root = "uploads"
+	}
+
+	filePath := filepath.Join(root, filepath.FromSlash(rel))
+	http.ServeFile(w, r, filePath)
+}
+
 // RegisterHTTPRoutes registers all HTTP routes
 func (h *HTTPHandler) RegisterHTTPRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/upload", h.HandleChunkUpload)
 	mux.HandleFunc("/health", h.HandleHealthCheck)
 	mux.HandleFunc("/api/upload", h.HandleChunkUpload) // Also support /api/upload
+	mux.HandleFunc("/uploads/", h.ServeUploads)
 }
 
 // StartHTTPServer starts the HTTP server

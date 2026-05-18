@@ -39,7 +39,7 @@ func TestHTTPHandler_HandleChunkUpload(t *testing.T) {
 	storageBase := filepath.Join(tempDir, "storage", "app")
 	ftpClient := ftp.NewMockFTPClient(filepath.Join(tempDir, "ftp"), "http://example.com")
 	storageService := service.NewStorageService(ftpClient, chunkManager, storageBase)
-	handler := NewHTTPHandler(storageService)
+	handler := NewHTTPHandler(storageService, storageBase)
 
 	t.Run("missing file field returns 400", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/api/upload", nil)
@@ -323,12 +323,42 @@ func TestHTTPHandler_HandleChunkUpload(t *testing.T) {
 	})
 }
 
+func TestHTTPHandler_ServeUploadsStatic(t *testing.T) {
+	tempDir := t.TempDir()
+	uploadRoot := filepath.Join(tempDir, "uploads")
+	profileDir := filepath.Join(uploadRoot, "profile")
+	if err := os.MkdirAll(profileDir, 0755); err != nil {
+		t.Fatalf("mkdir profile: %v", err)
+	}
+	filePath := filepath.Join(profileDir, "photo.jpg")
+	if err := os.WriteFile(filePath, []byte("jpeg-bytes"), 0644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+
+	chunkManager, _ := service.NewChunkManager(filepath.Join(tempDir, "chunks"))
+	ftpClient := ftp.NewMockFTPClient(filepath.Join(tempDir, "ftp"), "http://example.com")
+	storageService := service.NewStorageService(ftpClient, chunkManager, uploadRoot)
+	h := NewHTTPHandler(storageService, uploadRoot)
+
+	req := httptest.NewRequest(http.MethodGet, "/uploads/profile/photo.jpg", nil)
+	w := httptest.NewRecorder()
+	h.ServeUploads(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d body=%s", w.Code, w.Body.String())
+	}
+	if !bytes.Equal(w.Body.Bytes(), []byte("jpeg-bytes")) {
+		t.Fatalf("unexpected body: %q", w.Body.Bytes())
+	}
+}
+
 func TestHTTPHandler_HandleHealthCheck(t *testing.T) {
 	tempDir := t.TempDir()
 	chunkManager, _ := service.NewChunkManager(filepath.Join(tempDir, "chunks"))
 	ftpClient := ftp.NewMockFTPClient(filepath.Join(tempDir, "ftp"), "http://example.com")
-	storageService := service.NewStorageService(ftpClient, chunkManager, filepath.Join(tempDir, "storage", "app"))
-	handler := NewHTTPHandler(storageService)
+	uploadRoot := filepath.Join(tempDir, "storage", "app")
+	storageService := service.NewStorageService(ftpClient, chunkManager, uploadRoot)
+	handler := NewHTTPHandler(storageService, uploadRoot)
 
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	w := httptest.NewRecorder()
@@ -388,7 +418,7 @@ func TestChunkUpload_CompleteFlow(t *testing.T) {
 	storageBase := filepath.Join(tempDir, "storage", "app")
 	ftpClient := ftp.NewMockFTPClient(filepath.Join(tempDir, "ftp"), "http://example.com")
 	storageService := service.NewStorageService(ftpClient, chunkManager, storageBase)
-	handler := NewHTTPHandler(storageService)
+	handler := NewHTTPHandler(storageService, storageBase)
 
 	uploadID := "test-upload-complete"
 	totalChunks := int32(3)

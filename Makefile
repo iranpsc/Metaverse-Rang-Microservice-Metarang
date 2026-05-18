@@ -1,4 +1,4 @@
-.PHONY: proto clean-proto gen-auth gen-commercial gen-features gen-levels gen-dynasty gen-support gen-training gen-notifications gen-calendar gen-storage gen-financial gen-all help build-all deploy-all test up down restart logs ps build clean clean-runtime dev dev-up dev-down
+.PHONY: proto clean-proto gen-auth gen-commercial gen-features gen-levels gen-dynasty gen-support gen-training gen-notifications gen-calendar gen-storage gen-financial gen-all help build-all deploy-all test up down restart logs ps build clean clean-runtime dev dev-up dev-down link-uploads
 
 # Proto generation
 PROTO_DIR=shared/proto
@@ -7,6 +7,10 @@ PROTO_OUT_DIR=shared/pb
 # Docker
 DOCKER_REGISTRY=metargb
 VERSION?=latest
+
+# Local uploads (storage-service writes here; link-uploads exposes it at project root)
+UPLOADS_SRC=services/storage-service/uploads
+UPLOADS_LINK=uploads
 
 # Docker Compose compatibility - auto-detect docker-compose or docker compose plugin
 # Windows PowerShell doesn't support 'command -v', so default to 'docker compose' (modern Docker Desktop)
@@ -42,6 +46,9 @@ help:
 	@echo "Database:"
 	@echo "  import-schema    - Import database schema only (schema.sql)"
 	@echo "  import-database  - Import database with data (metargb_db.sql)"
+	@echo ""
+	@echo "Local dev:"
+	@echo "  link-uploads     - Symlink ./uploads -> $(UPLOADS_SRC)"
 	@echo ""
 	@echo "Docker:"
 	@echo "  up, down, build, logs, ps - Compose lifecycle"
@@ -87,6 +94,40 @@ test-all: test-unit test-integration test-golden test-database
 
 # Legacy test target (kept for backward compatibility)
 test: test-integration
+
+# =============================================================================
+# Local uploads symlink
+# =============================================================================
+
+.PHONY: link-uploads
+
+link-uploads:
+	@echo "Creating symlink: $(UPLOADS_LINK) -> $(UPLOADS_SRC)"
+ifeq ($(OS),Windows_NT)
+	@powershell -NoProfile -Command "$$ErrorActionPreference='Stop'; \
+		if (-not (Test-Path -LiteralPath '$(UPLOADS_SRC)')) { New-Item -ItemType Directory -Force -Path '$(UPLOADS_SRC)' | Out-Null }; \
+		$$target = (Resolve-Path -LiteralPath '$(UPLOADS_SRC)').Path; \
+		if (Test-Path -LiteralPath '$(UPLOADS_LINK)') { \
+			$$item = Get-Item -LiteralPath '$(UPLOADS_LINK)' -Force; \
+			if ($$item.Attributes -band [IO.FileAttributes]::ReparsePoint) { \
+				Write-Host 'Link already exists: $(UPLOADS_LINK) -> $(UPLOADS_SRC)'; exit 0 \
+			}; \
+			Write-Error '$(UPLOADS_LINK) already exists and is not a link to $(UPLOADS_SRC)'; exit 1 \
+		}; \
+		try { \
+			New-Item -ItemType SymbolicLink -Path '$(UPLOADS_LINK)' -Target $$target | Out-Null; \
+			Write-Host 'Created symlink: $(UPLOADS_LINK) -> $(UPLOADS_SRC)' \
+		} catch { \
+			Write-Host 'Symbolic link unavailable (enable Developer Mode or run as admin); creating directory junction...'; \
+			$$null = cmd /c mklink /J \"$(UPLOADS_LINK)\" \"$$target\"; \
+			if ($$LASTEXITCODE -ne 0) { exit $$LASTEXITCODE }; \
+			Write-Host 'Created junction: $(UPLOADS_LINK) -> $(UPLOADS_SRC)' \
+		}"
+else
+	@mkdir -p $(UPLOADS_SRC)
+	@ln -sfn $(UPLOADS_SRC) $(UPLOADS_LINK)
+	@echo "Created symlink: $(UPLOADS_LINK) -> $(UPLOADS_SRC)"
+endif
 
 # =============================================================================
 # Docker Compose Management

@@ -71,6 +71,9 @@ docker/*.env.*
 # API documentation (local/reference only)
 api-docs/
 
+# Local uploads symlink target at repo root (make link-uploads)
+/uploads
+
 # Miscellaneous
 *.iml
 *.orig

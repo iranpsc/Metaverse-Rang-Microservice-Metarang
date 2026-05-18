@@ -41,3 +41,6 @@ coverage-final.json
 
 # Go specific
 vendor/
+
+# Local uploads symlink target at repo root (make link-uploads)
+/uploads

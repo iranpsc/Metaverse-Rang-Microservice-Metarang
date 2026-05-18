@@ -567,6 +567,7 @@ services:
     environment:
       GRPC_PORT: 50060
       HTTP_PORT: 8059
+      UPLOAD_DIR: /app/uploads
       DB_HOST: mysql
       DB_PORT: 3306
       DB_DATABASE: metargb_db
