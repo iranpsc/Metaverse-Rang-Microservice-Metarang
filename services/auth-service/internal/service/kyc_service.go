@@ -237,16 +237,16 @@ func (s *kycService) validateIranianNationalCode(code string) bool {
 	}{Code: code}) == nil
 }
 
-// isUserVerified checks if user has verified email or phone
-func (s *kycService) isUserVerified(ctx context.Context, userID uint64) (bool, error) {
-	user, err := s.userRepo.FindByID(ctx, userID)
+// hasApprovedKYC matches Laravel User::verified() (kyc.status === 1).
+func (s *kycService) hasApprovedKYC(ctx context.Context, userID uint64) (bool, error) {
+	kyc, err := s.kycRepo.FindByUserID(ctx, userID)
 	if err != nil {
-		return false, fmt.Errorf("failed to find user: %w", err)
+		return false, fmt.Errorf("failed to get kyc: %w", err)
 	}
-	if user == nil {
-		return false, fmt.Errorf("user not found")
+	if kyc == nil {
+		return false, nil
 	}
-	return user.EmailVerifiedAt.Valid || user.PhoneVerifiedAt.Valid, nil
+	return kyc.Status == 1, nil
 }
 
 // validateBankAccountInput validates bank account input fields
@@ -281,8 +281,8 @@ func (s *kycService) ListBankAccounts(ctx context.Context, userID uint64) ([]*mo
 }
 
 func (s *kycService) CreateBankAccount(ctx context.Context, userID uint64, bankName, shabaNum, cardNum string) (*models.BankAccount, error) {
-	// Check if user is verified
-	verified, err := s.isUserVerified(ctx, userID)
+	// BankAccountPolicy::create requires approved KYC (Laravel User::verified()).
+	verified, err := s.hasApprovedKYC(ctx, userID)
 	if err != nil {
 		return nil, err
 	}

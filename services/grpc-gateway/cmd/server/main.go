@@ -324,7 +324,10 @@ func main() {
 		}
 	})))
 	// Bank Accounts routes - registered at /api/bank-accounts per documentation
-	mux.Handle("/api/bank-accounts", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	bankAccountsVerified := func(next http.Handler) http.Handler {
+		return authMiddleware(authHandler.RequireVerifiedEmail(next))
+	}
+	mux.Handle("/api/bank-accounts", bankAccountsVerified(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			authHandler.ListBankAccounts(w, r)
 		} else if r.Method == http.MethodPost {
@@ -333,14 +336,14 @@ func main() {
 			http.NotFound(w, r)
 		}
 	})))
-	mux.Handle("/api/bank-accounts/", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("/api/bank-accounts/", bankAccountsVerified(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 		id := strings.TrimPrefix(path, "/api/bank-accounts/")
 		if id == "" {
 			http.NotFound(w, r)
 			return
 		}
-		switch r.Method {
+		switch handler.EffectiveHTTPMethod(r) {
 		case http.MethodGet:
 			authHandler.GetBankAccount(w, r)
 		case http.MethodPut, http.MethodPatch:
@@ -443,10 +446,9 @@ func main() {
 		}
 	})))
 	mux.Handle("/api/general-settings/", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPut {
+		if handler.EffectiveHTTPMethod(r) == http.MethodPut {
 			authHandler.UpdateGeneralSettings(w, r)
 		} else {
-			log.Printf("⚠️  [DEBUG] /api/general-settings/ called with method %s (expected PUT), path: %s", r.Method, r.URL.Path)
 			http.NotFound(w, r)
 		}
 	})))

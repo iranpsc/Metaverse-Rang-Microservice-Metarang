@@ -226,10 +226,9 @@ func mapServiceError(err error, locale string) error {
 	switch {
 	case errors.Is(err, service.ErrBankAccountNotFound):
 		return status.Errorf(codes.NotFound, "%s", err.Error())
-	case errors.Is(err, service.ErrBankAccountNotOwned):
+	case errors.Is(err, service.ErrBankAccountNotOwned),
+		errors.Is(err, service.ErrBankAccountNotRejected):
 		return status.Errorf(codes.PermissionDenied, "%s", err.Error())
-	case errors.Is(err, service.ErrBankAccountNotRejected):
-		return status.Errorf(codes.FailedPrecondition, "%s", err.Error())
 	case errors.Is(err, service.ErrUserNotVerified):
 		return status.Errorf(codes.PermissionDenied, "%s", err.Error())
 	case errors.Is(err, service.ErrInvalidBankName),

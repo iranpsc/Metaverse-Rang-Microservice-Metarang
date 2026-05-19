@@ -56,17 +56,18 @@ func main() {
 
 	notificationRepo := repository.NewNotificationRepository(db)
 
-	// SMS config from config.env (SMS_PROVIDER, SMS_API_KEY, SMS_SENDER)
+	// SMS config: SMS_API_KEY or KAVENEGAR_API_KEY (same key as Laravel auth / auth-service)
 	smsCfg := service.SMSChannelConfig{
-		Provider: getEnv("SMS_PROVIDER", ""),
-		APIKey:   getEnv("SMS_API_KEY", ""),
-		Sender:   getEnv("SMS_SENDER", "10008663"),
+		Provider: getEnv("SMS_PROVIDER", getEnv("KAVENEGAR_PROVIDER", "kavenegar")),
+		APIKey:   service.ResolveSMSAPIKey(),
+		Sender:   service.ResolveSMSSender(getEnv("SMS_SENDER", "10008663")),
 	}
-	if smsCfg.Provider == "" || smsCfg.APIKey == "" {
-		log.Printf("WARNING: SMS not fully configured (SMS_PROVIDER=%s, SMS_API_KEY set=%v). SMS features will not work and will return 'not implemented' errors.", smsCfg.Provider, smsCfg.APIKey != "")
-		log.Printf("Please set SMS_PROVIDER and SMS_API_KEY in config.env or environment.")
+	if smsCfg.Provider == "" || service.IsPlaceholderSMSAPIKey(smsCfg.APIKey) {
+		log.Printf("WARNING: SMS not fully configured (SMS_PROVIDER=%s, API key set=%v). SMS features will not work.", smsCfg.Provider, smsCfg.APIKey != "")
+		log.Printf("Set SMS_API_KEY in services/notifications-service/config.env (same value as laravel-api config/kavenegar.php apikey).")
 	} else {
-		log.Printf("SMS configured: provider=%s, sender=%s", smsCfg.Provider, smsCfg.Sender)
+		log.Printf("SMS configured: provider=%s, sender=%s, api_key_from=%s, api_key=%s",
+			smsCfg.Provider, smsCfg.Sender, service.SMSAPIKeySource(), service.MaskAPIKey(smsCfg.APIKey))
 	}
 	smsChannel := service.NewSMSChannel(smsCfg)
 	emailChannel := service.NewEmailChannel()

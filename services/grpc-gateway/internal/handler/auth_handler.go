@@ -301,9 +301,9 @@ func (h *AuthHandler) VerifyAccountSecurity(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Parse request body
+	// Parse request body (Laravel accepts numeric|string for code)
 	var req struct {
-		Code string `json:"code"` // 6-digit OTP code
+		Code flexibleString `json:"code" form:"code"`
 	}
 
 	if err := decodeRequestBody(r, &req); err != nil {
@@ -321,9 +321,11 @@ func (h *AuthHandler) VerifyAccountSecurity(w http.ResponseWriter, r *http.Reque
 	ip := getClientIP(r)
 	userAgent := r.UserAgent()
 
+	code := strings.TrimSpace(helpers.NormalizePersianNumbers(req.Code.String()))
+
 	grpcReq := &pb.VerifyAccountSecurityRequest{
 		UserId:    userCtx.UserID,
-		Code:      req.Code,
+		Code:      code,
 		Ip:        ip,
 		UserAgent: userAgent,
 	}
@@ -988,8 +990,12 @@ func (h *AuthHandler) ListBankAccounts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Format response to match Laravel API: { "data": [...] }
+	data := make([]map[string]interface{}, 0, len(resp.Data))
+	for _, account := range resp.Data {
+		data = append(data, formatBankAccountResource(account))
+	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"data": resp.Data,
+		"data": data,
 	})
 }
 
@@ -1030,19 +1036,7 @@ func (h *AuthHandler) CreateBankAccount(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Format response to match Laravel BankAccountResource
-	response := map[string]interface{}{
-		"id":        resp.Id,
-		"bank_name": resp.BankName,
-		"shaba_num": resp.ShabaNum,
-		"card_num":  resp.CardNum,
-		"status":    resp.Status,
-	}
-	if resp.Errors != "" {
-		response["errors"] = resp.Errors
-	}
-
-	writeJSON(w, http.StatusCreated, response)
+	writeJSON(w, http.StatusCreated, formatBankAccountResource(resp))
 }
 
 // GetBankAccount handles GET /api/bank-accounts/{bankAccount}
@@ -1077,19 +1071,7 @@ func (h *AuthHandler) GetBankAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Format response to match Laravel BankAccountResource
-	response := map[string]interface{}{
-		"id":        resp.Id,
-		"bank_name": resp.BankName,
-		"shaba_num": resp.ShabaNum,
-		"card_num":  resp.CardNum,
-		"status":    resp.Status,
-	}
-	if resp.Errors != "" {
-		response["errors"] = resp.Errors
-	}
-
-	writeJSON(w, http.StatusOK, response)
+	writeJSON(w, http.StatusOK, formatBankAccountResource(resp))
 }
 
 // UpdateBankAccount handles PUT/PATCH /api/bank-accounts/{bankAccount}
@@ -1142,19 +1124,7 @@ func (h *AuthHandler) UpdateBankAccount(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Format response to match Laravel BankAccountResource
-	response := map[string]interface{}{
-		"id":        resp.Id,
-		"bank_name": resp.BankName,
-		"shaba_num": resp.ShabaNum,
-		"card_num":  resp.CardNum,
-		"status":    resp.Status,
-	}
-	if resp.Errors != "" {
-		response["errors"] = resp.Errors
-	}
-
-	writeJSON(w, http.StatusOK, response)
+	writeJSON(w, http.StatusOK, formatBankAccountResource(resp))
 }
 
 // DeleteBankAccount handles DELETE /api/bank-accounts/{bankAccount}
@@ -1191,6 +1161,61 @@ func (h *AuthHandler) DeleteBankAccount(w http.ResponseWriter, r *http.Request) 
 
 	// Return 204 No Content on success
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// formatBankAccountResource builds a Laravel BankAccountResource-compatible JSON object.
+func formatBankAccountResource(resp *pb.BankAccountResponse) map[string]interface{} {
+	response := map[string]interface{}{
+		"id":        resp.Id,
+		"bank_name": resp.BankName,
+		"shaba_num": resp.ShabaNum,
+		"card_num":  resp.CardNum,
+		"status":    resp.Status,
+	}
+	if parsed := parseBankAccountErrors(resp.Errors); parsed != nil {
+		response["errors"] = parsed
+	}
+	return response
+}
+
+// parseBankAccountErrors decodes JSON errors from the database (Laravel casts errors as array).
+func parseBankAccountErrors(raw string) interface{} {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	var arr []interface{}
+	if err := json.Unmarshal([]byte(raw), &arr); err == nil {
+		return arr
+	}
+	var obj map[string]interface{}
+	if err := json.Unmarshal([]byte(raw), &obj); err == nil {
+		return obj
+	}
+	return raw
+}
+
+// RequireVerifiedEmail enforces Laravel's verified middleware (EnsureEmailIsVerified).
+func (h *AuthHandler) RequireVerifiedEmail(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userCtx, err := middleware.GetUserFromRequest(r)
+		if err != nil {
+			writeError(w, http.StatusUnauthorized, "authentication required")
+			return
+		}
+
+		user, err := h.userClient.GetUser(r.Context(), &pb.GetUserRequest{UserId: userCtx.UserID})
+		if err != nil {
+			h.writeGRPCErrorLocale(w, err)
+			return
+		}
+		if user.EmailVerifiedAt == nil {
+			writeError(w, http.StatusForbidden, "Your email address is not verified.")
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 // Helper functions
@@ -1280,9 +1305,11 @@ func decodeRequestBody(r *http.Request, v interface{}) error {
 		return nil
 	}
 
-	// If body decoding failed, try query parameters as fallback
-	if queryErr := decodeQueryParams(r, v); queryErr == nil {
-		return nil
+	// If body decoding failed, try query parameters as fallback when present
+	if len(r.URL.Query()) > 0 {
+		if queryErr := decodeQueryParams(r, v); queryErr == nil {
+			return nil
+		}
 	}
 
 	// Both failed, return body error
