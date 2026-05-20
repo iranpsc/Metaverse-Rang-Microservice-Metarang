@@ -2214,6 +2214,12 @@ func hasPersonalInfoData(data *pb.PersonalInfoData) bool {
 
 // UpdatePersonalInfo handles PUT/PATCH /api/personal-info
 func (h *AuthHandler) UpdatePersonalInfo(w http.ResponseWriter, r *http.Request) {
+	// Accept Laravel-style POST + _method=put|patch (same as KYC / bank-accounts routing)
+	if m := EffectiveHTTPMethod(r); m != http.MethodPut && m != http.MethodPatch {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
 	// Get user from context (set by auth middleware)
 	userCtx, err := middleware.GetUserFromRequest(r)
 	if err != nil {

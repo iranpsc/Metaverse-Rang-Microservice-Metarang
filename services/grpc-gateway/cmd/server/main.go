@@ -304,8 +304,7 @@ func main() {
 	// Account security routes (already handled above, but keeping for consistency)
 	// These are already registered as protected routes above
 
-	// KYC routes - match the pattern used by /api/personal-info which works
-	// Use EffectiveHTTPMethod so POST + _method=put|patch (Laravel multipart uploads) is accepted
+	// KYC routes — use EffectiveHTTPMethod so POST + _method=put|patch (Laravel multipart uploads) is accepted
 	mux.Handle("/api/kyc", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch handler.EffectiveHTTPMethod(r) {
 		case http.MethodGet:
@@ -358,16 +357,10 @@ func main() {
 		}
 	})))
 
-	// Personal Info routes
-	mux.Handle("/api/personal-info", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
-			authHandler.GetPersonalInfo(w, r)
-		} else if r.Method == http.MethodPut || r.Method == http.MethodPatch {
-			authHandler.UpdatePersonalInfo(w, r)
-		} else {
-			http.NotFound(w, r)
-		}
-	})))
+	// Personal Info routes — EffectiveHTTPMethod supports POST + _method=put|patch (Laravel clients)
+	personalInfoHandler := authMiddleware(handler.PersonalInfoRoutes(authHandler))
+	mux.Handle("/api/personal-info", personalInfoHandler)
+	mux.Handle("/api/personal-info/", personalInfoHandler)
 
 	// Profile Limitation routes
 	// Register route with trailing slash first to handle /api/profile-limitations/{id}
