@@ -49,6 +49,16 @@ func TestSearchRepository_SearchUsers(t *testing.T) {
 			},
 		},
 		{
+			name:       "search by name without KYC",
+			searchTerm: "jane",
+			wantCount:  1,
+			checkFunc: func(t *testing.T, results []*SearchUserResult) {
+				assert.Len(t, results, 1)
+				assert.Equal(t, user2ID, results[0].User.ID)
+				assert.Nil(t, results[0].KYC)
+			},
+		},
+		{
 			name:       "search by code",
 			searchTerm: "USR001",
 			wantCount:  1,

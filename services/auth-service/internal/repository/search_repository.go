@@ -133,6 +133,7 @@ func (r *searchRepository) SearchUsers(ctx context.Context, searchTerm string) (
 		var user models.User
 		var kyc models.KYC
 		var kycID sql.NullInt64
+		var kycUserID sql.NullInt64
 		var kycFname sql.NullString
 		var kycLname sql.NullString
 		var kycMelliCode sql.NullString
@@ -153,7 +154,7 @@ func (r *searchRepository) SearchUsers(ctx context.Context, searchTerm string) (
 			&user.ID, &user.Name, &user.Email, &user.Phone, &user.Code, &user.ReferrerID,
 			&user.Score, &user.LastSeen, &user.CreatedAt, &user.UpdatedAt,
 			&emailVerifiedAt, &phoneVerifiedAt,
-			&kycID, &kyc.UserID, &kycFname, &kycLname, &kycMelliCode, &kycMelliCard,
+			&kycID, &kycUserID, &kycFname, &kycLname, &kycMelliCode, &kycMelliCard,
 			&kycVideo, &kycVerifyTextID, &kycProvince, &kycGender, &kycStatus,
 			&kycBirthdate, &kycErrors, &kycCreatedAt, &kycUpdatedAt,
 		)
@@ -171,6 +172,9 @@ func (r *searchRepository) SearchUsers(ctx context.Context, searchTerm string) (
 		// Build KYC if exists
 		if kycID.Valid {
 			kyc.ID = uint64(kycID.Int64)
+			if kycUserID.Valid {
+				kyc.UserID = uint64(kycUserID.Int64)
+			}
 			if kycFname.Valid {
 				kyc.Fname = kycFname.String
 			}
