@@ -2,6 +2,46 @@
 # These define which services to scrape for metrics
 
 ---
+# ServiceMonitor for Health Check Service (aggregated health, DB, cache metrics)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: health-check-service
+  namespace: metargb
+  labels:
+    app: health-check-service
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: health-check-service
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
+
+---
+# ServiceMonitor for Kong API Gateway
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kong
+  namespace: metargb
+  labels:
+    app: kong
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: kong
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
+
+---
 # ServiceMonitor for Auth Service
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor

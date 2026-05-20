@@ -1,330 +1,113 @@
 # MetaRGB Monitoring Stack
 
-This directory contains the Prometheus and Grafana configuration for monitoring MetaRGB microservices.
+Prometheus and Grafana configuration aligned with [MICROSERVICE_METRICS.md](./MICROSERVICE_METRICS.md).
 
 ## Components
 
-### Prometheus
-- **Port**: 9090
-- **URL**: http://localhost:9090
-- **Config**: `prometheus/prometheus.yml`
-- **Data**: Stored in Docker volume `prometheus_data`
-
-### Grafana
-- **Port**: 3001
-- **URL**: http://localhost:3001
-- **Default Credentials**:
-  - Username: `admin`
-  - Password: `admin123`
-- **Data**: Stored in Docker volume `grafana_data`
+| Component | Port | URL |
+|-----------|------|-----|
+| Prometheus | 9090 | http://localhost:9090 |
+| Grafana | 3001 | http://localhost:3001 (admin / admin123) |
 
 ## Quick Start
 
-### Start Monitoring Stack
 ```bash
-docker-compose up -d prometheus grafana
+docker-compose up -d prometheus grafana node-exporter health-check-service kong
 ```
 
-### Access Dashboards
-1. **Prometheus**: http://localhost:9090
-2. **Grafana**: http://localhost:3001
-   - Login with `admin` / `admin123`
-   - Navigate to Dashboards → MetaRGB Microservices Overview
+Verify targets: http://localhost:9090/targets
 
-### Verify Services
-```bash
-# Check Prometheus health
-curl http://localhost:9090/-/healthy
+## Dashboard Organization
 
-# Check Grafana health
-curl http://localhost:3001/api/health
+Dashboards are provisioned from folder structure (`foldersFromFilesStructure: true`):
+
+| Folder | Dashboard | Purpose |
+|--------|-----------|---------|
+| **01-overview** | Overview - Golden Signals & Health | SRE golden signals, service health summary |
+| **02-services** | Services - Per-Service Metrics | gRPC request rate, latency, errors per service |
+| **03-infrastructure** | Infrastructure - Resources | CPU, memory, disk, network (node-exporter) |
+| **04-dependencies** | Dependencies - DB, Cache & APIs | MySQL pools, Redis cache, external APIs |
+| **05-api-gateway** | API Traffic, Kong Basic | Kong HTTP metrics, routes, upstream health |
+
+## Prometheus Scrape Targets
+
+| Job | Source | Metrics |
+|-----|--------|---------|
+| `health-check-service` | :8090/metrics | Service health, DB, cache, external APIs |
+| `kong` | :8001/metrics | HTTP traffic, latency, errors |
+| `node-exporter` | :9100/metrics | Host CPU, memory, disk, network |
+| `*-service` | :9090/metrics | Per-service gRPC metrics (when exposed) |
+
+## Recording Rules
+
+Pre-aggregated golden signals in `prometheus/recording_rules.yml`:
+
+- `metargb:http_requests_per_second:5m` — Traffic
+- `metargb:http_latency_p50/p95/p99:5m` — Latency
+- `metargb:http_error_percentage:5m` — Errors (5xx)
+- `metargb:service_availability_percentage` — Availability
+- `metargb:node_cpu_usage_percentage` / `metargb:node_memory_usage_percentage` — Saturation
+
+## Alerting Rules
+
+Configured in `prometheus/alerting_rules.yml` per MICROSERVICE_METRICS.md:
+
+### Critical (immediate response)
+- Service down (`service_health_status == 0`)
+- Error rate > 5% (services or gateway)
+- P99 latency > 1s
+- CPU > 90% for 5m
+- Memory > 95%
+- Scrape target down
+
+### Warning (investigation)
+- Error rate > 1%
+- P95 latency > 500ms
+- CPU > 70% for 15m
+- Cache hit rate < 80%
+- Database connection failures / pool exhaustion
+- External API down
+
+### Info (monitoring)
+- Service recovered
+- Traffic spike (>2x hourly average)
+- Monitoring operational
+
+## Configuration Files
+
+```
+monitoring/
+├── MICROSERVICE_METRICS.md
+├── prometheus/
+│   ├── prometheus.yml
+│   ├── recording_rules.yml
+│   └── alerting_rules.yml
+└── grafana/
+    ├── datasources/prometheus.yml
+    ├── provisioning/dashboards/dashboard-provider.yml
+    └── dashboards/
+        ├── 01-overview/
+        ├── 02-services/
+        ├── 03-infrastructure/
+        ├── 04-dependencies/
+        └── 05-api-gateway/
 ```
 
-## Configuration
+## Per-Service Metrics
 
-### Prometheus Scrape Targets
+Services using `metargb/shared/pkg/metrics` expose:
 
-Prometheus is configured to scrape metrics from:
-- All microservices on port 9090 (metrics endpoint)
-- Kong API Gateway on port 8001
-- Health Check Service on port 8090
+- `metargb_<service>_requests_total{method,status}`
+- `metargb_<service>_request_duration_seconds_bucket{method,le}`
+- `metargb_<service>_requests_in_flight{method}`
+- `metargb_<service>_db_connection_pool{stat}`
 
-**Note**: Services need to expose metrics on port 9090 at `/metrics` endpoint.
-
-### Grafana Dashboards
-
-Pre-configured dashboards:
-- **Golden Signals - Critical Metrics**: Focused dashboard showing the four SRE Golden Signals (Latency, Traffic, Errors, Saturation) plus critical infrastructure metrics
-- **MetaRGB Microservices Overview**: Main dashboard showing service health, request rates, latency, and errors
-- **MetaRGB API Traffic Dashboard**: Comprehensive dashboard showing detailed incoming API requests and outgoing responses with Kong metrics
-
-#### API Traffic Dashboard Features
-
-The **MetaRGB API Traffic Dashboard** provides detailed visibility into your API gateway traffic:
-
-**Incoming Requests Analysis:**
-- Request rate by HTTP method (GET, POST, PUT, DELETE)
-- Response status code distribution (2xx, 3xx, 4xx, 5xx)
-- API error rates with configurable thresholds
-- Request/response bandwidth metrics
-- Top API routes by traffic volume
-
-**Response Details:**
-- Response time percentiles (P50, P95, P99)
-- Request/response size analysis
-- Rate limiting status and events
-- Upstream service response times
-
-**Error Analysis:**
-- Routes sorted by error rate
-- Detailed error breakdown by endpoint
-- Real-time error rate monitoring
-
-**Upstream Service Health:**
-- Upstream target health status
-- Response status distribution per upstream service
-- Load balancing metrics across service instances
-
-**Key Metrics Monitored:**
-- `kong_http_requests_total` - Total HTTP requests with labels for method, status, route, service
-- `kong_http_requests_duration_bucket` - Request duration histograms
-- `kong_bandwidth_bytes` - Request/response bandwidth by direction
-- `kong_upstream_target_response_time_bucket` - Upstream response times
-- `kong_rate_limiting_limited` - Rate limiting events
-
-### Alerting Rules
-
-Prometheus alerting rules are configured in `prometheus/alerting_rules.yml` with the following alert categories:
-
-#### Critical Alerts (Immediate Response)
-- **ServiceDown**: Service health status = 0 for >1 minute
-- **HighErrorRate**: Error rate > 5% for >5 minutes
-- **HighCPUUsage**: CPU usage > 90% for >5 minutes
-- **HighMemoryUsage**: Memory usage > 95% for >2 minutes
-
-#### Warning Alerts (Investigation Needed)
-- **ModerateErrorRate**: Error rate > 1% for >10 minutes
-- **ModerateCPUUsage**: CPU usage > 70% for >15 minutes
-- **LowCacheHitRate**: Cache hit rate < 80% for >10 minutes
-- **DatabaseConnectionIssues**: Database connection failures
-
-#### Info Alerts (Monitoring)
-- **ServiceRecovered**: Services that have recovered from downtime
-- **HighTrafficSpike**: Traffic spikes (>100 requests/5min increase)
-
-**Note**: Individual service latency alerts require services to expose `/metrics` endpoints on port 9090.
-
-### Adding Custom Dashboards
-
-**Quick Method:**
-1. Create dashboard JSON file in `monitoring/grafana/dashboards/`
-2. Restart Grafana: `docker-compose restart grafana`
-3. Dashboard will be auto-loaded
-
-**Detailed Guide:** See `ADD_DASHBOARDS.md` for:
-- Step-by-step instructions
-- Multiple methods (file-based, UI import, export)
-- Dashboard templates and examples
-- PromQL query examples
-- Troubleshooting tips
-
-## Metrics Exposed
-
-### Service Metrics (when implemented)
-- `metargb_<service>_requests_total` - Total request count
-- `metargb_<service>_request_duration_seconds` - Request duration histogram
-- `metargb_<service>_requests_in_flight` - Current in-flight requests
-- `metargb_<service>_db_connection_pool` - Database connection pool stats
-
-### Infrastructure Metrics
-- `up` - Service availability (1 = up, 0 = down)
-- Kong metrics (when Kong exporter is configured)
+Start an HTTP server on port 9090 with `promhttp.Handler()` for Prometheus to scrape.
 
 ## Troubleshooting
 
-### Prometheus not scraping services
-- Verify services expose metrics on port 9090
-- Check Prometheus targets: http://localhost:9090/targets
-- Review Prometheus logs: `docker logs metargb-prometheus`
+**Prometheus rules not loading:** Ensure the full `monitoring/prometheus/` directory is mounted (not only `prometheus.yml`).
 
-### Grafana not showing data
-- Verify Prometheus datasource is configured
-- Check datasource connection: Grafana → Configuration → Data Sources
-- Ensure services are exposing metrics
+**Grafana empty panels:** Check http://localhost:9090/targets — `health-check-service`, `kong`, and `node-exporter` must be UP.
 
-### Error: "dial tcp [::1]:9090: connect: connection refused"
-
-**Problem**: Grafana can't connect to Prometheus using `localhost:9090`
-
-**Solution**: 
-1. Go to **Configuration → Data Sources → Prometheus**
-2. Change **URL** from `http://localhost:9090` to `http://prometheus:9090`
-3. Ensure **Access** is set to **Server (default)**
-4. Click **Save & Test**
-
-**Why**: Inside Docker containers, `localhost` refers to the container itself. Use the Docker service name `prometheus` instead.
-
-See `FIX_CONNECTION_ERROR.md` for detailed steps.
-
-## Connecting Grafana to Prometheus
-
-### Automatic Configuration (Already Set Up)
-
-The Prometheus datasource is automatically configured via provisioning files:
-- **Config File**: `monitoring/grafana/datasources/prometheus.yml`
-- **Prometheus URL**: `http://prometheus:9090` (Docker service name)
-- **Status**: Automatically loaded when Grafana starts
-
-### Manual Configuration via Web UI
-
-If you need to manually configure or verify the connection:
-
-1. **Access Grafana Web UI**
-   - Open http://localhost:3001 in your browser
-   - Login with credentials: `admin` / `admin123`
-
-2. **Navigate to Data Sources**
-   - Click the **⚙️ (Configuration)** icon in the left sidebar
-   - Select **Data sources** from the menu
-
-3. **Add/Edit Prometheus Data Source**
-   - If Prometheus is already listed, click on it to edit
-   - If not, click **Add data source** button
-   - Select **Prometheus** from the list
-
-4. **Configure Prometheus Connection**
-   - **Name**: `Prometheus` (or any name you prefer)
-   - **URL**: 
-     - For Docker Compose: `http://prometheus:9090` (internal Docker network)
-     - For external access: `http://localhost:9090` (if accessing from host)
-   - **Access**: Select **Server (default)** or **Browser** based on your setup
-   - **HTTP Method**: `POST` (recommended for better performance)
-
-5. **Advanced Settings** (Optional)
-   - **Scrape interval**: `15s` (should match Prometheus scrape interval)
-   - **Query timeout**: `60s`
-   - **HTTP Method**: `POST`
-   - **Timeout**: `60s`
-
-6. **Test Connection**
-   - Scroll down and click **Save & Test** button
-   - You should see a green success message: "Data source is working"
-
-7. **Set as Default** (Optional)
-   - Check the **Default** checkbox if you want this to be the default datasource
-   - Click **Save & Test** again
-
-### Verifying the Connection
-
-**Method 1: Via Grafana UI**
-1. Go to **Configuration → Data Sources**
-2. Click on **Prometheus** datasource
-3. Click **Save & Test** - should show green success message
-
-**Method 2: Test Query**
-1. Go to **Explore** (compass icon) in left sidebar
-2. Select **Prometheus** from the datasource dropdown
-3. Type a test query: `up`
-4. Click **Run query** - should return results
-
-**Method 3: Check Logs**
-```bash
-# Check Grafana logs for datasource errors
-docker logs metargb-grafana | grep -i prometheus
-
-# Check if Prometheus is accessible from Grafana container
-docker exec metargb-grafana wget -O- http://prometheus:9090/api/v1/query?query=up
-```
-
-### Troubleshooting Connection Issues
-
-**Issue: "dial tcp [::1]:9090: connect: connection refused"**
-
-This error means Grafana is using `localhost:9090` instead of the Docker service name.
-
-**Quick Fix:**
-- Go to **Configuration → Data Sources → Prometheus**
-- Change **URL** to: `http://prometheus:9090`
-- Set **Access** to: **Server (default)**
-- Click **Save & Test**
-
-See `FIX_CONNECTION_ERROR.md` for detailed troubleshooting.
-
-**Issue: "Data source is not working" error**
-
-1. **Check Prometheus is running**
-   ```bash
-   docker ps | grep prometheus
-   curl http://localhost:9090/-/healthy
-   ```
-
-2. **Verify network connectivity**
-   - Both containers must be on the same Docker network (`metargb-network`)
-   - Check `docker-compose.yml` network configuration
-
-3. **Check URL format**
-   - Use `http://prometheus:9090` (service name) when both are in Docker
-   - Use `http://localhost:9090` only if accessing from host machine
-   - Do NOT use `http://127.0.0.1:9090` from Grafana container
-
-4. **Verify datasource file**
-   ```bash
-   # Check if provisioning file exists and is correct
-   cat monitoring/grafana/datasources/prometheus.yml
-   ```
-
-5. **Restart Grafana to reload provisioning**
-   ```bash
-   docker-compose restart grafana
-   ```
-
-6. **Check Grafana logs**
-   ```bash
-   docker logs metargb-grafana
-   ```
-
-### Services not exposing metrics
-Services need to:
-1. Import `metargb/shared/pkg/metrics`
-2. Start HTTP server on port 9090 with `/metrics` endpoint
-3. Register Prometheus metrics handler
-
-Example:
-```go
-import (
-    "net/http"
-    "github.com/prometheus/client_golang/prometheus/promhttp"
-)
-
-go func() {
-    http.Handle("/metrics", promhttp.Handler())
-    http.ListenAndServe(":9090", nil)
-}()
-```
-
-## Data Retention
-
-- **Prometheus**: 30 days (configurable in `prometheus.yml`)
-- **Grafana**: Persistent (stored in Docker volume)
-
-## Backup
-
-To backup Grafana dashboards and Prometheus data:
-```bash
-# Backup Grafana
-docker run --rm -v metargb_grafana_data:/data -v $(pwd):/backup alpine tar czf /backup/grafana-backup.tar.gz /data
-
-# Backup Prometheus
-docker run --rm -v metargb_prometheus_data:/data -v $(pwd):/backup alpine tar czf /backup/prometheus-backup.tar.gz /data
-```
-
-## Production Considerations
-
-1. **Change default passwords** in `docker-compose.yml`
-2. **Enable authentication** for Prometheus
-3. **Configure alerting** rules in Prometheus
-4. **Set up persistent storage** for production
-5. **Configure resource limits** for containers
-6. **Enable HTTPS** for Grafana
-7. **Set up backup strategy** for metrics data
-
+**Grafana cannot reach Prometheus:** Use `http://prometheus:9090` as datasource URL inside Docker.

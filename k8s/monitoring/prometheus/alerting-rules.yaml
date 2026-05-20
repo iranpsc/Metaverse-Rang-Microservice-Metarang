@@ -87,30 +87,24 @@ data:
         interval: 30s
         rules:
           - alert: HighLatency
-            expr: |
-              histogram_quantile(0.95,
-                sum(rate(grpc_server_handling_seconds_bucket{namespace="metargb"}[5m])) by (job, grpc_service, le)
-              ) > 0.5
+            expr: metargb:grpc_latency_p95:5m > 0.5
             for: 10m
             labels:
               severity: warning
               team: backend
             annotations:
-              summary: "High latency on {{ $labels.job }}"
-              description: "Service {{ $labels.job }} has p95 latency of {{ $value }}s on {{ $labels.grpc_service }}."
-          
-          - alert: VeryHighLatency
-            expr: |
-              histogram_quantile(0.95,
-                sum(rate(grpc_server_handling_seconds_bucket{namespace="metargb"}[5m])) by (job, grpc_service, le)
-              ) > 1.0
+              summary: "High P95 latency on {{ $labels.job }}"
+              description: "Service {{ $labels.job }} has P95 latency of {{ $value }}s (threshold: 500ms)."
+
+          - alert: CriticalP99Latency
+            expr: metargb:grpc_latency_p99:5m > 1.0
             for: 5m
             labels:
               severity: critical
               team: backend
             annotations:
-              summary: "CRITICAL: Very high latency on {{ $labels.job }}"
-              description: "Service {{ $labels.job }} has p95 latency of {{ $value }}s on {{ $labels.grpc_service }}. SLA breach!"
+              summary: "CRITICAL: P99 latency exceeds 1 second on {{ $labels.job }}"
+              description: "Service {{ $labels.job }} has P99 latency of {{ $value }}s. SLA breach!"
           
           - alert: SlowDatabaseQueries
             expr: |
@@ -263,4 +257,41 @@ data:
             annotations:
               summary: "CRITICAL: PVC {{ $labels.persistentvolumeclaim }} critically full"
               description: "PVC {{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full. Immediate action required!"
+
+  metargb-recording.yml: |
+    groups:
+      - name: golden_signals_k8s
+        interval: 30s
+        rules:
+          - record: metargb:grpc_requests_per_second:5m
+            expr: sum(rate(grpc_server_handled_total{namespace="metargb"}[5m])) by (job)
+
+          - record: metargb:grpc_error_percentage:5m
+            expr: |
+              (
+                sum(rate(grpc_server_handled_total{namespace="metargb",grpc_code!="OK"}[5m])) by (job)
+                /
+                sum(rate(grpc_server_handled_total{namespace="metargb"}[5m])) by (job)
+              ) * 100
+
+          - record: metargb:grpc_latency_p95:5m
+            expr: |
+              histogram_quantile(0.95,
+                sum(rate(grpc_server_handling_seconds_bucket{namespace="metargb"}[5m])) by (job, le)
+              )
+
+          - record: metargb:grpc_latency_p99:5m
+            expr: |
+              histogram_quantile(0.99,
+                sum(rate(grpc_server_handling_seconds_bucket{namespace="metargb"}[5m])) by (job, le)
+              )
+
+      - name: golden_signals_health_check
+        interval: 30s
+        rules:
+          - record: metargb:service_availability_percentage
+            expr: (service_health_healthy / service_health_total) * 100
+
+          - record: metargb:service_error_percentage
+            expr: (service_health_unhealthy / service_health_total) * 100
 

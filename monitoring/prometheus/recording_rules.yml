@@ -1,0 +1,50 @@
+groups:
+  # Golden Signals (SRE) — pre-aggregated from Kong and health-check-service
+  - name: golden_signals
+    interval: 30s
+    rules:
+      # Traffic: requests per second through API gateway
+      - record: metargb:http_requests_per_second:5m
+        expr: sum(rate(kong_http_requests_total[5m]))
+
+      # Errors: percentage of 5xx responses
+      - record: metargb:http_error_percentage:5m
+        expr: |
+          (
+            sum(rate(kong_http_requests_total{code=~"5.."}[5m]))
+            /
+            sum(rate(kong_http_requests_total[5m]))
+          ) * 100
+
+      # Errors: percentage of 4xx+5xx responses
+      - record: metargb:http_client_error_percentage:5m
+        expr: |
+          (
+            sum(rate(kong_http_requests_total{code=~"4.."}[5m]))
+            /
+            sum(rate(kong_http_requests_total[5m]))
+          ) * 100
+
+      # Latency: P50, P95, P99 (seconds)
+      - record: metargb:http_latency_p50:5m
+        expr: histogram_quantile(0.50, sum(rate(kong_http_requests_duration_bucket[5m])) by (le))
+
+      - record: metargb:http_latency_p95:5m
+        expr: histogram_quantile(0.95, sum(rate(kong_http_requests_duration_bucket[5m])) by (le))
+
+      - record: metargb:http_latency_p99:5m
+        expr: histogram_quantile(0.99, sum(rate(kong_http_requests_duration_bucket[5m])) by (le))
+
+      # Service availability from health-check-service
+      - record: metargb:service_availability_percentage
+        expr: (service_health_healthy / service_health_total) * 100
+
+      - record: metargb:service_error_percentage
+        expr: (service_health_unhealthy / service_health_total) * 100
+
+      # Saturation: host CPU and memory utilization
+      - record: metargb:node_cpu_usage_percentage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+
+      - record: metargb:node_memory_usage_percentage
+        expr: 100 - ((node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100)

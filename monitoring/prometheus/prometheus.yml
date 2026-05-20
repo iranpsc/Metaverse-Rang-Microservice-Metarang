@@ -6,8 +6,8 @@ global:
     cluster: 'metargb-cluster'
     environment: 'development'
 
-# Alerting rules
 rule_files:
+  - "recording_rules.yml"
   - "alerting_rules.yml"
 
 # Alertmanager configuration (optional - uncomment when alertmanager is deployed)
@@ -16,22 +16,14 @@ rule_files:
 #     - static_configs:
 #         - targets: ['alertmanager:9093']
 
-# Scrape configurations
 scrape_configs:
-  # Scrape Prometheus itself
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
         labels:
           service: 'prometheus'
 
-  # Health Check Service - PRIMARY SOURCE for service health status
-  # This service aggregates health checks for all microservices and exposes
-  # comprehensive Prometheus metrics including:
-  # - Service Availability: uptime percentage, downtime incidents, service health status
-  # - Dependency Health: database connection status, cache hit/miss rates, external API availability
-  # - Service Discovery: service registration status
-  # - Circuit Breaker: circuit breaker status (if Istio is configured)
+  # Primary: aggregated service health, DB, cache, and dependency metrics
   - job_name: 'health-check-service'
     scrape_interval: 15s
     scrape_timeout: 10s
@@ -42,7 +34,7 @@ scrape_configs:
           type: 'monitoring'
     metrics_path: '/metrics'
 
-  # Kong API Gateway - Exposes its own metrics
+  # API Gateway — Golden Signals (latency, traffic, errors)
   - job_name: 'kong'
     scrape_interval: 15s
     scrape_timeout: 10s
@@ -50,97 +42,10 @@ scrape_configs:
       - targets: ['kong:8001']
         labels:
           service: 'kong'
+          type: 'api-gateway'
     metrics_path: '/metrics'
 
-  # Individual microservices metrics endpoints (optional - only if services expose metrics on port 9090)
-  # These are commented out by default since most services don't expose metrics directly.
-  # Uncomment and configure if you add Prometheus metrics endpoints to individual services.
-
-  # Note: Services need to be updated to expose /metrics endpoints on port 9090
-  # for individual service metrics (Golden Signals: latency, errors, request rates)
-
-  # - job_name: 'auth-service'
-  #   scrape_interval: 15s
-  #   scrape_timeout: 10s
-  #   static_configs:
-  #     - targets: ['auth-service:9090']
-  #       labels:
-  #         service: 'auth-service'
-  #         port: '50051'
-  #   metrics_path: '/metrics'
-  
-  # - job_name: 'commercial-service'
-  #   scrape_interval: 15s
-  #   scrape_timeout: 10s
-  #   static_configs:
-  #     - targets: ['commercial-service:9090']
-  #       labels:
-  #         service: 'commercial-service'
-  #         port: '50052'
-  #   metrics_path: '/metrics'
-  
-  # - job_name: 'features-service'
-  #   scrape_interval: 15s
-  #   scrape_timeout: 10s
-  #   static_configs:
-  #     - targets: ['features-service:9090']
-  #       labels:
-  #         service: 'features-service'
-  #         port: '50053'
-  #   metrics_path: '/metrics'
-  
-  # - job_name: 'levels-service'
-  #   scrape_interval: 15s
-  #   scrape_timeout: 10s
-  #   static_configs:
-  #     - targets: ['levels-service:9090']
-  #       labels:
-  #         service: 'levels-service'
-  #         port: '50054'
-  #   metrics_path: '/metrics'
-  
-  # - job_name: 'dynasty-service'
-  #   scrape_interval: 15s
-  #   scrape_timeout: 10s
-  #   static_configs:
-  #     - targets: ['dynasty-service:9090']
-  #       labels:
-  #         service: 'dynasty-service'
-  #         port: '50055'
-  #   metrics_path: '/metrics'
-  
-  # - job_name: 'calendar-service'
-  #   scrape_interval: 15s
-  #   scrape_timeout: 10s
-  #   static_configs:
-  #     - targets: ['calendar-service:9090']
-  #       labels:
-  #         service: 'calendar-service'
-  #         port: '50058'
-  #   metrics_path: '/metrics'
-  
-  # - job_name: 'storage-service'
-  #   scrape_interval: 15s
-  #   scrape_timeout: 10s
-  #   static_configs:
-  #     - targets: ['storage-service:9090']
-  #       labels:
-  #         service: 'storage-service'
-  #         port: '50059'
-  #   metrics_path: '/metrics'
-  
-  # - job_name: 'grpc-gateway'
-  #   scrape_interval: 15s
-  #   scrape_timeout: 10s
-  #   static_configs:
-  #     - targets: ['grpc-gateway:9090']
-  #       labels:
-  #         service: 'grpc-gateway'
-  #         port: '8080'
-  #   metrics_path: '/metrics'
-
-
-  # Node Exporter - Host-level infrastructure metrics (CPU, Memory, Disk, Network)
+  # Host infrastructure (CPU, memory, disk, network)
   - job_name: 'node-exporter'
     scrape_interval: 15s
     scrape_timeout: 10s
@@ -150,5 +55,131 @@ scrape_configs:
           service: 'node-exporter'
           type: 'infrastructure'
 
-  # Note: MySQL and Redis exporters are optional and not currently deployed
+  # gRPC Gateway HTTP metrics (when METRICS_PORT is exposed)
+  - job_name: 'grpc-gateway'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['grpc-gateway:9090']
+        labels:
+          service: 'grpc-gateway'
+          type: 'gateway'
+    metrics_path: '/metrics'
 
+  # Individual microservices — enable as each service exposes /metrics on port 9090
+  - job_name: 'auth-service'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['auth-service:9090']
+        labels:
+          service: 'auth-service'
+    metrics_path: '/metrics'
+
+  - job_name: 'commercial-service'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['commercial-service:9090']
+        labels:
+          service: 'commercial-service'
+    metrics_path: '/metrics'
+
+  - job_name: 'features-service'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['features-service:9090']
+        labels:
+          service: 'features-service'
+    metrics_path: '/metrics'
+
+  - job_name: 'levels-service'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['levels-service:9090']
+        labels:
+          service: 'levels-service'
+    metrics_path: '/metrics'
+
+  - job_name: 'dynasty-service'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['dynasty-service:9090']
+        labels:
+          service: 'dynasty-service'
+    metrics_path: '/metrics'
+
+  - job_name: 'calendar-service'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['calendar-service:9090']
+        labels:
+          service: 'calendar-service'
+    metrics_path: '/metrics'
+
+  - job_name: 'support-service'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['support-service:9090']
+        labels:
+          service: 'support-service'
+    metrics_path: '/metrics'
+
+  - job_name: 'storage-service'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['storage-service:9090']
+        labels:
+          service: 'storage-service'
+    metrics_path: '/metrics'
+
+  - job_name: 'notifications-service'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['notifications-service:9090']
+        labels:
+          service: 'notifications-service'
+    metrics_path: '/metrics'
+
+  - job_name: 'financial-service'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['financial-service:9090']
+        labels:
+          service: 'financial-service'
+    metrics_path: '/metrics'
+
+  - job_name: 'social-service'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['social-service:9090']
+        labels:
+          service: 'social-service'
+    metrics_path: '/metrics'
+
+  - job_name: 'training-service'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['training-service:9090']
+        labels:
+          service: 'training-service'
+    metrics_path: '/metrics'
+
+  - job_name: 'websocket-gateway'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['websocket-gateway:9090']
+        labels:
+          service: 'websocket-gateway'
+    metrics_path: '/metrics'

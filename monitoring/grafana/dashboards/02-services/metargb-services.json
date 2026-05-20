@@ -94,8 +94,8 @@
       },
       "targets": [
         {
-          "expr": "rate(kong_nginx_requests_total[5m])",
-          "legendFormat": "Kong Gateway (Total)",
+          "expr": "metargb:http_requests_per_second:5m",
+          "legendFormat": "API Gateway (Total RPS)",
           "refId": "A"
         },
         {
@@ -199,6 +199,11 @@
         }
       },
       "targets": [
+        {
+          "expr": "metargb:http_latency_p95:5m",
+          "legendFormat": "Gateway P95",
+          "refId": "GW"
+        },
         {
           "expr": "histogram_quantile(0.95, rate(metargb_auth_service_request_duration_seconds_bucket[5m]))",
           "legendFormat": "Auth Service p95",
@@ -304,6 +309,11 @@
         }
       },
       "targets": [
+        {
+          "expr": "sum(rate(kong_http_requests_total{code=~\"5..\"}[5m]))",
+          "legendFormat": "Gateway 5xx RPS",
+          "refId": "GW"
+        },
         {
           "expr": "rate(metargb_auth_service_requests_total{status!=\"ok\"}[5m])",
           "legendFormat": "Auth Service Errors",
@@ -1115,7 +1125,7 @@
     ]
   },
   "timezone": "",
-  "title": "MetaRGB Microservices Overview",
+  "title": "Services - Per-Service Metrics",
   "uid": "metargb-services",
   "version": 8
 }
