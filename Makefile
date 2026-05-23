@@ -44,10 +44,8 @@ help:
 	@echo "  test-all         - Run all test suites"
 	@echo ""
 	@echo "Database:"
-	@echo "  import-schema       - Import database schema only (schema.sql)"
-	@echo "  import-database     - Import database with data (metargb_db.sql)"
-	@echo "  replace-domains     - Replace RGB API/admin hostnames in DB (dry-run)"
-	@echo "  replace-domains-run - Apply RGB -> MetaRang hostname replacements in DB"
+	@echo "  import-schema    - Import database schema only (schema.sql)"
+	@echo "  import-database  - Import database with data (metargb_db.sql)"
 	@echo ""
 	@echo "Local dev:"
 	@echo "  link-uploads     - Symlink ./uploads -> $(UPLOADS_SRC)"
@@ -146,7 +144,7 @@ endif
 # Docker Compose Management
 # =============================================================================
 
-.PHONY: up down restart logs ps build clean import-schema import-database replace-domains replace-domains-run help-docker dev-up dev-down dev-build dev-logs dev-restart dev-ps
+.PHONY: up down restart logs ps build clean import-schema import-database help-docker dev-up dev-down dev-build dev-logs dev-restart dev-ps
 
 up: init-storage-uploads
 	@echo "🚀 Starting all microservices..."
@@ -250,23 +248,6 @@ ifeq ($(OS),Windows_NT)
 else
 	@docker exec metargb-mysql mysql -uroot -proot_password metargb_db -e "SELECT COUNT(*) as table_count FROM information_schema.tables WHERE table_schema='metargb_db';" 2>/dev/null | grep -v table_count || echo "Could not verify table count"
 	@docker exec metargb-mysql mysql -uroot -proot_password metargb_db -e "SELECT COUNT(*) as row_count FROM account_securities;" 2>/dev/null | grep -v row_count || echo "Could not verify data"
-endif
-
-# Replace legacy RGB hostnames in all string columns (api/admin subdomains).
-replace-domains:
-	@echo "🔍 Scanning database for RGB hostnames (dry-run)..."
-ifeq ($(OS),Windows_NT)
-	@powershell -NoProfile -Command "$$sql = 'SET @dry_run=1;' + [Environment]::NewLine + (Get-Content -Raw scripts/replace-domains.sql); $$sql | docker exec -i metargb-mysql mysql -uroot -proot_password metargb_db"
-else
-	@(echo 'SET @dry_run=1;'; cat scripts/replace-domains.sql) | docker exec -i metargb-mysql mysql -uroot -proot_password metargb_db
-endif
-
-replace-domains-run:
-	@echo "⚠️  Updating RGB hostnames in database..."
-ifeq ($(OS),Windows_NT)
-	@powershell -NoProfile -Command "Get-Content scripts\replace-domains.sql | docker exec -i metargb-mysql mysql -uroot -proot_password metargb_db"
-else
-	@docker exec -i metargb-mysql mysql -uroot -proot_password metargb_db < scripts/replace-domains.sql
 endif
 
 dev:
