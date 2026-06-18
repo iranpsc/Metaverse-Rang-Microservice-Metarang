@@ -51,6 +51,10 @@ RUN mkdir -p /workspace/metargb/shared/pb/auth && \
     protoc --go_out=/workspace/metargb/shared/pb/financial --go_opt=paths=source_relative \
         --go-grpc_out=/workspace/metargb/shared/pb/financial --go-grpc_opt=paths=source_relative \
         -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/financial.proto && \
+    mkdir -p /workspace/metargb/shared/pb/commercial && \
+    protoc --go_out=/workspace/metargb/shared/pb/commercial --go_opt=paths=source_relative \
+        --go-grpc_out=/workspace/metargb/shared/pb/commercial --go-grpc_opt=paths=source_relative \
+        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/commercial.proto && \
     mkdir -p /workspace/metargb/shared/pb/social && \
     protoc --go_out=/workspace/metargb/shared/pb/social --go_opt=paths=source_relative \
         --go-grpc_out=/workspace/metargb/shared/pb/social --go-grpc_opt=paths=source_relative \
@@ -100,7 +104,7 @@ RUN go mod download
 # Build the application
 WORKDIR /workspace
 ENV GOWORK=/workspace/go.work
-ARG CACHEBUST=1
+ARG CACHEBUST=2
 RUN echo "cachebust=$CACHEBUST" && cd /workspace/metargb/grpc-gateway && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-extldflags "-static"' -o /app/grpc-gateway ./cmd/server
 
 # Final stage

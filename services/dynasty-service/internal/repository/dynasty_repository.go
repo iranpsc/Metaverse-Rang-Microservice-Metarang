@@ -218,6 +218,25 @@ func (r *DynastyRepository) GetDynastyMessage(ctx context.Context, messageType s
 	return message, nil
 }
 
+// GetVariableRate retrieves a variable rate by asset name (e.g. "psc").
+func (r *DynastyRepository) GetVariableRate(ctx context.Context, asset string) (float64, error) {
+	query := `SELECT price FROM variables WHERE asset = ? LIMIT 1`
+
+	var price float64
+	err := r.db.QueryRowContext(ctx, query, asset).Scan(&price)
+	if err == sql.ErrNoRows {
+		return 1, nil
+	}
+	if err != nil {
+		return 0, fmt.Errorf("failed to get variable rate: %w", err)
+	}
+	if price == 0 {
+		return 1, nil
+	}
+
+	return price, nil
+}
+
 // CheckFeatureHasPendingRequest checks if feature has pending join requests
 func (r *DynastyRepository) CheckFeatureHasPendingRequest(ctx context.Context, featureID uint64) (bool, error) {
 	query := `

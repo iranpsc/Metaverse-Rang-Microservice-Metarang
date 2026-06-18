@@ -51,7 +51,7 @@ func (h *DynastyHandler) GetDynasty(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{"data": resp})
+	writeJSON(w, http.StatusOK, map[string]interface{}{"data": buildDynastyHTTPResponse(resp)})
 }
 
 // CreateDynasty handles POST /api/dynasty/create/{feature}
@@ -87,7 +87,7 @@ func (h *DynastyHandler) CreateDynasty(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, map[string]interface{}{"data": resp})
+	writeJSON(w, http.StatusCreated, map[string]interface{}{"data": buildDynastyHTTPResponse(resp)})
 }
 
 // UpdateDynastyFeature handles POST /api/dynasty/{dynasty}/update/{feature}
@@ -131,7 +131,7 @@ func (h *DynastyHandler) UpdateDynastyFeature(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{"data": resp})
+	writeJSON(w, http.StatusOK, map[string]interface{}{"data": buildDynastyHTTPResponse(resp)})
 }
 
 // GetFamily handles GET /api/dynasty/{dynasty}/family/{family}
@@ -180,7 +180,7 @@ func (h *DynastyHandler) GetFamily(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{"data": resp})
+	writeJSON(w, http.StatusOK, buildFamilyMembersHTTPResponse(resp))
 }
 
 // GetSentRequests handles GET /api/dynasty/requests/sent
@@ -213,7 +213,7 @@ func (h *DynastyHandler) GetSentRequests(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{"data": resp})
+	writeJSON(w, http.StatusOK, buildSentJoinRequestsHTTPResponse(resp))
 }
 
 // GetReceivedRequests handles GET /api/dynasty/requests/recieved
@@ -246,7 +246,7 @@ func (h *DynastyHandler) GetReceivedRequests(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{"data": resp})
+	writeJSON(w, http.StatusOK, buildReceivedJoinRequestsHTTPResponse(resp))
 }
 
 // SendJoinRequest handles POST /api/dynasty/add/member
@@ -304,7 +304,7 @@ func (h *DynastyHandler) SendJoinRequest(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, map[string]interface{}{"data": resp})
+	writeJSON(w, http.StatusCreated, buildSentJoinRequestHTTP(resp))
 }
 
 // AcceptJoinRequest handles POST /api/dynasty/requests/recieved/{joinRequest}
@@ -409,7 +409,7 @@ func (h *DynastyHandler) GetSentRequest(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{"data": resp})
+	writeJSON(w, http.StatusOK, buildSentJoinRequestHTTP(resp))
 }
 
 // GetReceivedRequest handles GET /api/dynasty/requests/recieved/{joinRequest}
@@ -444,7 +444,7 @@ func (h *DynastyHandler) GetReceivedRequest(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{"data": resp})
+	writeJSON(w, http.StatusOK, buildReceivedJoinRequestHTTP(resp))
 }
 
 // DeleteJoinRequest handles DELETE /api/dynasty/requests/sent/{joinRequest}

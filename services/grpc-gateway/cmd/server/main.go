@@ -56,7 +56,7 @@ func main() {
 	log.Printf("✅ Created auth service client for %s (connection will be established on first RPC call)", cfg.AuthServiceAddr)
 
 	// Create connections to other services (with fallback if not configured)
-	var calendarConn, dynastyConn, featuresConn, financialConn, socialConn, levelsConn, trainingConn, supportConn, notificationConn *grpc.ClientConn
+	var calendarConn, dynastyConn, featuresConn, financialConn, commercialConn, socialConn, levelsConn, trainingConn, supportConn, notificationConn *grpc.ClientConn
 
 	if cfg.CalendarServiceAddr != "" {
 		calendarConn, err = grpc.NewClient(
@@ -107,6 +107,19 @@ func main() {
 		} else {
 			defer financialConn.Close()
 			log.Printf("✅ Connected to financial service at %s", cfg.FinancialServiceAddr)
+		}
+	}
+
+	if cfg.CommercialServiceAddr != "" {
+		commercialConn, err = grpc.NewClient(
+			cfg.CommercialServiceAddr,
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+		)
+		if err != nil {
+			log.Printf("⚠️  Failed to connect to commercial service: %v", err)
+		} else {
+			defer commercialConn.Close()
+			log.Printf("✅ Connected to commercial service at %s", cfg.CommercialServiceAddr)
 		}
 	}
 
@@ -218,6 +231,11 @@ func main() {
 		financialHandler = handler.NewFinancialHandler(financialConn, authConn, cfg.Locale)
 	}
 
+	var commercialHandler *handler.CommercialHandler
+	if commercialConn != nil {
+		commercialHandler = handler.NewCommercialHandler(commercialConn, cfg.Locale)
+	}
+
 	var levelsHandler *handler.LevelsHandler
 	if levelsConn != nil {
 		levelsHandler = handler.NewLevelsHandler(levelsConn, cfg.AppURL)
@@ -286,7 +304,12 @@ func main() {
 	// User routes - register /api/users FIRST before any other user routes
 	mux.Handle("/api/users", optionalAuthMiddleware(http.HandlerFunc(authHandler.ListUsers)))
 	mux.Handle("/api/user", optionalAuthMiddleware(http.HandlerFunc(authHandler.GetUser)))
+	mux.Handle("/api/user/wallet", authMiddleware(http.HandlerFunc(authHandler.GetAuthenticatedUserWallet)))
 	mux.Handle("/api/user/profile", authMiddleware(http.HandlerFunc(authHandler.UpdateProfile)))
+	if commercialHandler != nil {
+		mux.Handle("/api/user/transactions/latest", authMiddleware(http.HandlerFunc(commercialHandler.GetLatestTransaction)))
+		mux.Handle("/api/user/transactions", authMiddleware(http.HandlerFunc(commercialHandler.ListTransactions)))
+	}
 
 	// Dynamic /api/users/{user}/... routes
 	// Must be registered AFTER /api/users to avoid prefix matching conflicts

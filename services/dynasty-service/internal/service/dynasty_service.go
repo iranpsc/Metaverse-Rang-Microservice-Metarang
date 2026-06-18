@@ -145,3 +145,8 @@ func (s *DynastyService) GetFamilyMemberCount(ctx context.Context, familyID uint
 func (s *DynastyService) GetIntroductionPrizes(ctx context.Context) ([]*models.DynastyPrize, error) {
 	return s.prizeRepo.GetAllDynastyPrizes(ctx)
 }
+
+// GetVariableRate retrieves a variable rate by asset name.
+func (s *DynastyService) GetVariableRate(ctx context.Context, asset string) (float64, error) {
+	return s.dynastyRepo.GetVariableRate(ctx, asset)
+}

@@ -34,24 +34,53 @@ func RegisterTransactionHandler(grpcServer *grpc.Server, transactionService serv
 
 func (h *TransactionHandler) ListTransactions(ctx context.Context, req *pb.ListTransactionsRequest) (*pb.ListTransactionsResponse, error) {
 	filters := make(map[string]interface{})
-	if req.Asset != "" {
-		filters["asset"] = req.Asset
+
+	if req.Search != "" {
+		filters["search"] = req.Search
+	}
+	if req.StartDateTime != "" {
+		filters["start_date_time"] = req.StartDateTime
+	}
+	if req.EndDateTime != "" {
+		filters["end_date_time"] = req.EndDateTime
 	}
 	if req.Action != "" {
 		filters["action"] = req.Action
 	}
-	if req.PerPage > 0 {
-		filters["limit"] = int(req.PerPage)
+	if req.Asset != "" {
+		filters["asset"] = req.Asset
 	}
+	if req.Type != "" {
+		filters["type"] = req.Type
+	}
+	if len(req.Status) > 0 {
+		filters["status"] = req.Status
+	}
+
+	perPage := int(req.PerPage)
+	if perPage <= 0 {
+		perPage = 15
+	}
+	filters["per_page"] = perPage
+
+	page := int(req.Page)
+	if page <= 0 {
+		page = 1
+	}
+	filters["page"] = page
 
 	transactions, err := h.transactionService.ListTransactions(ctx, req.UserId, filters)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list transactions: %v", err)
 	}
 
+	hasMore := len(transactions) > perPage
+	if hasMore {
+		transactions = transactions[:perPage]
+	}
+
 	var resources []*pb.TransactionResource
 	for _, t := range transactions {
-		// Parse amount string to float64
 		var amount float64
 		fmt.Sscanf(t.Amount, "%f", &amount)
 
@@ -62,15 +91,16 @@ func (h *TransactionHandler) ListTransactions(ctx context.Context, req *pb.ListT
 			Amount: amount,
 			Action: t.Action,
 			Status: t.Status,
-			Date:   t.Date, // Already in Jalali format
-			Time:   t.Time, // Already in Jalali format
+			Date:   t.Date,
+			Time:   t.Time,
 		})
 	}
 
+	currentPage := int32(page)
 	return &pb.ListTransactionsResponse{
 		Transactions: resources,
-		CurrentPage:  req.Page,
-		HasMorePages: len(resources) >= int(req.PerPage),
+		CurrentPage:  currentPage,
+		HasMorePages: hasMore,
 	}, nil
 }
 

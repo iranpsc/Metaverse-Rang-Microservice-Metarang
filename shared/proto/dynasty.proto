@@ -70,6 +70,17 @@ message DynastyResponse {
   string profile_image = 5;
   DynastyFeature dynasty_feature = 6;
   repeated AvailableFeature features = 7;
+  repeated IntroductionPrize prizes = 8;
+}
+
+// IntroductionPrize matches Laravel IntroductionPrizeResource for users without a dynasty.
+message IntroductionPrize {
+  string member = 1;
+  double satisfaction = 2;
+  int32 introduction_profit_increase = 3;
+  int32 accumulated_capital_reserve = 4;
+  int32 data_storage = 5;
+  string psc = 6;
 }
 
 message DynastyFeature {

@@ -674,6 +674,22 @@ func (h *AuthHandler) GetUserProfile(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]interface{}{"data": data})
 }
 
+// GetAuthenticatedUserWallet handles GET /api/user/wallet (Laravel TransactionController@getWallet)
+func (h *AuthHandler) GetAuthenticatedUserWallet(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+
+	userCtx, err := middleware.GetUserFromRequest(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	h.writeUserWalletResponse(w, r, userCtx.UserID)
+}
+
 // GetUserWallet handles GET /api/users/{user}/wallet
 func (h *AuthHandler) GetUserWallet(w http.ResponseWriter, r *http.Request) {
 	// Extract user ID from path: /api/users/{user}/wallet
@@ -702,6 +718,10 @@ func (h *AuthHandler) GetUserWallet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.writeUserWalletResponse(w, r, userID)
+}
+
+func (h *AuthHandler) writeUserWalletResponse(w http.ResponseWriter, r *http.Request, userID uint64) {
 	grpcReq := &pb.GetUserWalletRequest{
 		UserId: userID,
 	}
@@ -712,7 +732,6 @@ func (h *AuthHandler) GetUserWallet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Convert string values to numeric format (remove K, M suffixes and return as numbers)
 	parseFloat := func(s string) float64 {
 		if s == "" {
 			return 0
@@ -724,7 +743,6 @@ func (h *AuthHandler) GetUserWallet(w http.ResponseWriter, r *http.Request) {
 		return val
 	}
 
-	// Format response with numeric values
 	data := map[string]interface{}{
 		"psc":          parseFloat(resp.Psc),
 		"irr":          parseFloat(resp.Irr),

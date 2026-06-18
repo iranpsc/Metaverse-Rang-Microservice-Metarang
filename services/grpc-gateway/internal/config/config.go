@@ -12,6 +12,7 @@ type Config struct {
 	DynastyServiceAddr      string
 	FeaturesServiceAddr     string
 	FinancialServiceAddr    string
+	CommercialServiceAddr   string
 	SocialServiceAddr       string
 	LevelsServiceAddr       string
 	TrainingServiceAddr     string
@@ -35,6 +36,7 @@ func Load() *Config {
 		DynastyServiceAddr:      getEnv("DYNASTY_SERVICE_ADDR", "dynasty-service:50055"),
 		FeaturesServiceAddr:     getEnv("FEATURES_SERVICE_ADDR", "features-service:50053"),
 		FinancialServiceAddr:    getEnv("FINANCIAL_SERVICE_ADDR", "financial-service:50062"),
+		CommercialServiceAddr:   getEnv("COMMERCIAL_SERVICE_ADDR", "commercial-service:50052"),
 		SocialServiceAddr:       getEnv("SOCIAL_SERVICE_ADDR", "social-service:50061"),
 		LevelsServiceAddr:       getEnv("LEVELS_SERVICE_ADDR", "levels-service:50054"),
 		TrainingServiceAddr:     getEnv("TRAINING_SERVICE_ADDR", "training-service:50057"),

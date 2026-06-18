@@ -2679,6 +2679,7 @@ type HourlyProfitsResponse struct {
 	TotalMaskoniProfit  string                 `protobuf:"bytes,2,opt,name=total_maskoni_profit,json=totalMaskoniProfit,proto3" json:"total_maskoni_profit,omitempty"`
 	TotalTejariProfit   string                 `protobuf:"bytes,3,opt,name=total_tejari_profit,json=totalTejariProfit,proto3" json:"total_tejari_profit,omitempty"`
 	TotalAmozeshiProfit string                 `protobuf:"bytes,4,opt,name=total_amozeshi_profit,json=totalAmozeshiProfit,proto3" json:"total_amozeshi_profit,omitempty"`
+	HasMore             bool                   `protobuf:"varint,5,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -2741,15 +2742,25 @@ func (x *HourlyProfitsResponse) GetTotalAmozeshiProfit() string {
 	return ""
 }
 
+func (x *HourlyProfitsResponse) GetHasMore() bool {
+	if x != nil {
+		return x.HasMore
+	}
+	return false
+}
+
 type HourlyProfit struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            uint64                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	FeatureId     uint64                 `protobuf:"varint,2,opt,name=feature_id,json=featureId,proto3" json:"feature_id,omitempty"`
+	FeatureId     uint64                 `protobuf:"varint,2,opt,name=feature_id,json=featureId,proto3" json:"feature_id,omitempty"` // features.id (internal)
 	UserId        uint64                 `protobuf:"varint,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Asset         string                 `protobuf:"bytes,4,opt,name=asset,proto3" json:"asset,omitempty"`                       // color: yellow, red, blue
 	Amount        string                 `protobuf:"bytes,5,opt,name=amount,proto3" json:"amount,omitempty"`                     // formatted as string
-	DeadLine      string                 `protobuf:"bytes,6,opt,name=dead_line,json=deadLine,proto3" json:"dead_line,omitempty"` // timestamp
+	DeadLine      string                 `protobuf:"bytes,6,opt,name=dead_line,json=deadLine,proto3" json:"dead_line,omitempty"` // Jalali date Y/m/d
 	IsActive      bool                   `protobuf:"varint,7,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`
+	FeatureDbId   uint64                 `protobuf:"varint,8,opt,name=feature_db_id,json=featureDbId,proto3" json:"feature_db_id,omitempty"` // features.id (Laravel feature_db_id)
+	PropertiesId  string                 `protobuf:"bytes,9,opt,name=properties_id,json=propertiesId,proto3" json:"properties_id,omitempty"` // feature_properties.id (Laravel feature_id)
+	Karbari       string                 `protobuf:"bytes,10,opt,name=karbari,proto3" json:"karbari,omitempty"`                              // m, t, a
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2831,6 +2842,27 @@ func (x *HourlyProfit) GetIsActive() bool {
 		return x.IsActive
 	}
 	return false
+}
+
+func (x *HourlyProfit) GetFeatureDbId() uint64 {
+	if x != nil {
+		return x.FeatureDbId
+	}
+	return 0
+}
+
+func (x *HourlyProfit) GetPropertiesId() string {
+	if x != nil {
+		return x.PropertiesId
+	}
+	return ""
+}
+
+func (x *HourlyProfit) GetKarbari() string {
+	if x != nil {
+		return x.Karbari
+	}
+	return ""
 }
 
 type GetSingleProfitRequest struct {
@@ -4546,12 +4578,13 @@ const file_features_proto_rawDesc = "" +
 	"\x17GetHourlyProfitsRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x04R\x06userId\x12\x12\n" +
 	"\x04page\x18\x02 \x01(\x05R\x04page\x12\x1b\n" +
-	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\"\xdf\x01\n" +
+	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\"\xfa\x01\n" +
 	"\x15HourlyProfitsResponse\x120\n" +
 	"\aprofits\x18\x01 \x03(\v2\x16.features.HourlyProfitR\aprofits\x120\n" +
 	"\x14total_maskoni_profit\x18\x02 \x01(\tR\x12totalMaskoniProfit\x12.\n" +
 	"\x13total_tejari_profit\x18\x03 \x01(\tR\x11totalTejariProfit\x122\n" +
-	"\x15total_amozeshi_profit\x18\x04 \x01(\tR\x13totalAmozeshiProfit\"\xbe\x01\n" +
+	"\x15total_amozeshi_profit\x18\x04 \x01(\tR\x13totalAmozeshiProfit\x12\x19\n" +
+	"\bhas_more\x18\x05 \x01(\bR\ahasMore\"\xa1\x02\n" +
 	"\fHourlyProfit\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x1d\n" +
 	"\n" +
@@ -4560,7 +4593,11 @@ const file_features_proto_rawDesc = "" +
 	"\x05asset\x18\x04 \x01(\tR\x05asset\x12\x16\n" +
 	"\x06amount\x18\x05 \x01(\tR\x06amount\x12\x1b\n" +
 	"\tdead_line\x18\x06 \x01(\tR\bdeadLine\x12\x1b\n" +
-	"\tis_active\x18\a \x01(\bR\bisActive\"N\n" +
+	"\tis_active\x18\a \x01(\bR\bisActive\x12\"\n" +
+	"\rfeature_db_id\x18\b \x01(\x04R\vfeatureDbId\x12#\n" +
+	"\rproperties_id\x18\t \x01(\tR\fpropertiesId\x12\x18\n" +
+	"\akarbari\x18\n" +
+	" \x01(\tR\akarbari\"N\n" +
 	"\x16GetSingleProfitRequest\x12\x1b\n" +
 	"\tprofit_id\x18\x01 \x01(\x04R\bprofitId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\x04R\x06userId\"`\n" +

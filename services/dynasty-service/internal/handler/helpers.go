@@ -72,6 +72,47 @@ func buildAvailableFeatures(features []map[string]interface{}) []*dynastypb.Avai
 	return result
 }
 
+func memberTitle(member string) string {
+	switch member {
+	case "brother":
+		return "برادر"
+	case "sister":
+		return "خواهر"
+	case "offspring":
+		return "فرزند"
+	case "father":
+		return "پدر"
+	case "mother":
+		return "مادر"
+	case "husband":
+		return "شوهر"
+	case "wife":
+		return "زن"
+	default:
+		return member
+	}
+}
+
+func buildIntroductionPrizes(prizes []*models.DynastyPrize, pscRate float64) []*dynastypb.IntroductionPrize {
+	if pscRate == 0 {
+		pscRate = 1
+	}
+
+	var result []*dynastypb.IntroductionPrize
+	for _, prize := range prizes {
+		psc := fmt.Sprintf("%.2f", float64(prize.PSC)/pscRate)
+		result = append(result, &dynastypb.IntroductionPrize{
+			Member:                     memberTitle(prize.Member),
+			Satisfaction:               prize.Satisfaction,
+			IntroductionProfitIncrease: int32(prize.IntroductionProfitIncrease * 100),
+			AccumulatedCapitalReserve:  int32(prize.AccumulatedCapitalReserve * 100),
+			DataStorage:                int32(prize.DataStorage * 100),
+			Psc:                        psc,
+		})
+	}
+	return result
+}
+
 func buildJoinRequestResponse(req *models.JoinRequest, userInfo *models.UserBasic, prize *models.DynastyPrize) *dynastypb.JoinRequestResponse {
 	resp := &dynastypb.JoinRequestResponse{
 		Id:           req.ID,
@@ -79,7 +120,7 @@ func buildJoinRequestResponse(req *models.JoinRequest, userInfo *models.UserBasi
 		ToUser:       req.ToUser,
 		Status:       int32(req.Status),
 		Relationship: req.Relationship,
-		CreatedAt:    formatJalaliDate(req.CreatedAt),
+		CreatedAt:    formatJalaliDateTime(req.CreatedAt),
 	}
 
 	if req.Message != nil {

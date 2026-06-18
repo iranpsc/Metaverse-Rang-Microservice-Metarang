@@ -18,7 +18,7 @@ type ProfitServiceInterface interface {
 	GetSingleProfit(ctx context.Context, profitID, userID uint64) (*models.FeatureHourlyProfit, error)
 	GetProfitsByApplication(ctx context.Context, userID uint64, karbari string) (float64, error)
 	TransferProfitOnSale(ctx context.Context, featureID, sellerID, buyerID uint64, withdrawProfitDays int) error
-	GetHourlyProfits(ctx context.Context, userID uint64, page, pageSize int32) ([]*models.FeatureHourlyProfit, string, string, string, error)
+	GetHourlyProfits(ctx context.Context, userID uint64, page, pageSize int32) ([]*models.FeatureHourlyProfit, string, string, string, bool, error)
 	StartHourlyProfitCalculator(ctx context.Context, log *logger.Logger)
 }
 
@@ -211,7 +211,7 @@ func (s *ProfitService) TransferProfitOnSale(ctx context.Context, featureID, sel
 
 // GetHourlyProfits retrieves paginated hourly profits for a user
 // Returns profits with feature information and formatted totals
-func (s *ProfitService) GetHourlyProfits(ctx context.Context, userID uint64, page, pageSize int32) ([]*models.FeatureHourlyProfit, string, string, string, error) {
+func (s *ProfitService) GetHourlyProfits(ctx context.Context, userID uint64, page, pageSize int32) ([]*models.FeatureHourlyProfit, string, string, string, bool, error) {
 	// Default page size to 10 if not specified
 	if pageSize <= 0 {
 		pageSize = 10
@@ -221,15 +221,15 @@ func (s *ProfitService) GetHourlyProfits(ctx context.Context, userID uint64, pag
 	}
 
 	// Get profits with pagination
-	profits, err := s.profitRepo.FindByUserID(ctx, userID, page, pageSize)
+	profits, hasMore, err := s.profitRepo.FindByUserID(ctx, userID, page, pageSize)
 	if err != nil {
-		return nil, "0.00", "0.00", "0.00", fmt.Errorf("failed to get profits: %w", err)
+		return nil, "0.00", "0.00", "0.00", false, fmt.Errorf("failed to get profits: %w", err)
 	}
 
 	// Get totals by karbari and format to 2 decimal places
 	totalMaskoni, totalTejari, totalAmozeshi, err := s.profitRepo.GetTotalsByKarbari(ctx, userID)
 	if err != nil {
-		return profits, "0.00", "0.00", "0.00", nil
+		return profits, "0.00", "0.00", "0.00", hasMore, nil
 	}
 
 	// Format totals to 2 decimal places (matching Laravel's number_format(..., 2))
@@ -237,7 +237,7 @@ func (s *ProfitService) GetHourlyProfits(ctx context.Context, userID uint64, pag
 	totalTejariFormatted := formatTotal(totalTejari)
 	totalAmozeshiFormatted := formatTotal(totalAmozeshi)
 
-	return profits, totalMaskoniFormatted, totalTejariFormatted, totalAmozeshiFormatted, nil
+	return profits, totalMaskoniFormatted, totalTejariFormatted, totalAmozeshiFormatted, hasMore, nil
 }
 
 // formatTotal formats a total amount string to 2 decimal places

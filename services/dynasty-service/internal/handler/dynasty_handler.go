@@ -78,13 +78,15 @@ func (h *DynastyHandler) GetUserDynasty(ctx context.Context, req *dynastypb.GetU
 	}
 
 	if dynasty == nil {
-		// Return available features when no dynasty exists
+		// Return available features and introduction prizes when no dynasty exists
 		userFeatures, _ := h.dynastyService.GetUserFeatures(ctx, req.UserId, 0)
+		introPrizes, _ := h.dynastyService.GetIntroductionPrizes(ctx)
+		pscRate, _ := h.dynastyService.GetVariableRate(ctx, "psc")
 
 		return &dynastypb.DynastyResponse{
 			UserHasDynasty: false,
 			Features:       buildAvailableFeatures(userFeatures),
-			// Note: intro prizes would need to be added to proto
+			Prizes:         buildIntroductionPrizes(introPrizes, pscRate),
 		}, nil
 	}
 

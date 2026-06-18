@@ -43,7 +43,7 @@ func (h *ProfitHandler) GetHourlyProfits(ctx context.Context, req *pb.GetHourlyP
 		page = 1
 	}
 
-	profits, totalMaskoni, totalTejari, totalAmozeshi, err := h.service.GetHourlyProfits(ctx, req.UserId, page, pageSize)
+	profits, totalMaskoni, totalTejari, totalAmozeshi, hasMore, err := h.service.GetHourlyProfits(ctx, req.UserId, page, pageSize)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get hourly profits: %v", err)
 	}
@@ -59,13 +59,16 @@ func (h *ProfitHandler) GetHourlyProfits(ctx context.Context, req *pb.GetHourlyP
 		deadlineJalali := helpers.FormatJalaliDate(p.Deadline)
 
 		profitProto := &pb.HourlyProfit{
-			Id:        p.ID,
-			FeatureId: p.FeatureID,
-			UserId:    p.UserID,
-			Asset:     p.Asset,
-			Amount:    amountFormatted,
-			DeadLine:  deadlineJalali,
-			IsActive:  p.IsActive,
+			Id:           p.ID,
+			FeatureId:    p.FeatureID,
+			FeatureDbId:  p.FeatureDBID,
+			PropertiesId: p.PropertiesID,
+			Karbari:      p.Karbari,
+			UserId:       p.UserID,
+			Asset:        p.Asset,
+			Amount:       amountFormatted,
+			DeadLine:     deadlineJalali,
+			IsActive:     p.IsActive,
 		}
 
 		profitsProto = append(profitsProto, profitProto)
@@ -76,6 +79,7 @@ func (h *ProfitHandler) GetHourlyProfits(ctx context.Context, req *pb.GetHourlyP
 		TotalMaskoniProfit:  totalMaskoni,
 		TotalTejariProfit:   totalTejari,
 		TotalAmozeshiProfit: totalAmozeshi,
+		HasMore:             hasMore,
 	}, nil
 }
 
@@ -108,13 +112,16 @@ func (h *ProfitHandler) GetSingleProfit(ctx context.Context, req *pb.GetSinglePr
 
 	return &pb.HourlyProfitResponse{
 		Profit: &pb.HourlyProfit{
-			Id:        profit.ID,
-			FeatureId: profit.FeatureID,
-			UserId:    profit.UserID,
-			Asset:     profit.Asset,
-			Amount:    amountFormatted,
-			DeadLine:  deadlineJalali,
-			IsActive:  profit.IsActive,
+			Id:           profit.ID,
+			FeatureId:    profit.FeatureID,
+			FeatureDbId:  profit.FeatureDBID,
+			PropertiesId: profit.PropertiesID,
+			Karbari:      profit.Karbari,
+			UserId:       profit.UserID,
+			Asset:        profit.Asset,
+			Amount:       amountFormatted,
+			DeadLine:     deadlineJalali,
+			IsActive:     profit.IsActive,
 		},
 		Success: true,
 	}, nil

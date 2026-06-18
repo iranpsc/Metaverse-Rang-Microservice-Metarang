@@ -114,7 +114,7 @@ func (r *JoinRequestRepository) GetReceivedRequests(ctx context.Context, userID 
 	offset := (page - 1) * perPage
 
 	// Get total count
-	countQuery := `SELECT COUNT(*) FROM join_requests WHERE to_user = ?`
+	countQuery := `SELECT COUNT(*) FROM join_requests WHERE to_user = ? AND status = 0`
 	var total int32
 	err := r.db.QueryRowContext(ctx, countQuery, userID).Scan(&total)
 	if err != nil {
@@ -124,7 +124,7 @@ func (r *JoinRequestRepository) GetReceivedRequests(ctx context.Context, userID 
 	// Get requests
 	query := `SELECT id, from_user, to_user, status, relationship, message, created_at, updated_at 
 	          FROM join_requests 
-	          WHERE to_user = ? 
+	          WHERE to_user = ? AND status = 0
 	          ORDER BY created_at DESC 
 	          LIMIT ? OFFSET ?`
 

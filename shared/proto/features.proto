@@ -333,16 +333,20 @@ message HourlyProfitsResponse {
   string total_maskoni_profit = 2;
   string total_tejari_profit = 3;
   string total_amozeshi_profit = 4;
+  bool has_more = 5;
 }
 
 message HourlyProfit {
   uint64 id = 1;
-  uint64 feature_id = 2;
+  uint64 feature_id = 2; // features.id (internal)
   uint64 user_id = 3;
   string asset = 4; // color: yellow, red, blue
   string amount = 5; // formatted as string
-  string dead_line = 6; // timestamp
+  string dead_line = 6; // Jalali date Y/m/d
   bool is_active = 7;
+  uint64 feature_db_id = 8; // features.id (Laravel feature_db_id)
+  string properties_id = 9; // feature_properties.id (Laravel feature_id)
+  string karbari = 10; // m, t, a
 }
 
 message GetSingleProfitRequest {

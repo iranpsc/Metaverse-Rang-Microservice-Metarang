@@ -361,7 +361,9 @@ func (h *TrainingHandler) GetSubCategory(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, buildSubCategoryResponse(resp))
+	result := buildSubCategoryResponse(resp)
+	h.attachSubCategoryVideos(r, resp, result)
+	writeJSON(w, http.StatusOK, result)
 }
 
 // GetComments handles GET /api/tutorials/{video}/comments
@@ -1142,6 +1144,39 @@ func buildSubCategoryResponse(subCategory *trainingpb.SubCategoryResponse) map[s
 	applyCategoryCountsToJSON(resp, subCategory.VideosCount, subCategory.Stats)
 
 	return resp
+}
+
+func (h *TrainingHandler) attachSubCategoryVideos(r *http.Request, subCategory *trainingpb.SubCategoryResponse, resp map[string]interface{}) {
+	if subCategory == nil || subCategory.Id == 0 {
+		resp["videos"] = []map[string]interface{}{}
+		return
+	}
+	if _, ok := resp["videos"]; ok {
+		return
+	}
+
+	perPage := subCategory.VideosCount
+	if perPage <= 0 {
+		perPage = 1000
+	}
+
+	videosResp, err := h.trainingClient.GetVideos(r.Context(), &trainingpb.GetVideosRequest{
+		SubCategoryId: subCategory.Id,
+		Pagination: &commonpb.PaginationRequest{
+			Page:    1,
+			PerPage: perPage,
+		},
+	})
+	if err != nil {
+		resp["videos"] = []map[string]interface{}{}
+		return
+	}
+
+	videos := make([]map[string]interface{}, 0, len(videosResp.Videos))
+	for _, video := range videosResp.Videos {
+		videos = append(videos, buildVideoResponse(video))
+	}
+	resp["videos"] = videos
 }
 
 func buildSubCategoryInfoJSON(subCategory *trainingpb.SubCategoryInfo) map[string]interface{} {

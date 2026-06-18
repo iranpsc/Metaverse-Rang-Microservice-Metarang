@@ -4,9 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"metargb/commercial-service/internal/models"
+	"metargb/shared/pkg/helpers"
 )
 
 type TransactionRepository interface {
@@ -123,21 +125,86 @@ func (r *transactionRepository) FindByUserID(ctx context.Context, userID uint64,
 	`
 	args := []interface{}{userID}
 
-	// Add filters (simplified for now)
-	if asset, ok := filters["asset"].(string); ok && asset != "" {
-		query += " AND asset = ?"
-		args = append(args, asset)
+	if search, ok := filters["search"].(string); ok && search != "" {
+		query += " AND id = ?"
+		args = append(args, search)
 	}
+
+	if startDateTime, ok := filters["start_date_time"].(string); ok && startDateTime != "" {
+		if start, err := helpers.ParseJalaliDateTime(startDateTime); err == nil {
+			query += " AND DATE(created_at) >= DATE(?)"
+			args = append(args, start)
+		}
+	}
+
+	if endDateTime, ok := filters["end_date_time"].(string); ok && endDateTime != "" {
+		if end, err := helpers.ParseJalaliDateTime(endDateTime); err == nil {
+			query += " AND DATE(created_at) <= DATE(?)"
+			args = append(args, end)
+		}
+	}
+
+	if statuses, ok := filters["status"].([]int32); ok && len(statuses) > 0 {
+		placeholders := strings.Repeat("?,", len(statuses))
+		query += " AND status IN (" + placeholders[:len(placeholders)-1] + ")"
+		for _, status := range statuses {
+			args = append(args, status)
+		}
+	}
+
 	if action, ok := filters["action"].(string); ok && action != "" {
 		query += " AND action = ?"
 		args = append(args, action)
 	}
 
+	if asset, ok := filters["asset"].(string); ok && asset != "" {
+		assets := splitCSV(asset)
+		if len(assets) == 1 {
+			query += " AND asset = ?"
+			args = append(args, assets[0])
+		} else if len(assets) > 1 {
+			placeholders := strings.Repeat("?,", len(assets))
+			query += " AND asset IN (" + placeholders[:len(placeholders)-1] + ")"
+			for _, value := range assets {
+				args = append(args, value)
+			}
+		}
+	}
+
+	if txType, ok := filters["type"].(string); ok && txType != "" {
+		types := splitCSV(txType)
+		payableTypes := make([]string, 0, len(types))
+		for _, value := range types {
+			if payableType := transactionTypeToPayableType(value); payableType != "" {
+				payableTypes = append(payableTypes, payableType)
+			}
+		}
+		if len(payableTypes) == 1 {
+			query += " AND payable_type = ?"
+			args = append(args, payableTypes[0])
+		} else if len(payableTypes) > 1 {
+			placeholders := strings.Repeat("?,", len(payableTypes))
+			query += " AND payable_type IN (" + placeholders[:len(placeholders)-1] + ")"
+			for _, value := range payableTypes {
+				args = append(args, value)
+			}
+		}
+	}
+
 	query += " ORDER BY created_at DESC"
 
-	if limit, ok := filters["limit"].(int); ok && limit > 0 {
-		query += fmt.Sprintf(" LIMIT %d", limit)
+	perPage := 15
+	if value, ok := filters["per_page"].(int); ok && value > 0 {
+		perPage = value
 	}
+
+	page := 1
+	if value, ok := filters["page"].(int); ok && value > 0 {
+		page = value
+	}
+
+	offset := (page - 1) * perPage
+	query += fmt.Sprintf(" LIMIT %d OFFSET %d", perPage+1, offset)
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -161,4 +228,27 @@ func (r *transactionRepository) FindByUserID(ctx context.Context, userID uint64,
 	}
 
 	return transactions, nil
+}
+
+func splitCSV(value string) []string {
+	parts := strings.Split(value, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			out = append(out, part)
+		}
+	}
+	return out
+}
+
+func transactionTypeToPayableType(txType string) string {
+	switch strings.ToLower(strings.TrimSpace(txType)) {
+	case "trade":
+		return `App\Models\Trade`
+	case "order":
+		return `App\Models\Order`
+	default:
+		return ""
+	}
 }

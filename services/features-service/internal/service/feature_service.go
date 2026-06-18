@@ -69,21 +69,39 @@ func (s *FeatureService) ListFeatures(ctx context.Context, points []string, load
 		return nil, fmt.Errorf("failed to find features by bbox: %w", err)
 	}
 
+	featureIDs := make([]uint64, len(features))
+	for i, feature := range features {
+		featureIDs[i] = feature.ID
+	}
+
+	geometriesByFeature, err := s.geometryRepo.GetByFeatureIDs(ctx, featureIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load geometries: %w", err)
+	}
+
+	coordinatesByFeature, err := s.geometryRepo.GetCoordinatesByFeatureIDs(ctx, featureIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load coordinates: %w", err)
+	}
+
+	var buildingsByFeature map[uint64][]*pb.Building
+	if loadBuildings {
+		buildingsByFeature, err = s.buildingRepo.FindByFeatureIDs(ctx, featureIDs)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load buildings: %w", err)
+		}
+	}
+
 	// Convert to protobuf with all relations
 	result := make([]*pb.Feature, 0, len(features))
 	for i, feature := range features {
 		properties := propertiesList[i]
 
-		// Load geometry coordinates (Laravel: geometry.coordinates:id,geometry_id,x,y)
-		geometry, err := s.geometryRepo.GetByFeatureID(ctx, feature.ID)
-		if err != nil {
-			geometry = nil
-		}
-
+		geometry := geometriesByFeature[feature.ID]
 		var pbGeometry *pb.Geometry
 		if geometry != nil {
-			coordinates, err := s.geometryRepo.GetCoordinatesWithIDs(ctx, feature.ID)
-			if err == nil && len(coordinates) > 0 {
+			coordinates := coordinatesByFeature[feature.ID]
+			if len(coordinates) > 0 {
 				pbCoordinates := make([]*pb.Coordinate, 0, len(coordinates))
 				for _, coord := range coordinates {
 					pbCoordinates = append(pbCoordinates, &pb.Coordinate{
@@ -106,13 +124,9 @@ func (s *FeatureService) ListFeatures(ctx context.Context, points []string, load
 			}
 		}
 
-		// Load building models if requested
 		var buildings []*pb.Building
 		if loadBuildings {
-			buildings, err = s.buildingRepo.FindByFeatureID(ctx, feature.ID)
-			if err != nil {
-				buildings = nil
-			}
+			buildings = buildingsByFeature[feature.ID]
 		}
 
 		// Check if owned by authenticated user

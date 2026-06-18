@@ -49,7 +49,8 @@ RUN go mod download
 # Build the application  
 WORKDIR /workspace
 ENV GOWORK=/workspace/go.work
-RUN cd /workspace/metargb/dynasty-service && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-extldflags "-static"' -o /app/dynasty-service ./cmd/server
+ARG CACHEBUST=2
+RUN echo "cachebust=$CACHEBUST" && cd /workspace/metargb/dynasty-service && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-extldflags "-static"' -o /app/dynasty-service ./cmd/server
 
 # Final stage
 FROM docker.arvancloud.ir/alpine:3.21

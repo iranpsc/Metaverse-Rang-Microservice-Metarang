@@ -76,8 +76,9 @@ func (r *HourlyProfitRepository) FindByID(ctx context.Context, id uint64) (*mode
 
 // FindByUserID retrieves all profits for a user with pagination
 // Joins with feature_properties to get karbari and properties.id
-func (r *HourlyProfitRepository) FindByUserID(ctx context.Context, userID uint64, page, pageSize int32) ([]*models.FeatureHourlyProfit, error) {
+func (r *HourlyProfitRepository) FindByUserID(ctx context.Context, userID uint64, page, pageSize int32) ([]*models.FeatureHourlyProfit, bool, error) {
 	offset := (page - 1) * pageSize
+	limit := pageSize + 1
 
 	query := `
 		SELECT 
@@ -101,9 +102,9 @@ func (r *HourlyProfitRepository) FindByUserID(ctx context.Context, userID uint64
 		LIMIT ? OFFSET ?
 	`
 
-	rows, err := r.db.QueryContext(ctx, query, userID, pageSize, offset)
+	rows, err := r.db.QueryContext(ctx, query, userID, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	defer rows.Close()
 
@@ -121,17 +122,22 @@ func (r *HourlyProfitRepository) FindByUserID(ctx context.Context, userID uint64
 		profits = append(profits, profit)
 	}
 
-	return profits, nil
+	hasMore := int32(len(profits)) > pageSize
+	if hasMore {
+		profits = profits[:pageSize]
+	}
+
+	return profits, hasMore, nil
 }
 
 // GetTotalsByKarbari calculates total amounts for each karbari
 func (r *HourlyProfitRepository) GetTotalsByKarbari(ctx context.Context, userID uint64) (maskoni, tejari, amozeshi string, err error) {
-	// Query totals by asset (yellow=maskoni, red=tejari, blue=amozeshi)
 	query := `
-		SELECT asset, SUM(amount) as total
-		FROM feature_hourly_profits
-		WHERE user_id = ?
-		GROUP BY asset
+		SELECT fp.karbari, SUM(fhp.amount) as total
+		FROM feature_hourly_profits fhp
+		INNER JOIN feature_properties fp ON fhp.feature_id = fp.feature_id
+		WHERE fhp.user_id = ?
+		GROUP BY fp.karbari
 	`
 
 	rows, err := r.db.QueryContext(ctx, query, userID)
@@ -141,23 +147,23 @@ func (r *HourlyProfitRepository) GetTotalsByKarbari(ctx context.Context, userID 
 	defer rows.Close()
 
 	totals := map[string]float64{
-		"yellow": 0,
-		"red":    0,
-		"blue":   0,
+		"m": 0,
+		"t": 0,
+		"a": 0,
 	}
 
 	for rows.Next() {
-		var asset string
+		var karbari string
 		var total float64
-		if err := rows.Scan(&asset, &total); err != nil {
+		if err := rows.Scan(&karbari, &total); err != nil {
 			continue
 		}
-		totals[asset] = total
+		totals[karbari] = total
 	}
 
-	return fmt.Sprintf("%.6f", totals["yellow"]),
-		fmt.Sprintf("%.6f", totals["red"]),
-		fmt.Sprintf("%.6f", totals["blue"]),
+	return fmt.Sprintf("%.6f", totals["m"]),
+		fmt.Sprintf("%.6f", totals["t"]),
+		fmt.Sprintf("%.6f", totals["a"]),
 		nil
 }
 

@@ -118,6 +118,7 @@ services:
       DYNASTY_SERVICE_ADDR: dynasty-service:50055
       FEATURES_SERVICE_ADDR: features-service:50053
       FINANCIAL_SERVICE_ADDR: financial-service:50062
+      COMMERCIAL_SERVICE_ADDR: commercial-service:50052
       LEVELS_SERVICE_ADDR: levels-service:50054
       TRAINING_SERVICE_ADDR: training-service:50057
       SUPPORT_SERVICE_ADDR: support-service:50056
@@ -126,6 +127,8 @@ services:
       STORAGE_SERVICE_ADDR: storage-service:8059
     depends_on:
       auth-service:
+        condition: service_started
+      commercial-service:
         condition: service_started
       training-service:
         condition: service_started

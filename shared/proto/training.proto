@@ -155,6 +155,7 @@ message SubCategoryResponse {
   string image_url = 7;
   string icon_url = 8;
   VideoStats stats = 9;
+  repeated VideoResponse videos = 10;
 }
 
 message CategoryInfo {

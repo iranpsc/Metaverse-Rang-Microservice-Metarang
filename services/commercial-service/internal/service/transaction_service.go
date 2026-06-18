@@ -57,10 +57,9 @@ func (s *transactionService) GetLatestTransaction(ctx context.Context, userID ui
 // transactionToDTO converts Transaction model to TransactionDTO with proper formatting
 // Matches Laravel's TransactionResource::toArray() exactly
 func (s *transactionService) transactionToDTO(t *models.Transaction) *models.TransactionDTO {
-	// Get payable type if exists
 	payableType := ""
 	if t.PayableType != nil {
-		payableType = *t.PayableType
+		payableType = payableTypeToTransactionType(*t.PayableType)
 	}
 
 	return &models.TransactionDTO{
@@ -70,8 +69,19 @@ func (s *transactionService) transactionToDTO(t *models.Transaction) *models.Tra
 		Amount: strconv.FormatFloat(t.Amount, 'f', -1, 64),
 		Action: t.Action,
 		Status: t.Status,
-		Date:   s.jalaliConverter.FormatJalaliDate(t.CreatedAt), // Laravel: jdate($this->created_at)->format('Y/m/d')
-		Time:   s.jalaliConverter.FormatJalaliTime(t.CreatedAt), // Laravel: jdate($this->created_at)->format('H:i:s')
+		Date:   s.jalaliConverter.FormatJalaliDate(t.CreatedAt),
+		Time:   s.jalaliConverter.FormatJalaliTime(t.CreatedAt),
+	}
+}
+
+func payableTypeToTransactionType(payableType string) string {
+	switch payableType {
+	case `App\Models\Trade`:
+		return "trade"
+	case `App\Models\Order`:
+		return "order"
+	default:
+		return "unknown"
 	}
 }
 
