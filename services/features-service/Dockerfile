@@ -25,7 +25,8 @@ RUN sed -i 's|replace metargb/shared => ../../shared|replace metargb/shared => /
     go mod download
 
 ENV GOWORK=/workspace/go.work
-RUN go build -trimpath -ldflags="-s -w" -o /app/features-service ./cmd/server
+RUN go build -trimpath -ldflags="-s -w" -o /app/features-service ./cmd/server && \
+    go build -trimpath -ldflags="-s -w" -o /app/calculate-hourly-profits ./cmd/calculate-profits
 
 FROM alpine:3.21
 
@@ -35,7 +36,7 @@ RUN apk add --no-cache ca-certificates tzdata netcat-openbsd && \
 
 WORKDIR /app
 
-COPY --from=builder --chown=appuser:appuser /app/features-service .
+COPY --from=builder --chown=appuser:appuser /app/features-service /app/calculate-hourly-profits .
 
 USER appuser
 

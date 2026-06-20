@@ -267,11 +267,15 @@ func main() {
 	// Enable reflection for debugging
 	reflection.Register(grpcServer)
 
-	// Start hourly profit calculator background job
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go profitService.StartHourlyProfitCalculator(ctx, log)
+	// Start hourly profit calculator (disable when using external cron via calculate-profits)
+	if getEnv("HOURLY_PROFIT_CALCULATOR_ENABLED", "true") == "true" {
+		go profitService.StartHourlyProfitCalculator(ctx, log)
+	} else {
+		log.Info("In-process hourly profit calculator disabled; use calculate-profits cron job")
+	}
 
 	// Start gRPC server
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
@@ -281,14 +285,13 @@ func main() {
 
 	log.Info("Features Service started", "port", port, "metrics_port", metricsPort)
 
-	// Graceful shutdown
 	go func() {
 		sigChan := make(chan os.Signal, 1)
 		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 		<-sigChan
 
 		log.Info("Shutting down gracefully...")
-		cancel() // Stop background jobs
+		cancel()
 		grpcServer.GracefulStop()
 		database.Close()
 		log.Info("Shutdown complete")

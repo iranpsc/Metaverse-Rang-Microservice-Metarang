@@ -251,7 +251,7 @@ func main() {
 
 	var supportHandler *handler.SupportHandler
 	if supportConn != nil {
-		supportHandler = handler.NewSupportHandler(supportConn, authConn)
+		supportHandler = handler.NewSupportHandler(supportConn, authConn, cfg.StorageServiceAddr, cfg.AppURL)
 	}
 
 	var socialHandler *handler.SocialHandler
@@ -925,28 +925,65 @@ func main() {
 		mux.Handle("/api/support/reports/create", authMiddleware(http.HandlerFunc(supportHandler.CreateReport)))
 		mux.Handle("/api/support/reports/", authMiddleware(http.HandlerFunc(supportHandler.GetReport)))
 		// Direct routes (without /support prefix) - for Kong compatibility
-		mux.Handle("/api/tickets", authMiddleware(http.HandlerFunc(supportHandler.ListTickets)))
+		mux.Handle("/api/tickets", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodGet:
+				supportHandler.ListTickets(w, r)
+			case http.MethodPost:
+				supportHandler.CreateTicket(w, r)
+			default:
+				http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+			}
+		})))
 		mux.Handle("/api/tickets/", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			path := r.URL.Path
 			if strings.Contains(path, "/response/") {
-				// Response handler would go here
-				http.NotFound(w, r)
-			} else if strings.Contains(path, "/close/") {
-				// Close handler would go here
-				http.NotFound(w, r)
-			} else {
-				supportHandler.GetTicket(w, r)
+				supportHandler.AddTicketResponse(w, r)
+				return
+			}
+			if strings.Contains(path, "/close/") {
+				supportHandler.CloseTicket(w, r)
+				return
+			}
+			if r.Method == http.MethodPut || r.Method == http.MethodPatch {
+				supportHandler.UpdateTicket(w, r)
+				return
+			}
+			supportHandler.GetTicket(w, r)
+		})))
+		mux.Handle("/api/reports", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodGet:
+				supportHandler.ListReports(w, r)
+			case http.MethodPost:
+				supportHandler.CreateReport(w, r)
+			default:
+				http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
 			}
 		})))
-		mux.Handle("/api/reports", authMiddleware(http.HandlerFunc(supportHandler.ListReports)))
 		mux.Handle("/api/reports/", authMiddleware(http.HandlerFunc(supportHandler.GetReport)))
 		mux.Handle("/api/notes", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Notes handler would go here
-			http.NotFound(w, r)
+			switch r.Method {
+			case http.MethodGet:
+				supportHandler.ListNotes(w, r)
+			case http.MethodPost:
+				supportHandler.CreateNote(w, r)
+			default:
+				http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+			}
 		})))
 		mux.Handle("/api/notes/", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Notes handler would go here
-			http.NotFound(w, r)
+			method := handler.EffectiveHTTPMethod(r)
+			switch method {
+			case http.MethodDelete:
+				supportHandler.DeleteNote(w, r)
+			case http.MethodPut, http.MethodPatch:
+				supportHandler.UpdateNote(w, r)
+			case http.MethodGet:
+				supportHandler.GetNote(w, r)
+			default:
+				http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+			}
 		})))
 	}
 

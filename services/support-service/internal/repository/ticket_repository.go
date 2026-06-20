@@ -71,18 +71,24 @@ func (r *ticketRepository) GetByID(ctx context.Context, ticketID uint64) (*model
 		INNER JOIN users sender ON t.user_id = sender.id
 		LEFT JOIN users receiver ON t.reciever_id = receiver.id
 		LEFT JOIN (
-			SELECT user_id, url 
-			FROM profile_photos 
-			WHERE id IN (
-				SELECT MAX(id) FROM profile_photos GROUP BY user_id
-			)
+			SELECT imageable_id AS user_id, url
+			FROM images
+			WHERE imageable_type = 'App\\Models\\User'
+			  AND id IN (
+				SELECT MAX(id) FROM images
+				WHERE imageable_type = 'App\\Models\\User'
+				GROUP BY imageable_id
+			  )
 		) sender_photo ON sender.id = sender_photo.user_id
 		LEFT JOIN (
-			SELECT user_id, url 
-			FROM profile_photos 
-			WHERE id IN (
-				SELECT MAX(id) FROM profile_photos GROUP BY user_id
-			)
+			SELECT imageable_id AS user_id, url
+			FROM images
+			WHERE imageable_type = 'App\\Models\\User'
+			  AND id IN (
+				SELECT MAX(id) FROM images
+				WHERE imageable_type = 'App\\Models\\User'
+				GROUP BY imageable_id
+			  )
 		) receiver_photo ON receiver.id = receiver_photo.user_id
 		WHERE t.id = ?
 	`
@@ -165,18 +171,24 @@ func (r *ticketRepository) GetByUserID(ctx context.Context, userID uint64, page,
 		INNER JOIN users sender ON t.user_id = sender.id
 		LEFT JOIN users receiver ON t.reciever_id = receiver.id
 		LEFT JOIN (
-			SELECT user_id, url 
-			FROM profile_photos 
-			WHERE id IN (
-				SELECT MAX(id) FROM profile_photos GROUP BY user_id
-			)
+			SELECT imageable_id AS user_id, url
+			FROM images
+			WHERE imageable_type = 'App\\Models\\User'
+			  AND id IN (
+				SELECT MAX(id) FROM images
+				WHERE imageable_type = 'App\\Models\\User'
+				GROUP BY imageable_id
+			  )
 		) sender_photo ON sender.id = sender_photo.user_id
 		LEFT JOIN (
-			SELECT user_id, url 
-			FROM profile_photos 
-			WHERE id IN (
-				SELECT MAX(id) FROM profile_photos GROUP BY user_id
-			)
+			SELECT imageable_id AS user_id, url
+			FROM images
+			WHERE imageable_type = 'App\\Models\\User'
+			  AND id IN (
+				SELECT MAX(id) FROM images
+				WHERE imageable_type = 'App\\Models\\User'
+				GROUP BY imageable_id
+			  )
 		) receiver_photo ON receiver.id = receiver_photo.user_id
 	`
 

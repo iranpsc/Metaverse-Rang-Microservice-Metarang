@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strconv"
+	"time"
 
 	"metargb/features-service/internal/client"
 	"metargb/features-service/internal/constants"
@@ -19,6 +20,7 @@ type ProfitServiceInterface interface {
 	GetProfitsByApplication(ctx context.Context, userID uint64, karbari string) (float64, error)
 	TransferProfitOnSale(ctx context.Context, featureID, sellerID, buyerID uint64, withdrawProfitDays int) error
 	GetHourlyProfits(ctx context.Context, userID uint64, page, pageSize int32) ([]*models.FeatureHourlyProfit, string, string, string, bool, error)
+	RunHourlyProfitCalculation(ctx context.Context) (int, error)
 	StartHourlyProfitCalculator(ctx context.Context, log *logger.Logger)
 }
 
@@ -248,11 +250,64 @@ func formatTotal(totalStr string) string {
 	return fmt.Sprintf("%.2f", total)
 }
 
-// StartHourlyProfitCalculator runs the background job to calculate hourly profits
+// RunHourlyProfitCalculation processes all eligible profit records.
+// Eligibility (deadline not passed, is_active, last update >= 3 hours ago) is enforced in the repository.
+func (s *ProfitService) RunHourlyProfitCalculation(ctx context.Context) (int, error) {
+	const maxBatches = 1000
+
+	totalUpdated := 0
+	for batch := 0; batch < maxBatches; batch++ {
+		if err := ctx.Err(); err != nil {
+			return totalUpdated, err
+		}
+
+		updated, err := s.profitRepo.CalculateAndUpdateProfits(ctx)
+		if err != nil {
+			return totalUpdated, fmt.Errorf("failed to calculate hourly profits: %w", err)
+		}
+
+		totalUpdated += updated
+		if updated == 0 {
+			break
+		}
+	}
+
+	return totalUpdated, nil
+}
+
+// StartHourlyProfitCalculator runs the profit calculation on a fixed interval.
+// The scheduler ticks every minute; each record is only updated once every 3 hours.
 func (s *ProfitService) StartHourlyProfitCalculator(ctx context.Context, log *logger.Logger) {
-	// TODO: Implement background job similar to Laravel's CalculateFeatureProfit command
-	// This should run periodically and call profitRepo.CalculateAndUpdateProfits
-	log.Info("Hourly profit calculator started (not yet implemented)")
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+
+	log.Info("Hourly profit calculator started",
+		"scheduler_interval", "1m",
+		"per_record_interval", fmt.Sprintf("%dh", constants.HourlyProfitCalculationIntervalHours),
+	)
+
+	run := func() {
+		updated, err := s.RunHourlyProfitCalculation(ctx)
+		if err != nil {
+			log.Error("Hourly profit calculation failed", "error", err)
+			return
+		}
+		if updated > 0 {
+			log.Info("Hourly profit calculation completed", "updated_records", updated)
+		}
+	}
+
+	run()
+
+	for {
+		select {
+		case <-ctx.Done():
+			log.Info("Hourly profit calculator stopped")
+			return
+		case <-ticker.C:
+			run()
+		}
+	}
 }
 
 // Utility methods

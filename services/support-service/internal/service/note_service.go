@@ -33,7 +33,12 @@ func (s *noteService) CreateNote(ctx context.Context, userID uint64, title, cont
 		UserID:     userID,
 	}
 
-	return s.noteRepo.Create(ctx, note)
+	created, err := s.noteRepo.Create(ctx, note)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.noteRepo.GetByID(ctx, created.ID)
 }
 
 func (s *noteService) GetNotes(ctx context.Context, userID uint64) ([]*models.Note, error) {
@@ -82,7 +87,7 @@ func (s *noteService) UpdateNote(ctx context.Context, noteID, userID uint64, tit
 		return nil, fmt.Errorf("failed to update note: %w", err)
 	}
 
-	return note, nil
+	return s.noteRepo.GetByID(ctx, noteID)
 }
 
 func (s *noteService) DeleteNote(ctx context.Context, noteID, userID uint64) error {

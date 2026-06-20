@@ -105,7 +105,9 @@ func (s *ticketService) UpdateTicket(ctx context.Context, ticketID, userID uint6
 	// Update fields
 	ticket.Title = title
 	ticket.Content = content
-	ticket.Attachment = attachment
+	if attachment != "" {
+		ticket.Attachment = attachment
+	}
 	ticket.Status = models.TicketStatusNew // Reset to NEW when updated (matching Laravel)
 
 	err = s.ticketRepo.Update(ctx, &ticket.Ticket)

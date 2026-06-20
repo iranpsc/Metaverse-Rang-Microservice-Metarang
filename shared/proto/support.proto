@@ -122,6 +122,8 @@ message CreateReportRequest {
   uint64 reportable_id = 3;
   string reason = 4;
   string description = 5;
+  string url = 6;
+  repeated string image_paths = 7; // relative storage paths, e.g. reports/file.png
 }
 
 message GetReportsRequest {
@@ -141,6 +143,8 @@ message ReportResponse {
   string reason = 5;
   string description = 6;
   string created_at = 7; // Jalali formatted
+  string url = 8;
+  repeated string image_paths = 9; // relative storage paths
 }
 
 message ReportsResponse {

@@ -184,8 +184,9 @@ func (r *HourlyProfitRepository) ResetProfitAndUpdateDeadline(ctx context.Contex
 }
 
 // CalculateAndUpdateProfits implements the hourly profit calculation job
-// From Laravel's CalculateFeatureProfit command
-func (r *HourlyProfitRepository) CalculateAndUpdateProfits(ctx context.Context) error {
+// From Laravel's CalculateFeatureProfit command.
+// Returns the number of profit records updated in this batch (max 100).
+func (r *HourlyProfitRepository) CalculateAndUpdateProfits(ctx context.Context) (int, error) {
 	// Find all profits that need updating:
 	// - dead_line > now (not expired)
 	// - updated_at < 3 hours ago
@@ -203,7 +204,7 @@ func (r *HourlyProfitRepository) CalculateAndUpdateProfits(ctx context.Context) 
 
 	rows, err := r.db.QueryContext(ctx, query, threeHoursAgo)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer rows.Close()
 
@@ -224,6 +225,7 @@ func (r *HourlyProfitRepository) CalculateAndUpdateProfits(ctx context.Context) 
 	}
 
 	// For each profit, get feature stability and increment amount
+	updated := 0
 	for _, p := range profits {
 		var stability float64
 		stabilityQuery := "SELECT stability FROM feature_properties WHERE feature_id = ?"
@@ -238,9 +240,10 @@ func (r *HourlyProfitRepository) CalculateAndUpdateProfits(ctx context.Context) 
 		if _, err := r.db.ExecContext(ctx, updateQuery, increment, p.ID); err != nil {
 			continue
 		}
+		updated++
 	}
 
-	return nil
+	return updated, nil
 }
 
 // TransferProfitToNewOwner transfers profit to seller and resets for buyer

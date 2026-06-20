@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"google.golang.org/grpc"
 
@@ -14,20 +15,24 @@ import (
 )
 
 type SupportHandler struct {
-	ticketClient    pbSupport.TicketServiceClient
-	reportClient    pbSupport.ReportServiceClient
-	userEventClient pbSupport.UserEventReportServiceClient
-	noteClient      pbSupport.NoteServiceClient
-	authClient      pbAuth.AuthServiceClient
+	ticketClient        pbSupport.TicketServiceClient
+	reportClient        pbSupport.ReportServiceClient
+	userEventClient     pbSupport.UserEventReportServiceClient
+	noteClient          pbSupport.NoteServiceClient
+	authClient          pbAuth.AuthServiceClient
+	storageServiceAddr  string
+	appURL              string
 }
 
-func NewSupportHandler(supportConn, authConn *grpc.ClientConn) *SupportHandler {
+func NewSupportHandler(supportConn, authConn *grpc.ClientConn, storageServiceAddr, appURL string) *SupportHandler {
 	return &SupportHandler{
-		ticketClient:    pbSupport.NewTicketServiceClient(supportConn),
-		reportClient:    pbSupport.NewReportServiceClient(supportConn),
-		userEventClient: pbSupport.NewUserEventReportServiceClient(supportConn),
-		noteClient:      pbSupport.NewNoteServiceClient(supportConn),
-		authClient:      pbAuth.NewAuthServiceClient(authConn),
+		ticketClient:       pbSupport.NewTicketServiceClient(supportConn),
+		reportClient:       pbSupport.NewReportServiceClient(supportConn),
+		userEventClient:    pbSupport.NewUserEventReportServiceClient(supportConn),
+		noteClient:         pbSupport.NewNoteServiceClient(supportConn),
+		authClient:         pbAuth.NewAuthServiceClient(authConn),
+		storageServiceAddr: storageServiceAddr,
+		appURL:             appURL,
 	}
 }
 
@@ -169,35 +174,60 @@ func (h *SupportHandler) CreateTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req struct {
-		Title      string  `json:"title"`
-		Content    string  `json:"content"`
-		Attachment string  `json:"attachment"`
-		Reciever   *uint64 `json:"reciever"` // Note: Laravel uses 'reciever' (typo)
-		Department string  `json:"department"`
+	title, content, department, receiverID, err := parseTicketFormFields(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
 	}
 
-	if err := decodeRequestBody(r, &req); err != nil {
-		if err == io.EOF {
-			writeError(w, http.StatusBadRequest, "request body is required")
-		} else {
-			writeError(w, http.StatusBadRequest, "invalid request body")
+	attachment := ""
+	contentType := r.Header.Get("Content-Type")
+	if strings.HasPrefix(contentType, "multipart/form-data") {
+		attachment, err = uploadTicketAttachment(r, h.storageServiceAddr, h.appURL)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
 		}
+	} else {
+		var req struct {
+			Title      string  `json:"title"`
+			Content    string  `json:"content"`
+			Attachment string  `json:"attachment"`
+			Reciever   *uint64 `json:"reciever"`
+			Department string  `json:"department"`
+		}
+		if err := decodeRequestBody(r, &req); err != nil {
+			if err == io.EOF {
+				writeError(w, http.StatusBadRequest, "request body is required")
+			} else {
+				writeError(w, http.StatusBadRequest, "invalid request body")
+			}
+			return
+		}
+		title = req.Title
+		content = req.Content
+		department = req.Department
+		receiverID = req.Reciever
+		attachment = req.Attachment
+	}
+
+	if title == "" || content == "" {
+		writeError(w, http.StatusBadRequest, "title and content are required")
 		return
 	}
 
 	grpcReq := &pbSupport.CreateTicketRequest{
 		UserId:     userID,
-		Title:      req.Title,
-		Content:    req.Content,
-		Attachment: req.Attachment,
+		Title:      title,
+		Content:    content,
+		Attachment: attachment,
 	}
 
-	if req.Reciever != nil {
-		grpcReq.ReceiverId = *req.Reciever
+	if receiverID != nil {
+		grpcReq.ReceiverId = *receiverID
 	}
-	if req.Department != "" {
-		grpcReq.Department = req.Department
+	if department != "" {
+		grpcReq.Department = department
 	}
 
 	resp, err := h.ticketClient.CreateTicket(r.Context(), grpcReq)
@@ -206,38 +236,7 @@ func (h *SupportHandler) CreateTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Convert to Laravel-compatible format
-	ticketMap := map[string]interface{}{
-		"id":      resp.Id,
-		"title":   resp.Title,
-		"content": resp.Content,
-		"code":    resp.Code,
-		"status":  resp.Status,
-		"date":    resp.CreatedAt,
-		"time":    resp.CreatedAt,
-	}
-
-	if resp.Sender != nil {
-		ticketMap["sender"] = map[string]interface{}{
-			"name":          resp.Sender.Name,
-			"code":          resp.Sender.Code,
-			"profile-photo": resp.Sender.ProfilePhoto,
-		}
-	}
-
-	if resp.Receiver != nil {
-		ticketMap["reciever"] = map[string]interface{}{
-			"name":          resp.Receiver.Name,
-			"code":          resp.Receiver.Code,
-			"profile-photo": resp.Receiver.ProfilePhoto,
-		}
-	}
-
-	if resp.Department != "" {
-		ticketMap["department"] = resp.Department
-	}
-
-	writeJSON(w, http.StatusCreated, ticketMap)
+	writeJSON(w, http.StatusCreated, formatTicketResponse(resp))
 }
 
 // GetTicket handles GET /api/tickets/{ticket}
@@ -350,27 +349,47 @@ func (h *SupportHandler) UpdateTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req struct {
-		Title      string `json:"title"`
-		Content    string `json:"content"`
-		Attachment string `json:"attachment"`
+	title, content, _, _, err := parseTicketFormFields(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
 	}
 
-	if err := decodeRequestBody(r, &req); err != nil {
-		if err == io.EOF {
-			writeError(w, http.StatusBadRequest, "request body is required")
-		} else {
-			writeError(w, http.StatusBadRequest, "invalid request body")
+	attachment := ""
+	contentType := r.Header.Get("Content-Type")
+	if strings.HasPrefix(contentType, "multipart/form-data") {
+		if _, hdr, fileErr := r.FormFile("attachment"); fileErr == nil && hdr != nil {
+			attachment, err = uploadTicketAttachment(r, h.storageServiceAddr, h.appURL)
+			if err != nil {
+				writeError(w, http.StatusBadRequest, err.Error())
+				return
+			}
 		}
-		return
+	} else {
+		var req struct {
+			Title      string `json:"title"`
+			Content    string `json:"content"`
+			Attachment string `json:"attachment"`
+		}
+		if err := decodeRequestBody(r, &req); err != nil {
+			if err == io.EOF {
+				writeError(w, http.StatusBadRequest, "request body is required")
+			} else {
+				writeError(w, http.StatusBadRequest, "invalid request body")
+			}
+			return
+		}
+		title = req.Title
+		content = req.Content
+		attachment = req.Attachment
 	}
 
 	grpcReq := &pbSupport.UpdateTicketRequest{
 		TicketId:   ticketID,
 		UserId:     userID,
-		Title:      req.Title,
-		Content:    req.Content,
-		Attachment: req.Attachment,
+		Title:      title,
+		Content:    content,
+		Attachment: attachment,
 	}
 
 	resp, err := h.ticketClient.UpdateTicket(r.Context(), grpcReq)
@@ -379,26 +398,7 @@ func (h *SupportHandler) UpdateTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Convert response (same format as GetTicket)
-	ticketMap := map[string]interface{}{
-		"id":      resp.Id,
-		"title":   resp.Title,
-		"content": resp.Content,
-		"code":    resp.Code,
-		"status":  resp.Status,
-		"date":    resp.UpdatedAt,
-		"time":    resp.UpdatedAt,
-	}
-
-	if resp.Sender != nil {
-		ticketMap["sender"] = map[string]interface{}{
-			"name":          resp.Sender.Name,
-			"code":          resp.Sender.Code,
-			"profile-photo": resp.Sender.ProfilePhoto,
-		}
-	}
-
-	writeJSON(w, http.StatusOK, ticketMap)
+	writeJSON(w, http.StatusOK, formatTicketResponse(resp))
 }
 
 // AddTicketResponse handles POST /api/tickets/response/{ticket}
@@ -426,25 +426,48 @@ func (h *SupportHandler) AddTicketResponse(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	var req struct {
-		Response   string `json:"response"`
-		Attachment string `json:"attachment"`
+	responseText := ""
+	attachment := ""
+	contentType := r.Header.Get("Content-Type")
+
+	if strings.HasPrefix(contentType, "multipart/form-data") {
+		if err := r.ParseMultipartForm(32 << 20); err != nil {
+			writeError(w, http.StatusBadRequest, "failed to parse multipart form")
+			return
+		}
+		responseText = r.FormValue("response")
+		attachment, err = uploadTicketAttachment(r, h.storageServiceAddr, h.appURL)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+	} else {
+		var req struct {
+			Response   string `json:"response"`
+			Attachment string `json:"attachment"`
+		}
+		if err := decodeRequestBody(r, &req); err != nil {
+			if err == io.EOF {
+				writeError(w, http.StatusBadRequest, "request body is required")
+			} else {
+				writeError(w, http.StatusBadRequest, "invalid request body")
+			}
+			return
+		}
+		responseText = req.Response
+		attachment = req.Attachment
 	}
 
-	if err := decodeRequestBody(r, &req); err != nil {
-		if err == io.EOF {
-			writeError(w, http.StatusBadRequest, "request body is required")
-		} else {
-			writeError(w, http.StatusBadRequest, "invalid request body")
-		}
+	if responseText == "" {
+		writeError(w, http.StatusBadRequest, "response is required")
 		return
 	}
 
 	grpcReq := &pbSupport.AddResponseRequest{
 		TicketId:   ticketID,
 		UserId:     userID,
-		Response:   req.Response,
-		Attachment: req.Attachment,
+		Response:   responseText,
+		Attachment: attachment,
 	}
 
 	resp, err := h.ticketClient.AddResponse(r.Context(), grpcReq)
@@ -453,7 +476,11 @@ func (h *SupportHandler) AddTicketResponse(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Return updated ticket (same format as GetTicket)
+	writeJSON(w, http.StatusOK, formatTicketResponse(resp))
+}
+
+// formatTicketResponse converts a proto ticket to Laravel TicketResource-compatible JSON.
+func formatTicketResponse(resp *pbSupport.TicketResponse) map[string]interface{} {
 	ticketMap := map[string]interface{}{
 		"id":      resp.Id,
 		"title":   resp.Title,
@@ -464,22 +491,51 @@ func (h *SupportHandler) AddTicketResponse(w http.ResponseWriter, r *http.Reques
 		"time":    resp.UpdatedAt,
 	}
 
+	if resp.CreatedAt != "" && resp.UpdatedAt == "" {
+		ticketMap["date"] = resp.CreatedAt
+		ticketMap["time"] = resp.CreatedAt
+	}
+
+	if resp.Sender != nil {
+		ticketMap["sender"] = map[string]interface{}{
+			"name":          resp.Sender.Name,
+			"code":          resp.Sender.Code,
+			"profile-photo": resp.Sender.ProfilePhoto,
+		}
+	}
+
+	if resp.Receiver != nil {
+		ticketMap["reciever"] = map[string]interface{}{
+			"name":          resp.Receiver.Name,
+			"code":          resp.Receiver.Code,
+			"profile-photo": resp.Receiver.ProfilePhoto,
+		}
+	}
+
+	if resp.Department != "" {
+		ticketMap["department"] = resp.Department
+	}
+
+	if resp.Attachment != "" {
+		ticketMap["attachment"] = resp.Attachment
+	}
+
 	if len(resp.Responses) > 0 {
 		responses := make([]map[string]interface{}, 0, len(resp.Responses))
-		for _, resp := range resp.Responses {
+		for _, item := range resp.Responses {
 			responses = append(responses, map[string]interface{}{
-				"id":             resp.Id,
-				"response":       resp.Response,
-				"attachment":     resp.Attachment,
-				"responser_name": resp.ResponserName,
-				"responser_id":   resp.ResponserId,
-				"created_at":     resp.CreatedAt,
+				"id":             item.Id,
+				"response":       item.Response,
+				"attachment":     item.Attachment,
+				"responser_name": item.ResponserName,
+				"responser_id":   item.ResponserId,
+				"created_at":     item.CreatedAt,
 			})
 		}
 		ticketMap["responses"] = responses
 	}
 
-	writeJSON(w, http.StatusOK, ticketMap)
+	return ticketMap
 }
 
 // CloseTicket handles GET /api/tickets/close/{ticket}
@@ -579,21 +635,18 @@ func (h *SupportHandler) ListReports(w http.ResponseWriter, r *http.Request) {
 
 	reports := make([]map[string]interface{}, 0, len(resp.Reports))
 	for _, report := range resp.Reports {
-		reportMap := map[string]interface{}{
-			"id":       report.Id,
-			"title":    report.Reason,         // Mapping reason to title
-			"subject":  report.ReportableType, // Mapping reportable_type to subject
-			"content":  report.Description,
-			"datetime": report.CreatedAt,
-		}
-		reports = append(reports, reportMap)
+		reports = append(reports, formatReportResponse(report, h.appURL))
 	}
 
 	response := map[string]interface{}{
 		"data": reports,
 	}
 	if len(reports) == int(perPage) {
-		response["next_page_url"] = r.URL.Path + "?page=" + strconv.Itoa(int(page+1))
+		nextURL := r.URL.Path + "?page=" + strconv.Itoa(int(page+1))
+		response["next_page_url"] = nextURL
+		response["links"] = map[string]interface{}{
+			"next": nextURL,
+		}
 	}
 
 	writeJSON(w, http.StatusOK, response)
@@ -612,29 +665,56 @@ func (h *SupportHandler) CreateReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req struct {
-		Subject     string   `json:"subject"`
-		Title       string   `json:"title"`
-		Content     string   `json:"content"`
-		URL         string   `json:"url"`
-		Attachments []string `json:"attachments"`
+	var subject, title, content, url string
+	var imagePaths []string
+
+	contentType := r.Header.Get("Content-Type")
+	if strings.HasPrefix(contentType, "multipart/form-data") {
+		title, content, subject, url, err = parseReportFormFields(r)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		imagePaths, err = uploadReportAttachments(r, h.storageServiceAddr, h.appURL)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+	} else {
+		var req struct {
+			Subject     string   `json:"subject"`
+			Title       string   `json:"title"`
+			Content     string   `json:"content"`
+			URL         string   `json:"url"`
+			Attachments []string `json:"attachments"`
+		}
+		if err := decodeRequestBody(r, &req); err != nil {
+			if err == io.EOF {
+				writeError(w, http.StatusBadRequest, "request body is required")
+			} else {
+				writeError(w, http.StatusBadRequest, "invalid request body")
+			}
+			return
+		}
+		subject = req.Subject
+		title = req.Title
+		content = req.Content
+		url = req.URL
+		imagePaths = req.Attachments
 	}
 
-	if err := decodeRequestBody(r, &req); err != nil {
-		if err == io.EOF {
-			writeError(w, http.StatusBadRequest, "request body is required")
-		} else {
-			writeError(w, http.StatusBadRequest, "invalid request body")
-		}
+	if subject == "" || title == "" || content == "" || url == "" {
+		writeError(w, http.StatusBadRequest, "subject, title, content, and url are required")
 		return
 	}
 
-	// Map Laravel fields to proto fields
 	grpcReq := &pbSupport.CreateReportRequest{
 		UserId:         userID,
-		ReportableType: req.Subject,
-		Reason:         req.Title,
-		Description:    req.Content,
+		ReportableType: subject,
+		Reason:         title,
+		Description:    content,
+		Url:            url,
+		ImagePaths:     imagePaths,
 	}
 
 	resp, err := h.reportClient.CreateReport(r.Context(), grpcReq)
@@ -643,19 +723,7 @@ func (h *SupportHandler) CreateReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	reportMap := map[string]interface{}{
-		"id":       resp.Id,
-		"title":    resp.Reason,
-		"subject":  resp.ReportableType,
-		"content":  resp.Description,
-		"datetime": resp.CreatedAt,
-	}
-
-	if req.URL != "" {
-		reportMap["url"] = req.URL
-	}
-
-	writeJSON(w, http.StatusCreated, reportMap)
+	writeJSON(w, http.StatusCreated, formatReportResponse(resp, h.appURL))
 }
 
 // GetReport handles GET /api/reports/{report}
@@ -687,15 +755,7 @@ func (h *SupportHandler) GetReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	reportMap := map[string]interface{}{
-		"id":       resp.Id,
-		"title":    resp.Reason,
-		"subject":  resp.ReportableType,
-		"content":  resp.Description,
-		"datetime": resp.CreatedAt,
-	}
-
-	writeJSON(w, http.StatusOK, reportMap)
+	writeJSON(w, http.StatusOK, formatReportResponse(resp, h.appURL))
 }
 
 // ============================================================================
@@ -727,17 +787,7 @@ func (h *SupportHandler) ListNotes(w http.ResponseWriter, r *http.Request) {
 
 	notes := make([]map[string]interface{}, 0, len(resp.Notes))
 	for _, note := range resp.Notes {
-		noteMap := map[string]interface{}{
-			"id":      note.Id,
-			"title":   note.Title,
-			"content": note.Content,
-			"date":    note.Date,
-			"time":    note.Time,
-		}
-		if note.Attachment != "" {
-			noteMap["attachment"] = note.Attachment
-		}
-		notes = append(notes, noteMap)
+		notes = append(notes, formatNoteResponse(note))
 	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{"data": notes})
@@ -756,26 +806,50 @@ func (h *SupportHandler) CreateNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req struct {
-		Title      string `json:"title"`
-		Content    string `json:"content"`
-		Attachment string `json:"attachment"`
+	title, content, err := parseNoteFormFields(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
 	}
 
-	if err := decodeRequestBody(r, &req); err != nil {
-		if err == io.EOF {
-			writeError(w, http.StatusBadRequest, "request body is required")
-		} else {
-			writeError(w, http.StatusBadRequest, "invalid request body")
+	attachment := ""
+	contentType := r.Header.Get("Content-Type")
+	if strings.HasPrefix(contentType, "multipart/form-data") {
+		url, _, attachErr := resolveNoteAttachmentURL(r, h.storageServiceAddr, h.appURL)
+		if attachErr != nil {
+			writeError(w, http.StatusBadRequest, attachErr.Error())
+			return
 		}
+		attachment = url
+	} else {
+		var req struct {
+			Title      string `json:"title"`
+			Content    string `json:"content"`
+			Attachment string `json:"attachment"`
+		}
+		if err := decodeRequestBody(r, &req); err != nil {
+			if err == io.EOF {
+				writeError(w, http.StatusBadRequest, "request body is required")
+			} else {
+				writeError(w, http.StatusBadRequest, "invalid request body")
+			}
+			return
+		}
+		title = req.Title
+		content = req.Content
+		attachment = req.Attachment
+	}
+
+	if title == "" || content == "" {
+		writeError(w, http.StatusBadRequest, "title and content are required")
 		return
 	}
 
 	grpcReq := &pbSupport.CreateNoteRequest{
 		UserId:     userID,
-		Title:      req.Title,
-		Content:    req.Content,
-		Attachment: req.Attachment,
+		Title:      title,
+		Content:    content,
+		Attachment: attachment,
 	}
 
 	resp, err := h.noteClient.CreateNote(r.Context(), grpcReq)
@@ -784,18 +858,7 @@ func (h *SupportHandler) CreateNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	noteMap := map[string]interface{}{
-		"id":      resp.Id,
-		"title":   resp.Title,
-		"content": resp.Content,
-		"date":    resp.Date,
-		"time":    resp.Time,
-	}
-	if resp.Attachment != "" {
-		noteMap["attachment"] = resp.Attachment
-	}
-
-	writeJSON(w, http.StatusCreated, noteMap)
+	writeJSON(w, http.StatusCreated, formatNoteResponse(resp))
 }
 
 // GetNote handles GET /api/notes/{note}
@@ -834,23 +897,12 @@ func (h *SupportHandler) GetNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	noteMap := map[string]interface{}{
-		"id":      resp.Id,
-		"title":   resp.Title,
-		"content": resp.Content,
-		"date":    resp.Date,
-		"time":    resp.Time,
-	}
-	if resp.Attachment != "" {
-		noteMap["attachment"] = resp.Attachment
-	}
-
-	writeJSON(w, http.StatusOK, noteMap)
+	writeJSON(w, http.StatusOK, formatNoteResponse(resp))
 }
 
-// UpdateNote handles PUT/PATCH /api/notes/{note}
+// UpdateNote handles PUT/PATCH /api/notes/{note} (also POST + _method=put|patch)
 func (h *SupportHandler) UpdateNote(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPut && r.Method != http.MethodPatch {
+	if m := EffectiveHTTPMethod(r); m != http.MethodPut && m != http.MethodPatch {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
@@ -873,27 +925,66 @@ func (h *SupportHandler) UpdateNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req struct {
-		Title      string `json:"title"`
-		Content    string `json:"content"`
-		Attachment string `json:"attachment"`
-	}
-
-	if err := decodeRequestBody(r, &req); err != nil {
-		if err == io.EOF {
-			writeError(w, http.StatusBadRequest, "request body is required")
-		} else {
-			writeError(w, http.StatusBadRequest, "invalid request body")
-		}
+	title, content, err := parseNoteFormFields(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
+	attachment := ""
+	updateAttachment := false
+	contentType := r.Header.Get("Content-Type")
+	if strings.HasPrefix(contentType, "multipart/form-data") {
+		url, clear, attachErr := resolveNoteAttachmentURL(r, h.storageServiceAddr, h.appURL)
+		if attachErr != nil {
+			writeError(w, http.StatusBadRequest, attachErr.Error())
+			return
+		}
+		if clear {
+			attachment = ""
+			updateAttachment = true
+		} else if url != "" {
+			attachment = url
+			updateAttachment = true
+		}
+	} else {
+		var req struct {
+			Title      string `json:"title"`
+			Content    string `json:"content"`
+			Attachment string `json:"attachment"`
+		}
+		if err := decodeRequestBody(r, &req); err != nil {
+			if err == io.EOF {
+				writeError(w, http.StatusBadRequest, "request body is required")
+			} else {
+				writeError(w, http.StatusBadRequest, "invalid request body")
+			}
+			return
+		}
+		title = req.Title
+		content = req.Content
+		attachment = req.Attachment
+		updateAttachment = true
+	}
+
 	grpcReq := &pbSupport.UpdateNoteRequest{
-		NoteId:     noteID,
-		UserId:     userID,
-		Title:      req.Title,
-		Content:    req.Content,
-		Attachment: req.Attachment,
+		NoteId:  noteID,
+		UserId:  userID,
+		Title:   title,
+		Content: content,
+	}
+	if updateAttachment {
+		grpcReq.Attachment = attachment
+	} else {
+		existing, getErr := h.noteClient.GetNote(r.Context(), &pbSupport.GetNoteRequest{
+			NoteId: noteID,
+			UserId: userID,
+		})
+		if getErr != nil {
+			writeGRPCError(w, getErr)
+			return
+		}
+		grpcReq.Attachment = existing.Attachment
 	}
 
 	resp, err := h.noteClient.UpdateNote(r.Context(), grpcReq)
@@ -902,18 +993,7 @@ func (h *SupportHandler) UpdateNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	noteMap := map[string]interface{}{
-		"id":      resp.Id,
-		"title":   resp.Title,
-		"content": resp.Content,
-		"date":    resp.Date,
-		"time":    resp.Time,
-	}
-	if resp.Attachment != "" {
-		noteMap["attachment"] = resp.Attachment
-	}
-
-	writeJSON(w, http.StatusOK, noteMap)
+	writeJSON(w, http.StatusOK, formatNoteResponse(resp))
 }
 
 // DeleteNote handles DELETE /api/notes/{note}
@@ -953,4 +1033,46 @@ func (h *SupportHandler) DeleteNote(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// formatNoteResponse converts a proto note to Laravel/frontend-compatible JSON.
+// Frontend expects attachments as an array; DB stores a single attachment URL.
+func formatNoteResponse(resp *pbSupport.NoteResponse) map[string]interface{} {
+	noteMap := map[string]interface{}{
+		"id":          resp.Id,
+		"title":       resp.Title,
+		"content":     resp.Content,
+		"date":        resp.Date,
+		"time":        resp.Time,
+		"attachments": []string{},
+	}
+	if resp.Attachment != "" {
+		noteMap["attachment"] = resp.Attachment
+		noteMap["attachments"] = []string{resp.Attachment}
+	}
+	return noteMap
+}
+
+// formatReportResponse converts a proto report to Laravel ReportResource-compatible JSON.
+func formatReportResponse(resp *pbSupport.ReportResponse, appURL string) map[string]interface{} {
+	reportMap := map[string]interface{}{
+		"id":       strconv.FormatUint(resp.Id, 10),
+		"title":    resp.Reason,
+		"subject":  resp.ReportableType,
+		"content":  resp.Description,
+		"datetime": resp.CreatedAt,
+	}
+	if resp.Url != "" {
+		reportMap["url"] = resp.Url
+	}
+	attachments := make([]string, 0, len(resp.ImagePaths))
+	base := strings.TrimRight(appURL, "/")
+	for _, path := range resp.ImagePaths {
+		path = strings.TrimPrefix(path, "/")
+		attachments = append(attachments, base+"/uploads/"+path)
+	}
+	if len(attachments) > 0 {
+		reportMap["attachments"] = attachments
+	}
+	return reportMap
 }

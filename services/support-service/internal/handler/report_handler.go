@@ -37,15 +37,12 @@ func (h *ReportHandler) CreateReport(ctx context.Context, req *pb.CreateReportRe
 		return nil, status.Error(codes.InvalidArgument, "reason is required")
 	}
 
-	// Note: Laravel's Report model has different fields than what's in the proto
-	// The proto expects reportable_type/reportable_id, but Laravel Report has subject/title/content/url
-	// We'll map them appropriately
-	report, err := h.reportService.CreateReport(ctx, req.UserId, req.ReportableType, req.Reason, req.Description, "", nil)
+	report, err := h.reportService.CreateReport(ctx, req.UserId, req.ReportableType, req.Reason, req.Description, req.Url, req.ImagePaths)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create report: %v", err)
 	}
 
-	return convertReportToProto(&report.Report), nil
+	return convertReportWithImagesToProto(report), nil
 }
 
 func (h *ReportHandler) GetReports(ctx context.Context, req *pb.GetReportsRequest) (*pb.ReportsResponse, error) {
@@ -100,7 +97,7 @@ func (h *ReportHandler) GetReport(ctx context.Context, req *pb.GetReportRequest)
 		return nil, status.Error(codes.NotFound, "report not found")
 	}
 
-	return convertReportToProto(&report.Report), nil
+	return convertReportWithImagesToProto(report), nil
 }
 
 // Helper function to convert report model to proto response
@@ -108,10 +105,22 @@ func convertReportToProto(report *models.Report) *pb.ReportResponse {
 	return &pb.ReportResponse{
 		Id:             report.ID,
 		UserId:         report.UserID,
-		ReportableType: report.Subject, // Mapping subject to reportable_type
-		ReportableId:   0,              // Not stored in Laravel Report model
-		Reason:         report.Title,   // Mapping title to reason
-		Description:    report.Content, // Mapping content to description
+		ReportableType: report.Subject,
+		ReportableId:   0,
+		Reason:         report.Title,
+		Description:    report.Content,
+		Url:            report.URL,
 		CreatedAt:      utils.FormatJalaliDateTime(report.CreatedAt),
 	}
+}
+
+func convertReportWithImagesToProto(report *models.ReportWithImages) *pb.ReportResponse {
+	resp := convertReportToProto(&report.Report)
+	if len(report.Images) > 0 {
+		resp.ImagePaths = make([]string, len(report.Images))
+		for i, img := range report.Images {
+			resp.ImagePaths[i] = img.URL
+		}
+	}
+	return resp
 }
