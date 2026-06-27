@@ -152,39 +152,3 @@ func TestTransactionOperations(t *testing.T) {
 		t.Logf("Created transaction: %s", resp.Id)
 	})
 }
-
-func TestPaymentGateway(t *testing.T) {
-	conn, err := grpc.Dial(commercialServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		t.Fatalf("Failed to connect: %v", err)
-	}
-	defer conn.Close()
-
-	client := pb.NewPaymentServiceClient(conn)
-	ctx := context.Background()
-
-	testUserID := uint64(1)
-
-	t.Run("InitiatePayment", func(t *testing.T) {
-		req := &pb.InitiatePaymentRequest{
-			UserId: testUserID,
-			Asset:  "psc",
-			Amount: 1000.0,
-		}
-
-		resp, err := client.InitiatePayment(ctx, req)
-		if err != nil {
-			t.Logf("InitiatePayment error (might be gateway issue): %v", err)
-			return
-		}
-
-		if resp.PaymentUrl == "" {
-			t.Error("Payment URL should not be empty")
-		}
-
-		t.Logf("Payment URL: %s", resp.PaymentUrl)
-		t.Logf("Order ID: %d", resp.OrderId)
-		t.Logf("Transaction ID: %s", resp.TransactionId)
-	})
-}
-

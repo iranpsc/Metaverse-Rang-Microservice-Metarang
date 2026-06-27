@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 
 	"metargb/financial-service/internal/service"
@@ -16,7 +15,7 @@ import (
 // mockOrderService implements service.OrderService for testing
 type mockOrderService struct {
 	createOrderFunc func(ctx context.Context, userID uint64, amount int32, asset string) (string, error)
-	callbackFunc    func(ctx context.Context, orderID uint64, status int32, token int64, additionalParams map[string]string) (string, error)
+	callbackFunc    func(ctx context.Context, orderID uint64, token string, resCode string, additionalParams map[string]string) (string, error)
 }
 
 func (m *mockOrderService) CreateOrder(ctx context.Context, userID uint64, amount int32, asset string) (string, error) {
@@ -26,9 +25,9 @@ func (m *mockOrderService) CreateOrder(ctx context.Context, userID uint64, amoun
 	return "", nil
 }
 
-func (m *mockOrderService) HandleCallback(ctx context.Context, orderID uint64, status int32, token int64, additionalParams map[string]string) (string, error) {
+func (m *mockOrderService) HandleCallback(ctx context.Context, orderID uint64, token string, resCode string, additionalParams map[string]string) (string, error) {
 	if m.callbackFunc != nil {
-		return m.callbackFunc(ctx, orderID, status, token, additionalParams)
+		return m.callbackFunc(ctx, orderID, token, resCode, additionalParams)
 	}
 	return "", nil
 }
@@ -42,7 +41,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 				if userID != 1 || amount != 10 || asset != "psc" {
 					t.Errorf("unexpected parameters: userID=%d, amount=%d, asset=%s", userID, amount, asset)
 				}
-				return "https://pec.shaparak.ir/NewIPG/?token=abc123", nil
+				return "https://sadad.shaparak.ir/VPG/Purchase?Token=abc123", nil
 			},
 		}
 		handler := NewOrderHandler(mockService)
@@ -58,8 +57,8 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 			t.Fatalf("CreateOrder failed: %v", err)
 		}
 
-		if resp.Link != "https://pec.shaparak.ir/NewIPG/?token=abc123" {
-			t.Errorf("expected link %s, got %s", "https://pec.shaparak.ir/NewIPG/?token=abc123", resp.Link)
+		if resp.Link != "https://sadad.shaparak.ir/VPG/Purchase?Token=abc123" {
+			t.Errorf("expected link %s, got %s", "https://sadad.shaparak.ir/VPG/Purchase?Token=abc123", resp.Link)
 		}
 	})
 
@@ -70,7 +69,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 			t.Run("asset_"+asset, func(t *testing.T) {
 				mockService := &mockOrderService{
 					createOrderFunc: func(ctx context.Context, userID uint64, amount int32, asset string) (string, error) {
-						return "https://pec.shaparak.ir/NewIPG/?token=test", nil
+						return "https://sadad.shaparak.ir/VPG/Purchase?Token=test", nil
 					},
 				}
 				handler := NewOrderHandler(mockService)
@@ -275,8 +274,8 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 		}
 
 		st, ok := status.FromError(err)
-		if !ok || st.Code() != codes.FailedPrecondition {
-			t.Errorf("expected FailedPrecondition, got %v", err)
+		if !ok || st.Code() != codes.InvalidArgument {
+			t.Errorf("expected InvalidArgument, got %v", err)
 		}
 	})
 
@@ -330,22 +329,21 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 func TestOrderHandler_HandleCallback(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("successful callback - status 0 (payment success)", func(t *testing.T) {
-		expectedURL := "https://rgb.irpsc.com/metaverse/payment/verify?OrderId=123&status=0&Token=456789&RRN=987654&CardMaskPan=1234****5678"
+	t.Run("successful callback - res_code 0 (payment success)", func(t *testing.T) {
+		expectedURL := "https://rgb.irpsc.com/metaverse/payment/verify?OrderId=123&ResCode=0&Token=456789"
 		mockService := &mockOrderService{
-			callbackFunc: func(ctx context.Context, orderID uint64, status int32, token int64, additionalParams map[string]string) (string, error) {
+			callbackFunc: func(ctx context.Context, orderID uint64, token string, resCode string, additionalParams map[string]string) (string, error) {
 				if orderID != 123 {
 					t.Errorf("unexpected orderID: %d", orderID)
 				}
-				if status != 0 {
-					t.Errorf("unexpected status: %d", status)
+				if resCode != "0" {
+					t.Errorf("unexpected resCode: %s", resCode)
 				}
-				if token != 456789 {
-					t.Errorf("unexpected token: %d", token)
+				if token != "456789" {
+					t.Errorf("unexpected token: %s", token)
 				}
-				// Verify additional params are passed
-				if additionalParams["RRN"] != "987654" {
-					t.Errorf("unexpected RRN: %s", additionalParams["RRN"])
+				if additionalParams["PrimaryAccNo"] != "1234****5678" {
+					t.Errorf("unexpected PrimaryAccNo: %s", additionalParams["PrimaryAccNo"])
 				}
 				return expectedURL, nil
 			},
@@ -354,13 +352,10 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 
 		req := &pb.HandleCallbackRequest{
 			OrderId: 123,
-			Status:  0,
-			Token:   456789,
-			Rrn:     987654,
-			CardMaskPan: "1234****5678",
+			ResCode: "0",
+			Token:   "456789",
 			AdditionalParams: map[string]string{
-				"RRN":         "987654",
-				"CardMaskPan": "1234****5678",
+				"PrimaryAccNo": "1234****5678",
 			},
 		}
 
@@ -374,12 +369,12 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 		}
 	})
 
-	t.Run("successful callback - status != 0 (payment failure)", func(t *testing.T) {
-		expectedURL := "https://rgb.irpsc.com/metaverse/payment/verify?OrderId=123&status=-1&Token=456789"
+	t.Run("successful callback - res_code != 0 (payment failure)", func(t *testing.T) {
+		expectedURL := "https://rgb.irpsc.com/metaverse/payment/verify?OrderId=123&ResCode=-1&Token=456789"
 		mockService := &mockOrderService{
-			callbackFunc: func(ctx context.Context, orderID uint64, status int32, token int64, additionalParams map[string]string) (string, error) {
-				if status != -1 {
-					t.Errorf("unexpected status: %d", status)
+			callbackFunc: func(ctx context.Context, orderID uint64, token string, resCode string, additionalParams map[string]string) (string, error) {
+				if resCode != "-1" {
+					t.Errorf("unexpected resCode: %s", resCode)
 				}
 				return expectedURL, nil
 			},
@@ -388,8 +383,8 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 
 		req := &pb.HandleCallbackRequest{
 			OrderId: 123,
-			Status:  -1, // Payment failed
-			Token:   456789,
+			ResCode: "-1",
+			Token:   "456789",
 		}
 
 		resp, err := handler.HandleCallback(ctx, req)
@@ -407,9 +402,9 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 		handler := NewOrderHandler(mockService)
 
 		req := &pb.HandleCallbackRequest{
-			OrderId: 0, // Invalid: required field
-			Status:  0,
-			Token:   456789,
+			OrderId: 0,
+			ResCode: "0",
+			Token:   "456789",
 		}
 
 		_, err := handler.HandleCallback(ctx, req)
@@ -423,21 +418,21 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 		}
 	})
 
-	t.Run("allows zero token for failed payment callbacks", func(t *testing.T) {
+	t.Run("allows empty token for failed payment callbacks", func(t *testing.T) {
 		mockService := &mockOrderService{
-			callbackFunc: func(ctx context.Context, orderID uint64, status int32, token int64, additionalParams map[string]string) (string, error) {
-				if token != 0 {
-					t.Errorf("expected token 0, got %d", token)
+			callbackFunc: func(ctx context.Context, orderID uint64, token string, resCode string, additionalParams map[string]string) (string, error) {
+				if token != "" {
+					t.Errorf("expected empty token, got %s", token)
 				}
-				return "https://rgb.irpsc.com/metaverse/payment/verify?OrderId=123&status=1&Token=0", nil
+				return "https://rgb.irpsc.com/metaverse/payment/verify?OrderId=123&ResCode=1", nil
 			},
 		}
 		handler := NewOrderHandler(mockService)
 
 		req := &pb.HandleCallbackRequest{
 			OrderId: 123,
-			Status:  1,
-			Token:   0,
+			ResCode: "1",
+			Token:   "",
 		}
 
 		resp, err := handler.HandleCallback(ctx, req)
@@ -449,14 +444,14 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 		}
 	})
 
-	t.Run("validation error - missing order_id with zero token", func(t *testing.T) {
+	t.Run("validation error - missing order_id with empty token", func(t *testing.T) {
 		mockService := &mockOrderService{}
 		handler := NewOrderHandler(mockService)
 
 		req := &pb.HandleCallbackRequest{
 			OrderId: 0,
-			Status:  0,
-			Token:   0,
+			ResCode: "0",
+			Token:   "",
 		}
 
 		_, err := handler.HandleCallback(ctx, req)
@@ -472,16 +467,16 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 
 	t.Run("service error - order not found", func(t *testing.T) {
 		mockService := &mockOrderService{
-			callbackFunc: func(ctx context.Context, orderID uint64, status int32, token int64, additionalParams map[string]string) (string, error) {
+			callbackFunc: func(ctx context.Context, orderID uint64, token string, resCode string, additionalParams map[string]string) (string, error) {
 				return "", service.ErrOrderNotFound
 			},
 		}
 		handler := NewOrderHandler(mockService)
 
 		req := &pb.HandleCallbackRequest{
-			OrderId: 999, // Non-existent order
-			Status:  0,
-			Token:   456789,
+			OrderId: 999,
+			ResCode: "0",
+			Token:   "456789",
 		}
 
 		_, err := handler.HandleCallback(ctx, req)
@@ -497,7 +492,7 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 
 	t.Run("service error - internal error", func(t *testing.T) {
 		mockService := &mockOrderService{
-			callbackFunc: func(ctx context.Context, orderID uint64, status int32, token int64, additionalParams map[string]string) (string, error) {
+			callbackFunc: func(ctx context.Context, orderID uint64, token string, resCode string, additionalParams map[string]string) (string, error) {
 				return "", errors.New("database connection failed")
 			},
 		}
@@ -505,8 +500,8 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 
 		req := &pb.HandleCallbackRequest{
 			OrderId: 123,
-			Status:  0,
-			Token:   456789,
+			ResCode: "0",
+			Token:   "456789",
 		}
 
 		_, err := handler.HandleCallback(ctx, req)
@@ -522,20 +517,19 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 
 	t.Run("additional params handling - empty map", func(t *testing.T) {
 		mockService := &mockOrderService{
-			callbackFunc: func(ctx context.Context, orderID uint64, status int32, token int64, additionalParams map[string]string) (string, error) {
+			callbackFunc: func(ctx context.Context, orderID uint64, token string, resCode string, additionalParams map[string]string) (string, error) {
 				if additionalParams == nil {
 					t.Error("expected non-nil additionalParams map")
 				}
-				return "https://rgb.irpsc.com/metaverse/payment/verify?OrderId=123&status=0&Token=456789", nil
+				return "https://rgb.irpsc.com/metaverse/payment/verify?OrderId=123&ResCode=0&Token=456789", nil
 			},
 		}
 		handler := NewOrderHandler(mockService)
 
 		req := &pb.HandleCallbackRequest{
 			OrderId: 123,
-			Status:  0,
-			Token:   456789,
-			// AdditionalParams is nil
+			ResCode: "0",
+			Token:   "456789",
 		}
 
 		resp, err := handler.HandleCallback(ctx, req)
@@ -550,30 +544,28 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 
 	t.Run("additional params handling - multiple params", func(t *testing.T) {
 		mockService := &mockOrderService{
-			callbackFunc: func(ctx context.Context, orderID uint64, status int32, token int64, additionalParams map[string]string) (string, error) {
+			callbackFunc: func(ctx context.Context, orderID uint64, token string, resCode string, additionalParams map[string]string) (string, error) {
 				expectedParams := map[string]string{
-					"RRN":         "987654",
-					"CardMaskPan": "1234****5678",
-					"CustomField": "custom_value",
+					"PrimaryAccNo": "1234****5678",
+					"CustomField":  "custom_value",
 				}
 				for k, v := range expectedParams {
 					if additionalParams[k] != v {
 						t.Errorf("unexpected value for %s: expected %s, got %s", k, v, additionalParams[k])
 					}
 				}
-				return "https://rgb.irpsc.com/metaverse/payment/verify?OrderId=123&status=0&Token=456789", nil
+				return "https://rgb.irpsc.com/metaverse/payment/verify?OrderId=123&ResCode=0&Token=456789", nil
 			},
 		}
 		handler := NewOrderHandler(mockService)
 
 		req := &pb.HandleCallbackRequest{
 			OrderId: 123,
-			Status:  0,
-			Token:   456789,
+			ResCode: "0",
+			Token:   "456789",
 			AdditionalParams: map[string]string{
-				"RRN":         "987654",
-				"CardMaskPan": "1234****5678",
-				"CustomField": "custom_value",
+				"PrimaryAccNo": "1234****5678",
+				"CustomField":  "custom_value",
 			},
 		}
 
@@ -583,15 +575,15 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 		}
 	})
 
-	t.Run("callback with various status codes", func(t *testing.T) {
-		statusCodes := []int32{0, -1, -2, 1, 2, 100}
+	t.Run("callback with various res codes", func(t *testing.T) {
+		resCodes := []string{"0", "-1", "-2", "1", "2", "100"}
 
-		for _, statusCode := range statusCodes {
-			t.Run(fmt.Sprintf("status_%d", statusCode), func(t *testing.T) {
+		for _, resCode := range resCodes {
+			t.Run("res_code_"+resCode, func(t *testing.T) {
 				mockService := &mockOrderService{
-					callbackFunc: func(ctx context.Context, orderID uint64, status int32, token int64, additionalParams map[string]string) (string, error) {
-						if status != statusCode {
-							t.Errorf("unexpected status: expected %d, got %d", statusCode, status)
+					callbackFunc: func(ctx context.Context, orderID uint64, token string, gotResCode string, additionalParams map[string]string) (string, error) {
+						if gotResCode != resCode {
+							t.Errorf("unexpected resCode: expected %s, got %s", resCode, gotResCode)
 						}
 						return "https://rgb.irpsc.com/metaverse/payment/verify", nil
 					},
@@ -600,17 +592,17 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 
 				req := &pb.HandleCallbackRequest{
 					OrderId: 123,
-					Status:  statusCode,
-					Token:   456789,
+					ResCode: resCode,
+					Token:   "456789",
 				}
 
 				resp, err := handler.HandleCallback(ctx, req)
 				if err != nil {
-					t.Fatalf("HandleCallback failed for status %d: %v", statusCode, err)
+					t.Fatalf("HandleCallback failed for resCode %s: %v", resCode, err)
 				}
 
 				if resp.RedirectUrl == "" {
-					t.Errorf("expected non-empty redirect URL for status %d", statusCode)
+					t.Errorf("expected non-empty redirect URL for resCode %s", resCode)
 				}
 			})
 		}

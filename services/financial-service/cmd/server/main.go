@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -17,7 +18,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"metargb/financial-service/internal/handler"
-	"metargb/financial-service/internal/parsian"
+	"metargb/financial-service/internal/sadad"
 	"metargb/financial-service/internal/repository"
 	"metargb/financial-service/internal/service"
 	commercialpb "metargb/shared/pb/commercial"
@@ -32,23 +33,24 @@ func main() {
 		}
 	}()
 
-	// Load environment variables from config.env
-	// Try multiple possible paths for config.env
+	// Load config.env; file values apply only when not already set (docker-compose environment overrides DB_* etc.).
 	configPaths := []string{
+		"services/financial-service/config.env",
 		"config.env",
 		"./config.env",
 		"../config.env",
 		"../../config.env",
-		"services/financial-service/config.env",
 	}
-	var configLoaded bool
+	var loadedConfigPath string
 	for _, configPath := range configPaths {
 		if err := godotenv.Load(configPath); err == nil {
-			configLoaded = true
+			loadedConfigPath = configPath
 			break
 		}
 	}
-	if !configLoaded {
+	if loadedConfigPath != "" {
+		log.Printf("Loaded configuration from %s", loadedConfigPath)
+	} else {
 		log.Printf("Warning: config.env not found, using environment variables only")
 	}
 
@@ -90,8 +92,19 @@ func main() {
 	optionRepo := repository.NewOptionRepository(db)
 	imageRepo := repository.NewImageRepository(db)
 
-	// Initialize Parsian client
-	parsianClient := parsian.NewClient()
+	// Initialize Sadad client (BankTest sandbox when SADAD_SANDBOX=true)
+	sadadSandbox := parseBoolEnv("SADAD_SANDBOX", false)
+	sadadClient := sadad.NewClientWithSandbox(sadadSandbox)
+	if sadadSandbox {
+		log.Println("Sadad payment gateway: sandbox mode (BankTest)")
+	} else {
+		log.Println("Sadad payment gateway: production mode")
+	}
+
+	sadadCallbackURL := resolveSadadCallbackURL()
+	log.Printf("Sadad callback URL: %s", sadadCallbackURL)
+	frontendURL := resolveFrontendURL()
+	log.Printf("Frontend URL: %s", frontendURL)
 
 	// Initialize order policy
 	orderPolicy := service.NewOrderPolicy(db, firstOrderRepo)
@@ -118,15 +131,19 @@ func main() {
 		paymentRepo,
 		variableRepo,
 		firstOrderRepo,
-		parsianClient,
+		sadadClient,
 		orderPolicy,
 		jalaliConverter,
 		walletClient,
 		service.OrderConfig{
-			ParsianMerchantID:            getEnv("PARSIAN_MERCHANT_ID", ""),
-			ParsianLoanAccountMerchantID: getEnv("PARSIAN_LOAN_ACCOUNT_MERCHANT_ID", ""),
-			ParsianCallbackURL:           getEnv("PARSIAN_CALLBACK_URL", ""),
-			FrontendURL:                  getEnv("FRONTEND_URL", ""),
+			SadadMerchantID:             getEnv("SADAD_MERCHANT_ID", ""),
+			SadadTerminalID:             getEnv("SADAD_TERMINAL_ID", ""),
+			SadadTransactionKey:         getEnv("SADAD_TRANSACTION_KEY", ""),
+			SadadPaymentIdentityRial:    getEnv("SADAD_PAYMENT_IDENTITY_RIAL", ""),
+			SadadPaymentIdentityNonRial: getEnv("SADAD_PAYMENT_IDENTITY_NON_RIAL", ""),
+			SadadCallbackURL:            sadadCallbackURL,
+			FrontendURL:                 frontendURL,
+			SadadSandbox:                sadadSandbox,
 		},
 	)
 
@@ -179,4 +196,54 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+// resolveSadadCallbackURL returns the Sadad ReturnUrl base (without order_id query param).
+// Supports ${PROJECT_URL} expansion in config.env (e.g. SADAD_CALLBACK_URL=${PROJECT_URL}/api/payment/callback).
+func resolveSadadCallbackURL() string {
+	for _, key := range []string{"SADAD_CALLBACK_URL", "PAYMENT_CALLBACK_URL"} {
+		if raw := strings.TrimSpace(os.Getenv(key)); raw != "" {
+			if expanded := strings.TrimSpace(os.ExpandEnv(raw)); expanded != "" {
+				return strings.TrimSuffix(expanded, "/")
+			}
+		}
+	}
+
+	projectURL := strings.TrimSpace(os.ExpandEnv(getEnv("PROJECT_URL", "http://localhost:8000")))
+	return strings.TrimSuffix(projectURL, "/") + "/api/payment/callback"
+}
+
+func resolveFrontendURL() string {
+	raw := strings.TrimSpace(os.Getenv("FRONTEND_URL"))
+	if raw == "" {
+		return ""
+	}
+	expanded := strings.TrimSpace(os.ExpandEnv(raw))
+	return strings.TrimSuffix(normalizeURLScheme(expanded), "/")
+}
+
+func normalizeURLScheme(rawURL string) string {
+	if rawURL == "" {
+		return rawURL
+	}
+	if strings.Contains(rawURL, "://") {
+		return rawURL
+	}
+	return "http://" + rawURL
+}
+
+func parseBoolEnv(key string, defaultValue bool) bool {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return defaultValue
+	}
+	switch strings.ToLower(raw) {
+	case "1", "t", "true", "yes", "y", "on":
+		return true
+	case "0", "f", "false", "no", "n", "off":
+		return false
+	default:
+		log.Printf("Warning: invalid boolean for %s=%q, using default %t", key, raw, defaultValue)
+		return defaultValue
+	}
 }

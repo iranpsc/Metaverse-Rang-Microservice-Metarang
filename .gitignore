@@ -86,3 +86,4 @@ coverage-final.json
 /scripts/metargb_db.sql
 /.cursor/
 /docs/
+AGENTS.md

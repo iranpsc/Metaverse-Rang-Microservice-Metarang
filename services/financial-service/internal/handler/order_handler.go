@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -50,7 +51,10 @@ func (h *OrderHandler) CreateOrder(ctx context.Context, req *pb.CreateOrderReque
 			return nil, status.Errorf(codes.PermissionDenied, "%v", err)
 		}
 		if errors.Is(err, service.ErrPaymentFailed) {
-			return nil, status.Errorf(codes.FailedPrecondition, "%v", err)
+			// Laravel OrderController throws ValidationException with an "error" field (422)
+			return nil, returnValidationError(map[string]string{
+				"error": paymentFailedMessage(err),
+			})
 		}
 		return nil, status.Errorf(codes.Internal, "failed to create order: %v", err)
 	}
@@ -78,7 +82,7 @@ func (h *OrderHandler) HandleCallback(ctx context.Context, req *pb.HandleCallbac
 	}
 
 	// Call service
-	redirectURL, err := h.orderService.HandleCallback(ctx, req.OrderId, req.Status, req.Token, additionalParams)
+	redirectURL, err := h.orderService.HandleCallback(ctx, req.OrderId, req.Token, req.ResCode, additionalParams)
 	if err != nil {
 		if errors.Is(err, service.ErrOrderNotFound) {
 			return nil, status.Errorf(codes.NotFound, "%v", err)
@@ -89,4 +93,12 @@ func (h *OrderHandler) HandleCallback(ctx context.Context, req *pb.HandleCallbac
 	return &pb.HandleCallbackResponse{
 		RedirectUrl: redirectURL,
 	}, nil
+}
+
+func paymentFailedMessage(err error) string {
+	prefix := service.ErrPaymentFailed.Error() + ": "
+	if msg := strings.TrimPrefix(err.Error(), prefix); msg != err.Error() {
+		return msg
+	}
+	return err.Error()
 }

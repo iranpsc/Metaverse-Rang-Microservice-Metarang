@@ -690,7 +690,7 @@ func main() {
 	// Financial routes
 	if financialHandler != nil {
 		mux.Handle("/api/order", authMiddleware(http.HandlerFunc(financialHandler.CreateOrder)))
-		mux.Handle("/api/parsian/callback", http.HandlerFunc(financialHandler.HandleCallback)) // Callback doesn't require auth
+		mux.Handle("/api/payment/callback", http.HandlerFunc(financialHandler.HandleCallback)) // Callback doesn't require auth
 		mux.Handle("/api/store", optionalAuthMiddleware(http.HandlerFunc(financialHandler.GetStorePackages)))
 	}
 

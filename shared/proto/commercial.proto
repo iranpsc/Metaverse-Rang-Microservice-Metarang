@@ -23,13 +23,6 @@ service TransactionService {
   rpc CreateTransaction(CreateTransactionRequest) returns (Transaction);
 }
 
-// Payment Service - handles payment gateway integration
-service PaymentService {
-  rpc InitiatePayment(InitiatePaymentRequest) returns (InitiatePaymentResponse);
-  rpc HandleCallback(HandleCallbackRequest) returns (HandleCallbackResponse);
-  rpc VerifyPayment(VerifyPaymentRequest) returns (VerifyPaymentResponse);
-}
-
 // ============== Messages ==============
 
 message Wallet {
@@ -182,41 +175,4 @@ message CreateTransactionRequest {
   int32 status = 5;
   string payable_type = 6;
   uint64 payable_id = 7;
-}
-
-message InitiatePaymentRequest {
-  uint64 user_id = 1;
-  string asset = 2;
-  double amount = 3;
-}
-
-message InitiatePaymentResponse {
-  string payment_url = 1;
-  uint64 order_id = 2;
-  string transaction_id = 3;
-}
-
-message HandleCallbackRequest {
-  uint64 order_id = 1;
-  int32 status = 2;
-  int64 token = 3;
-}
-
-message HandleCallbackResponse {
-  bool success = 1;
-  string redirect_url = 2;
-  string message = 3;
-}
-
-message VerifyPaymentRequest {
-  int64 token = 1;
-  string merchant_id = 2;
-}
-
-message VerifyPaymentResponse {
-  bool success = 1;
-  int32 status = 2;
-  int64 reference_id = 3;
-  string card_hash = 4;
-  string message = 5;
 }

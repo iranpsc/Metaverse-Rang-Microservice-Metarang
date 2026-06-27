@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"metargb/financial-service/internal/models"
-	"metargb/financial-service/internal/parsian"
+	"metargb/financial-service/internal/sadad"
 )
 
 // Mock repositories
@@ -119,21 +119,21 @@ func (m *mockFirstOrderRepo) Count(ctx context.Context, userID uint64) (int, err
 	return m.count, nil
 }
 
-type mockParsianClient struct {
-	requestResponse *parsian.RequestResponse
-	verifyResponse  *parsian.VerificationResponse
+type mockSadadClient struct {
+	requestResponse *sadad.RequestResponse
+	verifyResponse  *sadad.VerificationResponse
 	requestError    error
 	verifyError     error
 }
 
-func (m *mockParsianClient) RequestPayment(params parsian.RequestParams) (*parsian.RequestResponse, error) {
+func (m *mockSadadClient) RequestPayment(params sadad.RequestParams) (*sadad.RequestResponse, error) {
 	if m.requestError != nil {
 		return nil, m.requestError
 	}
 	return m.requestResponse, nil
 }
 
-func (m *mockParsianClient) VerifyPayment(params parsian.VerificationParams) (*parsian.VerificationResponse, error) {
+func (m *mockSadadClient) VerifyPayment(params sadad.VerificationParams) (*sadad.VerificationResponse, error) {
 	if m.verifyError != nil {
 		return nil, m.verifyError
 	}
@@ -165,27 +165,27 @@ func (m *mockJalaliConverter) FormatJalaliDate(t time.Time) string {
 
 func TestOrderService_CreateOrder(t *testing.T) {
 	tests := []struct {
-		name          string
-		userID        uint64
-		amount        int32
-		asset         string
-		canBuy        bool
-		rate          float64
-		parsianStatus int32
-		parsianToken  int64
-		expectError   bool
-		errorType     error
+		name        string
+		userID      uint64
+		amount      int32
+		asset       string
+		canBuy      bool
+		rate        float64
+		sadadResCode string
+		sadadToken  string
+		expectError bool
+		errorType   error
 	}{
 		{
-			name:          "successful order creation",
-			userID:        1,
-			amount:        10,
-			asset:         "psc",
-			canBuy:        true,
-			rate:          1000.0,
-			parsianStatus: 0,
-			parsianToken:  12345,
-			expectError:   false,
+			name:         "successful order creation",
+			userID:       1,
+			amount:       10,
+			asset:        "psc",
+			canBuy:       true,
+			rate:         1000.0,
+			sadadResCode: "0",
+			sadadToken:   "12345",
+			expectError:  false,
 		},
 		{
 			name:        "invalid amount",
@@ -225,20 +225,23 @@ func TestOrderService_CreateOrder(t *testing.T) {
 				rates: map[string]float64{"psc": tt.rate},
 			}
 			firstOrderRepo := &mockFirstOrderRepo{}
-			parsianClient := &mockParsianClient{
-				requestResponse: &parsian.RequestResponse{
-					Status: tt.parsianStatus,
-					Token:  tt.parsianToken,
+			sadadClient := &mockSadadClient{
+				requestResponse: &sadad.RequestResponse{
+					ResCode: tt.sadadResCode,
+					Token:   tt.sadadToken,
 				},
 			}
 			orderPolicy := &mockOrderPolicy{canBuy: tt.canBuy}
 			jalaliConverter := &mockJalaliConverter{}
 
 			config := OrderConfig{
-				ParsianMerchantID:            "test_merchant",
-				ParsianLoanAccountMerchantID: "test_loan_merchant",
-				ParsianCallbackURL:           "http://localhost/callback",
-				FrontendURL:                  "http://localhost",
+				SadadMerchantID:             "test_merchant",
+				SadadTerminalID:             "test_terminal",
+				SadadTransactionKey:         "dGVzdC10cmFuc2FjdGlvbi1rZXk=",
+				SadadPaymentIdentityRial:    "rial_identity",
+				SadadPaymentIdentityNonRial: "non_rial_identity",
+				SadadCallbackURL:            "http://localhost/api/payment/callback",
+				FrontendURL:                 "http://localhost",
 			}
 
 			service := NewOrderService(
@@ -247,9 +250,10 @@ func TestOrderService_CreateOrder(t *testing.T) {
 				paymentRepo,
 				variableRepo,
 				firstOrderRepo,
-				parsianClient, // mockParsianClient implements ParsianClient interface
+				sadadClient,
 				orderPolicy,
 				jalaliConverter,
+				nil,
 				config,
 			)
 

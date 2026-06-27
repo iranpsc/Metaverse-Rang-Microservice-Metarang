@@ -1679,7 +1679,13 @@ func writeJSON(w http.ResponseWriter, status int, data interface{}, skipWrap ...
 				if _, hasError := dataMap["error"]; hasError {
 					shouldSkipWrap = true
 				}
-				// Special case: /auth/redirect returns {"url": "..."} - handled by skipWrap parameter
+				// Laravel-style bare responses: {"url": "..."} or {"link": "..."}
+				if _, hasURL := dataMap["url"]; hasURL {
+					shouldSkipWrap = true
+				}
+				if _, hasLink := dataMap["link"]; hasLink {
+					shouldSkipWrap = true
+				}
 			}
 		}
 		// Arrays, slices, and other non-map types (including []map[string]interface{}) 

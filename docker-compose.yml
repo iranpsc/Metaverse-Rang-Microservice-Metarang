@@ -531,8 +531,7 @@ services:
       DB_DATABASE: metargb_db
       DB_USER: metargb_user
       DB_PASSWORD: metargb_password
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
-      PARSIAN_CALLBACK_URL: ${FRONTEND_URL:-http://localhost:3000}/api/parsian/callback
+      PROJECT_URL: ${PROJECT_URL:-http://localhost:8000}
     depends_on:
       mysql:
         condition: service_healthy

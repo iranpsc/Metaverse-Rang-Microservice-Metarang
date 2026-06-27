@@ -7,7 +7,7 @@ option go_package = "metargb/shared/pb/financial";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
 
-// Order Service - handles order creation and Parsian payment callbacks
+// Order Service - handles order creation and Sadad payment callbacks
 service OrderService {
   rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse);
   rpc HandleCallback(HandleCallbackRequest) returns (HandleCallbackResponse);
@@ -75,16 +75,14 @@ message CreateOrderRequest {
 }
 
 message CreateOrderResponse {
-  string link = 1;  // Parsian payment URL
+  string link = 1;  // Sadad payment URL
 }
 
 message HandleCallbackRequest {
   uint64 order_id = 1;
-  int32 status = 2;  // Parsian status code (0 indicates success)
-  int64 token = 3;
-  int64 rrn = 4;  // Reference number
-  string card_mask_pan = 5;  // Masked card number
-  map<string, string> additional_params = 6;  // Other gateway fields
+  string token = 2;     // Sadad payment token
+  string res_code = 3;  // Sadad ResCode ("0" indicates success)
+  map<string, string> additional_params = 4;  // Other gateway fields
 }
 
 message HandleCallbackResponse {

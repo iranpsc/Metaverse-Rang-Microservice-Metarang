@@ -60,16 +60,6 @@ spec:
             configMapKeyRef:
               name: metargb-config
               key: db.database
-        - name: PARSIAN_MERCHANT_ID
-          valueFrom:
-            secretKeyRef:
-              name: metargb-secrets
-              key: parsian.merchant.id
-        - name: PARSIAN_LOAN_MERCHANT_ID
-          valueFrom:
-            secretKeyRef:
-              name: metargb-secrets
-              key: parsian.loan.merchant.id
         - name: GRPC_PORT
           value: "50052"
         resources:

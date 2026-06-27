@@ -7,11 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strconv"
 
 	"metargb/financial-service/internal/models"
-	"metargb/financial-service/internal/parsian"
+	"metargb/financial-service/internal/sadad"
 	"metargb/financial-service/internal/repository"
 	commercialpb "metargb/shared/pb/commercial"
+	"strings"
 )
 
 var (
@@ -24,7 +26,7 @@ var (
 
 type OrderService interface {
 	CreateOrder(ctx context.Context, userID uint64, amount int32, asset string) (string, error)
-	HandleCallback(ctx context.Context, orderID uint64, status int32, token int64, additionalParams map[string]string) (string, error)
+	HandleCallback(ctx context.Context, orderID uint64, token string, resCode string, additionalParams map[string]string) (string, error)
 }
 
 type orderService struct {
@@ -33,21 +35,22 @@ type orderService struct {
 	paymentRepo     repository.PaymentRepository
 	variableRepo    repository.VariableRepository
 	firstOrderRepo  repository.FirstOrderRepository
-	parsianClient   ParsianClient
+	sadadClient     SadadClient
 	orderPolicy     OrderPolicy
 	jalaliConverter JalaliConverter
 	walletClient    commercialpb.WalletServiceClient
-	merchantID      string
-	loanMerchantID  string
-	callbackURL     string
-	frontendURL     string
+	sadadConfig     OrderConfig
 }
 
 type OrderConfig struct {
-	ParsianMerchantID            string
-	ParsianLoanAccountMerchantID string
-	ParsianCallbackURL           string
-	FrontendURL                  string
+	SadadMerchantID             string
+	SadadTerminalID             string
+	SadadTransactionKey         string
+	SadadPaymentIdentityRial    string // multiplexing identity for IRR payments
+	SadadPaymentIdentityNonRial string // multiplexing identity for non-IRR assets
+	SadadCallbackURL            string
+	FrontendURL                 string
+	SadadSandbox                bool // BankTest sandbox skips multiplexing payment identities
 }
 
 func NewOrderService(
@@ -56,7 +59,7 @@ func NewOrderService(
 	paymentRepo repository.PaymentRepository,
 	variableRepo repository.VariableRepository,
 	firstOrderRepo repository.FirstOrderRepository,
-	parsianClient ParsianClient,
+	sadadClient SadadClient,
 	orderPolicy OrderPolicy,
 	jalaliConverter JalaliConverter,
 	walletClient commercialpb.WalletServiceClient,
@@ -68,14 +71,11 @@ func NewOrderService(
 		paymentRepo:     paymentRepo,
 		variableRepo:    variableRepo,
 		firstOrderRepo:  firstOrderRepo,
-		parsianClient:   parsianClient,
+		sadadClient:     sadadClient,
 		orderPolicy:     orderPolicy,
 		jalaliConverter: jalaliConverter,
 		walletClient:    walletClient,
-		merchantID:      config.ParsianMerchantID,
-		loanMerchantID:  config.ParsianLoanAccountMerchantID,
-		callbackURL:     config.ParsianCallbackURL,
-		frontendURL:     config.FrontendURL,
+		sadadConfig:     config,
 	}
 }
 
@@ -135,41 +135,56 @@ func (s *orderService) CreateOrder(ctx context.Context, userID uint64, amount in
 		return "", fmt.Errorf("failed to create transaction: %w", err)
 	}
 
-	merchantID := s.merchantID
-	if asset == "irr" {
-		merchantID = s.loanMerchantID
+	paymentIdentity := s.getPaymentIdentity(asset)
+	if paymentIdentity == "" && !s.sadadConfig.SadadSandbox {
+		return "", fmt.Errorf("%w: payment identity not configured for asset %s", ErrPaymentFailed, asset)
 	}
 
 	amountInRials := int64(float64(amount) * rate)
+	returnURL := fmt.Sprintf("%s?order_id=%d", s.sadadConfig.SadadCallbackURL, order.ID)
 
-	params := parsian.RequestParams{
-		MerchantID:     merchantID,
-		OrderID:        fmt.Sprintf("%d", order.ID),
-		Amount:         amountInRials,
-		CallbackURL:    s.callbackURL,
-		AdditionalData: "",
-		Originator:     "",
+	params := sadad.RequestParams{
+		MerchantID:      s.sadadConfig.SadadMerchantID,
+		TerminalID:      s.sadadConfig.SadadTerminalID,
+		TransactionKey:  s.sadadConfig.SadadTransactionKey,
+		OrderID:         fmt.Sprintf("%d", order.ID),
+		Amount:          amountInRials,
+		ReturnURL:       returnURL,
+		PaymentIdentity: paymentIdentity,
 	}
 
-	response, err := s.parsianClient.RequestPayment(params)
+	response, err := s.sadadClient.RequestPayment(params)
 	if err != nil {
 		return "", fmt.Errorf("failed to request payment: %w", err)
 	}
 
 	if !response.Success() {
-		return "", fmt.Errorf("%w: %s", ErrPaymentFailed, response.Error().Message())
+		msg := response.Description
+		if msg == "" {
+			msg = response.Error().Message()
+		}
+		return "", fmt.Errorf("%w: %s", ErrPaymentFailed, msg)
 	}
 
-	transaction.Token = &response.Token
-	err = s.transactionRepo.Update(ctx, transaction)
-	if err != nil {
-		fmt.Printf("Warning: failed to update transaction with token: %v\n", err)
+	if tokenInt, err := strconv.ParseInt(response.Token, 10, 64); err == nil {
+		transaction.Token = &tokenInt
+		err = s.transactionRepo.Update(ctx, transaction)
+		if err != nil {
+			fmt.Printf("Warning: failed to update transaction with token: %v\n", err)
+		}
 	}
 
 	return response.URL(), nil
 }
 
-func (s *orderService) HandleCallback(ctx context.Context, orderID uint64, status int32, token int64, additionalParams map[string]string) (string, error) {
+func (s *orderService) getPaymentIdentity(asset string) string {
+	if asset == "irr" {
+		return s.sadadConfig.SadadPaymentIdentityRial
+	}
+	return s.sadadConfig.SadadPaymentIdentityNonRial
+}
+
+func (s *orderService) HandleCallback(ctx context.Context, orderID uint64, token string, resCode string, additionalParams map[string]string) (string, error) {
 	order, _, err := s.orderRepo.FindByIDWithUser(ctx, orderID)
 	if err != nil {
 		return "", fmt.Errorf("failed to find order: %w", err)
@@ -186,7 +201,10 @@ func (s *orderService) HandleCallback(ctx context.Context, orderID uint64, statu
 		return "", fmt.Errorf("transaction not found for order")
 	}
 
-	redirectURL := s.frontendURL + "/metaverse/payment/verify"
+	redirectURL, err := s.paymentVerifyRedirectURL()
+	if err != nil {
+		return "", err
+	}
 	u, err := url.Parse(redirectURL)
 	if err != nil {
 		return "", fmt.Errorf("invalid frontend URL: %w", err)
@@ -194,49 +212,47 @@ func (s *orderService) HandleCallback(ctx context.Context, orderID uint64, statu
 
 	q := u.Query()
 	q.Set("OrderId", fmt.Sprintf("%d", orderID))
-	q.Set("status", fmt.Sprintf("%d", status))
-	q.Set("Token", fmt.Sprintf("%d", token))
+	q.Set("ResCode", resCode)
+	q.Set("Token", token)
 
 	for k, v := range additionalParams {
 		q.Set(k, v)
 	}
 	u.RawQuery = q.Encode()
 
-	if status == 0 {
+	if resCode == "0" {
 		rate, err := s.variableRepo.GetRate(ctx, order.Asset)
 		if err != nil {
 			return u.String(), fmt.Errorf("failed to get rate: %w", err)
 		}
 
-		merchantID := s.merchantID
-		if order.Asset == "irr" {
-			merchantID = s.loanMerchantID
-		}
-
 		verifyToken := token
-		if verifyToken == 0 && transaction.Token != nil {
-			verifyToken = *transaction.Token
+		if verifyToken == "" && transaction.Token != nil {
+			verifyToken = strconv.FormatInt(*transaction.Token, 10)
 		}
 
-		verifyParams := parsian.VerificationParams{
-			MerchantID: merchantID,
-			Token:      verifyToken,
+		verifyParams := sadad.VerificationParams{
+			TransactionKey: s.sadadConfig.SadadTransactionKey,
+			Token:          verifyToken,
 		}
 
-		verifyResponse, err := s.parsianClient.VerifyPayment(verifyParams)
+		verifyResponse, err := s.sadadClient.VerifyPayment(verifyParams)
 		if err != nil {
 			return u.String(), nil
 		}
 
 		if verifyResponse.Success() {
-			order.Status = verifyResponse.Status
+			order.Status = 0
 			err = s.orderRepo.Update(ctx, order)
 			if err != nil {
 				return u.String(), fmt.Errorf("failed to update order: %w", err)
 			}
 
-			transaction.Status = verifyResponse.Status
-			refID := verifyResponse.ReferenceID
+			transaction.Status = 0
+			refID, parseErr := strconv.ParseInt(verifyResponse.RetrivalRefNo, 10, 64)
+			if parseErr != nil {
+				refID = 0
+			}
 			transaction.RefID = &refID
 			err = s.transactionRepo.Update(ctx, transaction)
 			if err != nil {
@@ -276,12 +292,15 @@ func (s *orderService) HandleCallback(ctx context.Context, orderID uint64, statu
 				}
 			}
 
-			cardPan := additionalParams["CardMaskPan"]
+			cardPan := additionalParams["PrimaryAccNo"]
+			if cardPan == "" {
+				cardPan = additionalParams["CardMaskPan"]
+			}
 			if cardPan == "" {
 				cardPan = additionalParams["card_pan"]
 			}
 			if cardPan == "" {
-				cardPan = verifyResponse.CardHash
+				cardPan = verifyResponse.CardNumberMasked
 			}
 			if cardPan == "" {
 				cardPan = "card-hash"
@@ -289,9 +308,9 @@ func (s *orderService) HandleCallback(ctx context.Context, orderID uint64, statu
 
 			payment := &models.Payment{
 				UserID:  order.UserID,
-				RefID:   verifyResponse.ReferenceID,
+				RefID:   refID,
 				CardPan: cardPan,
-				Gateway: "parsian",
+				Gateway: "sadad",
 				Amount:  amount,
 				Product: order.Asset,
 			}
@@ -299,20 +318,41 @@ func (s *orderService) HandleCallback(ctx context.Context, orderID uint64, statu
 			if err != nil {
 				fmt.Printf("Warning: failed to create payment record: %v\n", err)
 			}
-
-			// Referral and notifications remain in commercial-service scope for future wiring
 		} else {
-			order.Status = verifyResponse.Status
+			statusCode, parseErr := strconv.ParseInt(verifyResponse.ResCode, 10, 32)
+			if parseErr != nil {
+				statusCode = -1
+			}
+			order.Status = int32(statusCode)
 			s.orderRepo.Update(ctx, order)
 		}
 	} else {
-		order.Status = status
+		statusCode, parseErr := strconv.ParseInt(resCode, 10, 32)
+		if parseErr != nil {
+			statusCode = -1
+		}
+		order.Status = int32(statusCode)
 		s.orderRepo.Update(ctx, order)
-		transaction.Status = status
+		transaction.Status = int32(statusCode)
 		s.transactionRepo.Update(ctx, transaction)
 	}
 
 	return u.String(), nil
+}
+
+func (s *orderService) paymentVerifyRedirectURL() (string, error) {
+	frontendURL := strings.TrimSpace(s.sadadConfig.FrontendURL)
+	if frontendURL == "" {
+		return "", fmt.Errorf("FRONTEND_URL is not configured")
+	}
+
+	base, err := url.Parse(strings.TrimSuffix(frontendURL, "/"))
+	if err != nil {
+		return "", fmt.Errorf("invalid FRONTEND_URL: %w", err)
+	}
+
+	verifyURL := base.ResolveReference(&url.URL{Path: "/payment/verify"})
+	return verifyURL.String(), nil
 }
 
 func (s *orderService) addWalletBalance(ctx context.Context, userID uint64, asset string, amount float64) error {

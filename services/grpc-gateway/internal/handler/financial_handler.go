@@ -90,53 +90,48 @@ func (h *FinancialHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, map[string]string{
 		"link": resp.Link,
-	})
+	}, true)
 }
 
-// HandleCallback handles POST /api/parsian/callback
+// HandleCallback handles POST /api/payment/callback
 func (h *FinancialHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
-	// Parse form data (Parsian sends form-encoded data)
+	// Sadad sends form-encoded POST data; order_id is embedded in ReturnUrl query params
 	if err := r.ParseForm(); err != nil {
 		writeError(w, http.StatusBadRequest, "failed to parse form data")
 		return
 	}
 
-	// Extract OrderId and status
-	orderIDStr := r.FormValue("OrderId")
+	orderIDStr := r.URL.Query().Get("order_id")
 	if orderIDStr == "" {
-		writeError(w, http.StatusBadRequest, "OrderId is required")
+		writeError(w, http.StatusBadRequest, "order_id is required")
 		return
 	}
 
 	orderID, err := strconv.ParseUint(orderIDStr, 10, 64)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid OrderId")
+		writeError(w, http.StatusBadRequest, "invalid order_id")
 		return
 	}
 
-	statusStr := r.FormValue("status")
-	status, err := strconv.ParseInt(statusStr, 10, 32)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid status")
-		return
+	token := r.FormValue("Token")
+	if token == "" {
+		token = r.FormValue("token")
 	}
 
-	tokenStr := r.FormValue("Token")
-	token, err := strconv.ParseInt(tokenStr, 10, 64)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid Token")
-		return
+	resCode := r.FormValue("ResCode")
+	if resCode == "" {
+		resCode = r.FormValue("resCode")
 	}
 
 	// Collect all additional parameters
 	additionalParams := make(map[string]string)
 	for k, v := range r.Form {
-		if k != "OrderId" && k != "status" && k != "Token" {
+		if k != "Token" && k != "token" && k != "ResCode" && k != "resCode" {
 			if len(v) > 0 {
 				additionalParams[k] = v[0]
 			}
@@ -145,8 +140,8 @@ func (h *FinancialHandler) HandleCallback(w http.ResponseWriter, r *http.Request
 
 	grpcReq := &financialpb.HandleCallbackRequest{
 		OrderId:          orderID,
-		Status:           int32(status),
 		Token:            token,
+		ResCode:          resCode,
 		AdditionalParams: additionalParams,
 	}
 

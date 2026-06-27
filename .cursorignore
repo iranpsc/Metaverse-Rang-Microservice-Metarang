@@ -1,0 +1,14 @@
+﻿node_modules/
+vendor/
+bin/
+services/**/bin/
+services/**/tmp/
+coverage/
+*.log
+.env
+.env.*
+config.env
+services/**/config.env
+api-docs/
+uploads/
+docs/
