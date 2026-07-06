@@ -35,8 +35,8 @@ const TEST_USERS = [
 ];
 
 export default function () {
-  // Select random user
-  const user = TEST_USERS[Math.floor(Math.random() * TEST_USERS.length)];
+  // Select user deterministically per VU/iteration (load test fixture, not credential generation)
+  const user = TEST_USERS[(__VU + __ITER) % TEST_USERS.length];
 
   // Test 1: Login
   testLogin(user);
@@ -56,7 +56,7 @@ export default function () {
     testLogout(token);
   }
 
-  sleep(Math.random() * 3); // Random think time
+  sleep((__VU % 3) + 1); // Think time varies by virtual user
 }
 
 function testLogin(user) {

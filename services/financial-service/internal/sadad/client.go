@@ -322,13 +322,15 @@ func (v *VerificationResponse) Error() *SadadError {
 	return NewSadadError(v.ResCode)
 }
 
+// generateSignData encrypts request fields using 3DES per Sadad/Shaparak gateway specification.
 func generateSignData(data, base64Key string) (string, error) {
 	key, err := base64.StdEncoding.DecodeString(base64Key)
 	if err != nil {
 		return "", fmt.Errorf("invalid transaction key: %w", err)
 	}
 
-	block, err := des.NewTripleDESCipher(key)
+	// Sadad mandates Triple-DES for SignData; cannot substitute a different algorithm.
+	block, err := des.NewTripleDESCipher(key) // lgtm[go/weak-cryptographic-algorithm]
 	if err != nil {
 		return "", fmt.Errorf("failed to create 3DES cipher: %w", err)
 	}
@@ -337,7 +339,7 @@ func generateSignData(data, base64Key string) (string, error) {
 	encrypted := make([]byte, len(padded))
 
 	for i := 0; i < len(padded); i += block.BlockSize() {
-		block.Encrypt(encrypted[i:i+block.BlockSize()], padded[i:i+block.BlockSize()])
+		block.Encrypt(encrypted[i:i+block.BlockSize()], padded[i:i+block.BlockSize()]) // lgtm[go/weak-cryptographic-algorithm]
 	}
 
 	return base64.StdEncoding.EncodeToString(encrypted), nil

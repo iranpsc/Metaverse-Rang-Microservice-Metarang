@@ -292,11 +292,17 @@
             selectedFile = fileInput.files[0];
             if (selectedFile) {
                 const sizeMB = (selectedFile.size / 1024 / 1024).toFixed(2);
-                fileInfo.innerHTML = `
-                    <p><strong>📄 File:</strong> ${selectedFile.name}</p>
-                    <p><strong>📊 Size:</strong> ${sizeMB} MB (${selectedFile.size.toLocaleString()} bytes)</p>
-                    <p><strong>📋 Type:</strong> ${selectedFile.type || 'Unknown'}</p>
-                `;
+                fileInfo.replaceChildren();
+                const namePara = document.createElement('p');
+                namePara.appendChild(document.createElement('strong')).textContent = '📄 File:';
+                namePara.append(' ', selectedFile.name);
+                const sizePara = document.createElement('p');
+                sizePara.appendChild(document.createElement('strong')).textContent = '📊 Size:';
+                sizePara.append(` ${sizeMB} MB (${selectedFile.size.toLocaleString()} bytes)`);
+                const typePara = document.createElement('p');
+                typePara.appendChild(document.createElement('strong')).textContent = '📋 Type:';
+                typePara.append(' ', selectedFile.type || 'Unknown');
+                fileInfo.append(namePara, sizePara, typePara);
                 fileInfo.style.display = 'block';
                 uploadBtn.disabled = false;
                 showStatus('File selected! Click "Upload File" to start.', 'info');

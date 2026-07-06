@@ -22,6 +22,9 @@ env:
   DOCKER_REGISTRY: metargb
   GO_VERSION: '1.21'
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Run Tests

@@ -16,6 +16,9 @@ on:
 env:
   GO_VERSION: '1.21'
 
+permissions:
+  contents: read
+
 jobs:
   integration-tests:
     name: Run Integration Test Suite
@@ -133,6 +136,9 @@ jobs:
   golden-json-validation:
     name: Golden JSON Validation
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
     
     services:
       mysql:

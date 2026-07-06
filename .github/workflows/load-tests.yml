@@ -18,6 +18,10 @@ on:
 env:
   K6_VERSION: '0.48.0'
 
+permissions:
+  contents: read
+  actions: write
+
 jobs:
   load-test:
     name: Run Load Tests
