@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -198,19 +199,48 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
+const paymentCallbackPath = "/api/payment/callback"
+
 // resolveSadadCallbackURL returns the Sadad ReturnUrl base (without order_id query param).
+// The gateway must redirect users to the API callback endpoint, never the frontend verify page.
 // Supports ${PROJECT_URL} expansion in config.env (e.g. SADAD_CALLBACK_URL=${PROJECT_URL}/api/payment/callback).
 func resolveSadadCallbackURL() string {
 	for _, key := range []string{"SADAD_CALLBACK_URL", "PAYMENT_CALLBACK_URL"} {
 		if raw := strings.TrimSpace(os.Getenv(key)); raw != "" {
 			if expanded := strings.TrimSpace(os.ExpandEnv(raw)); expanded != "" {
-				return strings.TrimSuffix(expanded, "/")
+				if normalized, ok := normalizePaymentCallbackURL(expanded); ok {
+					return normalized
+				}
+				log.Printf("Warning: %s=%q is not a valid API callback URL; falling back to PROJECT_URL", key, expanded)
 			}
 		}
 	}
 
 	projectURL := strings.TrimSpace(os.ExpandEnv(getEnv("PROJECT_URL", "http://localhost:8000")))
-	return strings.TrimSuffix(projectURL, "/") + "/api/payment/callback"
+	return strings.TrimSuffix(projectURL, "/") + paymentCallbackPath
+}
+
+func normalizePaymentCallbackURL(raw string) (string, bool) {
+	if strings.Contains(raw, "/payment/verify") {
+		return "", false
+	}
+
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return "", false
+	}
+
+	path := strings.TrimSuffix(parsed.Path, "/")
+	if path == paymentCallbackPath {
+		return strings.TrimSuffix(raw, "/"), true
+	}
+
+	if path == "" || path == "/" {
+		parsed.Path = paymentCallbackPath
+		return strings.TrimSuffix(parsed.String(), "/"), true
+	}
+
+	return "", false
 }
 
 func resolveFrontendURL() string {

@@ -141,7 +141,10 @@ func (s *orderService) CreateOrder(ctx context.Context, userID uint64, amount in
 	}
 
 	amountInRials := int64(float64(amount) * rate)
-	returnURL := fmt.Sprintf("%s?order_id=%d", s.sadadConfig.SadadCallbackURL, order.ID)
+	returnURL, err := s.buildSadadReturnURL(order.ID)
+	if err != nil {
+		return "", err
+	}
 
 	params := sadad.RequestParams{
 		MerchantID:      s.sadadConfig.SadadMerchantID,
@@ -201,29 +204,10 @@ func (s *orderService) HandleCallback(ctx context.Context, orderID uint64, token
 		return "", fmt.Errorf("transaction not found for order")
 	}
 
-	redirectURL, err := s.paymentVerifyRedirectURL()
-	if err != nil {
-		return "", err
-	}
-	u, err := url.Parse(redirectURL)
-	if err != nil {
-		return "", fmt.Errorf("invalid frontend URL: %w", err)
-	}
-
-	q := u.Query()
-	q.Set("OrderId", fmt.Sprintf("%d", orderID))
-	q.Set("ResCode", resCode)
-	q.Set("Token", token)
-
-	for k, v := range additionalParams {
-		q.Set(k, v)
-	}
-	u.RawQuery = q.Encode()
-
 	if resCode == "0" {
 		rate, err := s.variableRepo.GetRate(ctx, order.Asset)
 		if err != nil {
-			return u.String(), fmt.Errorf("failed to get rate: %w", err)
+			return "", fmt.Errorf("failed to get rate: %w", err)
 		}
 
 		verifyToken := token
@@ -231,21 +215,14 @@ func (s *orderService) HandleCallback(ctx context.Context, orderID uint64, token
 			verifyToken = strconv.FormatInt(*transaction.Token, 10)
 		}
 
-		verifyParams := sadad.VerificationParams{
+		verifyResponse, err := s.sadadClient.VerifyPayment(sadad.VerificationParams{
 			TransactionKey: s.sadadConfig.SadadTransactionKey,
 			Token:          verifyToken,
-		}
-
-		verifyResponse, err := s.sadadClient.VerifyPayment(verifyParams)
-		if err != nil {
-			return u.String(), nil
-		}
-
-		if verifyResponse.Success() {
+		})
+		if err == nil && verifyResponse.Success() {
 			order.Status = 0
-			err = s.orderRepo.Update(ctx, order)
-			if err != nil {
-				return u.String(), fmt.Errorf("failed to update order: %w", err)
+			if err := s.orderRepo.Update(ctx, order); err != nil {
+				return "", fmt.Errorf("failed to update order: %w", err)
 			}
 
 			transaction.Status = 0
@@ -254,14 +231,13 @@ func (s *orderService) HandleCallback(ctx context.Context, orderID uint64, token
 				refID = 0
 			}
 			transaction.RefID = &refID
-			err = s.transactionRepo.Update(ctx, transaction)
-			if err != nil {
-				return u.String(), fmt.Errorf("failed to update transaction: %w", err)
+			if err := s.transactionRepo.Update(ctx, transaction); err != nil {
+				return "", fmt.Errorf("failed to update transaction: %w", err)
 			}
 
 			canGetBonus, err := s.orderPolicy.CanGetBonus(ctx, order.UserID, order.Asset)
 			if err != nil {
-				return u.String(), fmt.Errorf("failed to check bonus eligibility: %w", err)
+				return "", fmt.Errorf("failed to check bonus eligibility: %w", err)
 			}
 
 			amount := order.Amount * rate
@@ -271,7 +247,7 @@ func (s *orderService) HandleCallback(ctx context.Context, orderID uint64, token
 				totalAmount := order.Amount + bonus
 
 				if err := s.addWalletBalance(ctx, order.UserID, order.Asset, totalAmount); err != nil {
-					fmt.Printf("Warning: failed to add wallet balance with bonus: %v\n", err)
+					return "", fmt.Errorf("failed to add wallet balance with bonus: %w", err)
 				}
 
 				jalaliDate := s.jalaliConverter.NowJalali()
@@ -282,14 +258,11 @@ func (s *orderService) HandleCallback(ctx context.Context, orderID uint64, token
 					Date:   jalaliDate,
 					Bonus:  bonus,
 				}
-				err = s.firstOrderRepo.Create(ctx, firstOrder)
-				if err != nil {
-					fmt.Printf("Warning: failed to create first order record: %v\n", err)
+				if err := s.firstOrderRepo.Create(ctx, firstOrder); err != nil {
+					return "", fmt.Errorf("failed to create first order record: %w", err)
 				}
-			} else {
-				if err := s.addWalletBalance(ctx, order.UserID, order.Asset, order.Amount); err != nil {
-					fmt.Printf("Warning: failed to add wallet balance: %v\n", err)
-				}
+			} else if err := s.addWalletBalance(ctx, order.UserID, order.Asset, order.Amount); err != nil {
+				return "", fmt.Errorf("failed to add wallet balance: %w", err)
 			}
 
 			cardPan := additionalParams["PrimaryAccNo"]
@@ -314,11 +287,10 @@ func (s *orderService) HandleCallback(ctx context.Context, orderID uint64, token
 				Amount:  amount,
 				Product: order.Asset,
 			}
-			err = s.paymentRepo.Create(ctx, payment)
-			if err != nil {
-				fmt.Printf("Warning: failed to create payment record: %v\n", err)
+			if err := s.paymentRepo.Create(ctx, payment); err != nil {
+				return "", fmt.Errorf("failed to create payment record: %w", err)
 			}
-		} else {
+		} else if err == nil {
 			statusCode, parseErr := strconv.ParseInt(verifyResponse.ResCode, 10, 32)
 			if parseErr != nil {
 				statusCode = -1
@@ -336,6 +308,43 @@ func (s *orderService) HandleCallback(ctx context.Context, orderID uint64, token
 		transaction.Status = int32(statusCode)
 		s.transactionRepo.Update(ctx, transaction)
 	}
+
+	return s.buildPaymentVerifyRedirectURL(orderID, token, resCode, additionalParams)
+}
+
+func (s *orderService) buildSadadReturnURL(orderID uint64) (string, error) {
+	callbackURL := strings.TrimSpace(s.sadadConfig.SadadCallbackURL)
+	if callbackURL == "" {
+		return "", fmt.Errorf("%w: payment callback URL is not configured", ErrPaymentFailed)
+	}
+	if strings.Contains(callbackURL, "/payment/verify") {
+		return "", fmt.Errorf("%w: Sadad ReturnUrl must be the API callback /api/payment/callback, not the frontend verify page", ErrPaymentFailed)
+	}
+	if !strings.Contains(callbackURL, "/api/payment/callback") {
+		return "", fmt.Errorf("%w: Sadad ReturnUrl must include /api/payment/callback", ErrPaymentFailed)
+	}
+	return fmt.Sprintf("%s?order_id=%d", strings.TrimSuffix(callbackURL, "/"), orderID), nil
+}
+
+func (s *orderService) buildPaymentVerifyRedirectURL(orderID uint64, token, resCode string, additionalParams map[string]string) (string, error) {
+	redirectURL, err := s.paymentVerifyRedirectURL()
+	if err != nil {
+		return "", err
+	}
+
+	u, err := url.Parse(redirectURL)
+	if err != nil {
+		return "", fmt.Errorf("invalid frontend URL: %w", err)
+	}
+
+	q := u.Query()
+	q.Set("OrderId", fmt.Sprintf("%d", orderID))
+	q.Set("ResCode", resCode)
+	q.Set("Token", token)
+	for k, v := range additionalParams {
+		q.Set(k, v)
+	}
+	u.RawQuery = q.Encode()
 
 	return u.String(), nil
 }

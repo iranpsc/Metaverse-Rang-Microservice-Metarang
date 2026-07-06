@@ -150,6 +150,7 @@ services:
           - /api/payment/callback
         methods:
           - POST
+          - GET
         strip_path: false
         plugins:
           - name: grpc-gateway

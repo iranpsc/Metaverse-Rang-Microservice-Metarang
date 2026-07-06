@@ -22,8 +22,8 @@ import (
 	"metargb/auth-service/internal/pubsub"
 	"metargb/auth-service/internal/repository"
 	"metargb/auth-service/internal/service"
-	notificationspb "metargb/shared/pb/notifications"
 	pb "metargb/shared/pb/auth"
+	notificationspb "metargb/shared/pb/notifications"
 	storagepb "metargb/shared/pb/storage"
 	"metargb/shared/pkg/metrics"
 )

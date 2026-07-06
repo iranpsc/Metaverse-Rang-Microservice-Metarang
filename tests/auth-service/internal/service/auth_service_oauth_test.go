@@ -657,12 +657,12 @@ func TestValidateToken(t *testing.T) {
 // --- Fake implementations for testing ---
 
 type fakeCacheRepository struct {
-	state                         map[string]bool
-	redirectTo                    map[string]string
-	backURL                       map[string]string
-	ttl                           map[string]time.Duration
-	setTime                       map[string]time.Time
-	verificationRequestSlots      map[uint64]time.Time
+	state                    map[string]bool
+	redirectTo               map[string]string
+	backURL                  map[string]string
+	ttl                      map[string]time.Duration
+	setTime                  map[string]time.Time
+	verificationRequestSlots map[uint64]time.Time
 }
 
 func newFakeCacheRepository() *fakeCacheRepository {

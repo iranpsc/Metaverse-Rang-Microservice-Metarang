@@ -95,18 +95,24 @@ func (h *FinancialHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 // HandleCallback handles POST /api/payment/callback
 func (h *FinancialHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
+	if r.Method != http.MethodPost && r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
-	// Sadad sends form-encoded POST data; order_id is embedded in ReturnUrl query params
+	// Sadad sends form-encoded POST data; order_id is embedded in ReturnUrl query params.
 	if err := r.ParseForm(); err != nil {
 		writeError(w, http.StatusBadRequest, "failed to parse form data")
 		return
 	}
 
 	orderIDStr := r.URL.Query().Get("order_id")
+	if orderIDStr == "" {
+		orderIDStr = r.FormValue("order_id")
+	}
+	if orderIDStr == "" {
+		orderIDStr = r.FormValue("OrderId")
+	}
 	if orderIDStr == "" {
 		writeError(w, http.StatusBadRequest, "order_id is required")
 		return

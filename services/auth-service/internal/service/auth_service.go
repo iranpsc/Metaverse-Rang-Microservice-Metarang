@@ -36,21 +36,21 @@ type AuthService interface {
 }
 
 type authService struct {
-	userRepo            repository.UserRepository
-	tokenRepo           repository.TokenRepository
-	cacheRepo           repository.CacheRepository
-	accountSecurityRepo repository.AccountSecurityRepository
-	activityRepo        repository.ActivityRepository
-	observerService     ObserverService
-	helperService       HelperService
-	notificationsClient notificationspb.SMSServiceClient
-	oauthServerURL      string
-	oauthClientID       string
-	oauthClientSecret   string
-	appURL                           string
-	frontEndURL                      string
-	rateLimitVerificationRequests    bool
-	httpClient                       *http.Client
+	userRepo                      repository.UserRepository
+	tokenRepo                     repository.TokenRepository
+	cacheRepo                     repository.CacheRepository
+	accountSecurityRepo           repository.AccountSecurityRepository
+	activityRepo                  repository.ActivityRepository
+	observerService               ObserverService
+	helperService                 HelperService
+	notificationsClient           notificationspb.SMSServiceClient
+	oauthServerURL                string
+	oauthClientID                 string
+	oauthClientSecret             string
+	appURL                        string
+	frontEndURL                   string
+	rateLimitVerificationRequests bool
+	httpClient                    *http.Client
 }
 
 type CallbackResult struct {
@@ -91,8 +91,8 @@ var (
 	ErrInvalidPhoneFormat             = errors.New("invalid phone format")
 	ErrPhoneAlreadyTaken              = errors.New("phone already in use")
 	ErrUserNotFound                   = errors.New("user not found")
-	ErrInvalidUnlockDuration              = errors.New("invalid unlock duration")
-	ErrVerificationRequestRateLimited     = errors.New("verification request rate limit exceeded")
+	ErrInvalidUnlockDuration          = errors.New("invalid unlock duration")
+	ErrVerificationRequestRateLimited = errors.New("verification request rate limit exceeded")
 )
 
 const accountSecurityVerificationRequestPeriod = time.Minute
@@ -126,17 +126,17 @@ func NewAuthService(
 	}
 
 	return &authService{
-		userRepo:            userRepo,
-		tokenRepo:           tokenRepo,
-		cacheRepo:           cacheRepo,
-		accountSecurityRepo: accountSecurityRepo,
-		activityRepo:        activityRepo,
-		observerService:     observerService,
-		helperService:       helperService,
-		notificationsClient: notificationsClient,
-		oauthServerURL:      oauthServerURL,
-		oauthClientID:       oauthClientID,
-		oauthClientSecret:   oauthClientSecret,
+		userRepo:                      userRepo,
+		tokenRepo:                     tokenRepo,
+		cacheRepo:                     cacheRepo,
+		accountSecurityRepo:           accountSecurityRepo,
+		activityRepo:                  activityRepo,
+		observerService:               observerService,
+		helperService:                 helperService,
+		notificationsClient:           notificationsClient,
+		oauthServerURL:                oauthServerURL,
+		oauthClientID:                 oauthClientID,
+		oauthClientSecret:             oauthClientSecret,
 		appURL:                        appURL,
 		frontEndURL:                   frontEndURL,
 		rateLimitVerificationRequests: rateLimitVerificationRequests,
@@ -404,13 +404,13 @@ func (s *authService) GetMe(ctx context.Context, token string) (*UserDetails, er
 
 	// Prepare user details
 	details := &UserDetails{
-		ID:              user.ID,
-		Name:            user.Name,
-		Token:           token,
-		Code:            user.Code,
-		AutomaticLogout: settings.AutomaticLogout,
+		ID:                       user.ID,
+		Name:                     user.Name,
+		Token:                    token,
+		Code:                     user.Code,
+		AutomaticLogout:          settings.AutomaticLogout,
 		UnreadNotificationsCount: notificationsCount,
-		VerifiedKYC:     kyc != nil && kyc.Status == 1,
+		VerifiedKYC:              kyc != nil && kyc.Status == 1,
 	}
 
 	if user.AccessToken.Valid {
