@@ -5,7 +5,6 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	commonpb "metargb/shared/pb/common"
@@ -77,7 +76,7 @@ func (h *VideoHandler) GetVideos(ctx context.Context, req *trainingpb.GetVideosR
 
 // GetVideo retrieves a video by slug and increments view
 func (h *VideoHandler) GetVideo(ctx context.Context, req *trainingpb.GetVideoRequest) (*trainingpb.VideoResponse, error) {
-	ipAddress := h.getIPAddress(ctx)
+	ipAddress := IPAddressFromGRPCContext(ctx)
 	var userID *uint64
 	if req.UserId > 0 {
 		userID = &req.UserId
@@ -105,7 +104,7 @@ func (h *VideoHandler) GetVideo(ctx context.Context, req *trainingpb.GetVideoReq
 func (h *VideoHandler) GetVideoByFileName(ctx context.Context, req *trainingpb.GetVideoByFileNameRequest) (*trainingpb.VideoResponse, error) {
 	ipAddress := req.IpAddress
 	if ipAddress == "" {
-		ipAddress = h.getIPAddress(ctx)
+		ipAddress = IPAddressFromGRPCContext(ctx)
 	}
 
 	video, err := h.service.GetVideoByFileName(ctx, req.FileName, ipAddress)
@@ -178,7 +177,7 @@ func (h *VideoHandler) SearchVideos(ctx context.Context, req *trainingpb.SearchV
 func (h *VideoHandler) IncrementView(ctx context.Context, req *trainingpb.IncrementViewRequest) (*commonpb.Empty, error) {
 	ipAddress := req.IpAddress
 	if ipAddress == "" {
-		ipAddress = h.getIPAddress(ctx)
+		ipAddress = IPAddressFromGRPCContext(ctx)
 	}
 
 	if err := h.service.IncrementView(ctx, req.VideoId, ipAddress); err != nil {
@@ -192,7 +191,7 @@ func (h *VideoHandler) IncrementView(ctx context.Context, req *trainingpb.Increm
 func (h *VideoHandler) AddInteraction(ctx context.Context, req *trainingpb.AddInteractionRequest) (*commonpb.Empty, error) {
 	ipAddress := req.IpAddress
 	if ipAddress == "" {
-		ipAddress = h.getIPAddress(ctx)
+		ipAddress = IPAddressFromGRPCContext(ctx)
 	}
 
 	if err := h.service.AddInteraction(ctx, req.VideoId, req.UserId, req.Liked, ipAddress); err != nil {

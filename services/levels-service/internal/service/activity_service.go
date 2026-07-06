@@ -2,29 +2,64 @@ package service
 
 import (
 	"context"
-	"database/sql"
+	"fmt"
 	"strconv"
 	"time"
 
-	"metargb/levels-service/internal/repository"
+	"metargb/levels-service/internal/client"
 	pb "metargb/shared/pb/levels"
 )
 
+type activityRepository interface {
+	CreateActivity(ctx context.Context, req *pb.LogActivityRequest) (uint64, error)
+	CreateUserEvent(ctx context.Context, userID uint64, event, ip, device string, status int8) error
+	FindByUserID(ctx context.Context, userID uint64, limit int32) ([]*pb.UserActivity, error)
+	GetLatestActivity(ctx context.Context, userID uint64) (*pb.UserActivity, error)
+	UpdateActivity(ctx context.Context, activityID uint64, endTime time.Time, totalMinutes int32) error
+	GetTotalActivityMinutes(ctx context.Context, userID uint64) (int32, error)
+	GetVariableRate(ctx context.Context, name string) (float64, error)
+	GetSignificantTradeCount(ctx context.Context, userID uint64, minIrrAmount, minPscAmount float64) (int32, error)
+}
+
+type activityUserLogRepository interface {
+	GetUserLog(ctx context.Context, userID uint64) (*pb.UserLog, error)
+	CalculateScore(ctx context.Context, userID uint64) (int32, error)
+	UpdateScore(ctx context.Context, userID uint64, score int32) error
+	UpdateTransactionsCount(ctx context.Context, userID uint64, count string) error
+	IncrementDeposit(ctx context.Context, userID uint64, amount string) error
+	GetTotalFollowers(ctx context.Context, userID uint64) (int32, error)
+	UpdateFollowersCount(ctx context.Context, userID uint64, totalFollowers int32) error
+	UpdateActivityHours(ctx context.Context, userID uint64, totalMinutes int32) error
+}
+
+type activityLevelRepository interface {
+	GetNextLevelForScore(ctx context.Context, userID uint64, score int32) (*pb.Level, error)
+	AttachLevelToUser(ctx context.Context, userID, levelID uint64) error
+	GetLevelPrize(ctx context.Context, levelID uint64) (*pb.LevelPrize, error)
+	HasUserReceivedPrize(ctx context.Context, userID, prizeID uint64) (bool, error)
+	RecordReceivedPrize(ctx context.Context, userID, prizeID uint64) error
+}
+
 type ActivityService struct {
-	activityRepo *repository.ActivityRepository
-	userLogRepo  *repository.UserLogRepository
-	levelRepo    *repository.LevelRepository
+	activityRepo     activityRepository
+	userLogRepo      activityUserLogRepository
+	levelRepo        activityLevelRepository
+	commercialClient client.CommercialClient
+	defaultPSCRate   float64
 }
 
 func NewActivityService(
-	activityRepo *repository.ActivityRepository,
-	userLogRepo *repository.UserLogRepository,
-	levelRepo *repository.LevelRepository,
+	activityRepo activityRepository,
+	userLogRepo activityUserLogRepository,
+	levelRepo activityLevelRepository,
+	commercialClient client.CommercialClient,
 ) *ActivityService {
 	return &ActivityService{
-		activityRepo: activityRepo,
-		userLogRepo:  userLogRepo,
-		levelRepo:    levelRepo,
+		activityRepo:     activityRepo,
+		userLogRepo:      userLogRepo,
+		levelRepo:        levelRepo,
+		commercialClient: commercialClient,
+		defaultPSCRate:   30000,
 	}
 }
 
@@ -97,20 +132,22 @@ func (s *ActivityService) UpdateActivityScore(ctx context.Context, userID uint64
 		// TODO: Implement this by calling commercial service to update wallet
 		// For now, just record the prize as received
 		prize, err := s.levelRepo.GetLevelPrize(ctx, newLevelID)
-		if err == nil {
+		if err == nil && prize != nil {
 			// Check if user can receive prize (not already received)
 			hasReceived, _ := s.levelRepo.HasUserReceivedPrize(ctx, userID, prize.Id)
 			if !hasReceived {
-				// Award prize to wallet (TODO: call commercial service)
-				// Laravel: $wallet->increment('psc', ($levelPrize->psc / Variable::getRate('psc')))
-				// Laravel: $wallet->increment('blue', $levelPrize->blue)
-				// Laravel: $wallet->increment('red', $levelPrize->red)
-				// Laravel: $wallet->increment('yellow', $levelPrize->yellow)
-				// Laravel: $wallet->update(['effect' => $levelPrize->effect])
-				// Laravel: $wallet->increment('satisfaction', $levelPrize->satisfaction)
+				pscRate, rateErr := s.activityRepo.GetVariableRate(ctx, "psc")
+				if rateErr != nil || pscRate <= 0 {
+					pscRate = s.defaultPSCRate
+				}
+				if err := applyLevelPrizeBalances(ctx, s.commercialClient, userID, prize, pscRate); err != nil {
+					return newScore, false, 0, fmt.Errorf("failed to apply level-up prize balances: %w", err)
+				}
 
 				// Record prize as received
-				_ = s.levelRepo.RecordReceivedPrize(ctx, userID, prize.Id)
+				if err := s.levelRepo.RecordReceivedPrize(ctx, userID, prize.Id); err != nil {
+					return newScore, false, 0, err
+				}
 			}
 		}
 	}
@@ -128,11 +165,11 @@ func (s *ActivityService) RecordTrade(ctx context.Context, userID uint64, irrAmo
 	irr, _ := strconv.ParseFloat(irrAmount, 64)
 	psc, _ := strconv.ParseFloat(pscAmount, 64)
 
-	// Get PSC value rate to calculate minimum PSC amount
-	// Laravel: $psc_value = Variable::getRate('psc'); return 7000000 / $psc_value;
-	// For now, we'll use a default rate (TODO: query from variables table)
 	minIrrAmount := float64(7000000)
-	pscRate := float64(30000) // Default PSC rate
+	pscRate, err := s.activityRepo.GetVariableRate(ctx, "psc")
+	if err != nil || pscRate <= 0 {
+		pscRate = s.defaultPSCRate
+	}
 	minPscAmount := minIrrAmount / pscRate
 
 	// Check if this trade is significant
@@ -141,15 +178,13 @@ func (s *ActivityService) RecordTrade(ctx context.Context, userID uint64, irrAmo
 		return nil
 	}
 
-	// TODO: Count all significant trades for this user
-	// For now, we'll implement a simpler approach - query from trades table
-	// Laravel query (simplified):
-	// SELECT COUNT(*) FROM trades
-	// WHERE (buyer_id = ? AND (irr_amount > 7000000 OR psc_amount > minPsc))
-	//    OR (seller_id = ? AND (irr_amount > 7000000 OR psc_amount > minPsc))
-
-	// Update transactions_count (count * 2)
-	// Laravel: $user->log->update(['transactions_count' => $trades * 2])
+	trades, err := s.activityRepo.GetSignificantTradeCount(ctx, userID, minIrrAmount, minPscAmount)
+	if err != nil {
+		return err
+	}
+	if err := s.userLogRepo.UpdateTransactionsCount(ctx, userID, fmt.Sprintf("%d", trades*2)); err != nil {
+		return err
+	}
 
 	// After updating count, recalculate score
 	return s.recalculateAndUpdateScore(ctx, userID)
@@ -242,22 +277,4 @@ func (s *ActivityService) HourReached(ctx context.Context, userID uint64) error 
 func (s *ActivityService) recalculateAndUpdateScore(ctx context.Context, userID uint64) error {
 	_, _, _, err := s.UpdateActivityScore(ctx, userID)
 	return err
-}
-
-// GetTradeCount counts significant trades for a user (helper method)
-func (s *ActivityService) GetTradeCount(ctx context.Context, db *sql.DB, userID uint64, minIrrAmount, minPscAmount float64) (int32, error) {
-	query := `
-		SELECT COUNT(*)
-		FROM trades
-		WHERE (buyer_id = ? AND (irr_amount > ? OR psc_amount > ?))
-		   OR (seller_id = ? AND (irr_amount > ? OR psc_amount > ?))
-	`
-
-	var count int32
-	err := db.QueryRowContext(ctx, query,
-		userID, minIrrAmount, minPscAmount,
-		userID, minIrrAmount, minPscAmount,
-	).Scan(&count)
-
-	return count, err
 }

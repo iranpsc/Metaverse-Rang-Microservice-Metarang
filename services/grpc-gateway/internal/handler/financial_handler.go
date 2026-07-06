@@ -1,18 +1,28 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 
 	"metargb/grpc-gateway/internal/middleware"
 	pb "metargb/shared/pb/auth"
 	financialpb "metargb/shared/pb/financial"
 	"metargb/shared/pkg/helpers"
 )
+
+func appendAcceptLanguage(ctx context.Context, r *http.Request) context.Context {
+	al := r.Header.Get("Accept-Language")
+	if al == "" {
+		return ctx
+	}
+	return metadata.AppendToOutgoingContext(ctx, "accept-language", al, "grpcgateway-accept-language", al)
+}
 
 type FinancialHandler struct {
 	orderClient financialpb.OrderServiceClient
@@ -82,7 +92,7 @@ func (h *FinancialHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		Asset:  req.Asset,
 	}
 
-	resp, err := h.orderClient.CreateOrder(r.Context(), grpcReq)
+	resp, err := h.orderClient.CreateOrder(appendAcceptLanguage(r.Context(), r), grpcReq)
 	if err != nil {
 		writeGRPCError(w, err)
 		return
@@ -151,7 +161,7 @@ func (h *FinancialHandler) HandleCallback(w http.ResponseWriter, r *http.Request
 		AdditionalParams: additionalParams,
 	}
 
-	resp, err := h.orderClient.HandleCallback(r.Context(), grpcReq)
+	resp, err := h.orderClient.HandleCallback(appendAcceptLanguage(r.Context(), r), grpcReq)
 	if err != nil {
 		writeGRPCError(w, err)
 		return
@@ -203,7 +213,7 @@ func (h *FinancialHandler) GetStorePackages(w http.ResponseWriter, r *http.Reque
 		Codes: req.Codes,
 	}
 
-	resp, err := h.storeClient.GetStorePackages(r.Context(), grpcReq)
+	resp, err := h.storeClient.GetStorePackages(appendAcceptLanguage(r.Context(), r), grpcReq)
 	if err != nil {
 		writeGRPCError(w, err)
 		return

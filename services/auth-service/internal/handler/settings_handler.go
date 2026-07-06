@@ -28,7 +28,7 @@ func (h *settingsHandler) GetSettings(ctx context.Context, req *pb.GetSettingsRe
 	locale := getProjectLocale()
 	settings, err := h.settingsService.GetSettings(ctx, req.UserId)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, lang.Tf(locale, "failed to get settings: %v", err))
+		return nil, status.Errorf(codes.Internal, "%s", lang.Tf(locale, "failed to get settings: %v", err))
 	}
 
 	return &pb.GetSettingsResponse{
@@ -53,7 +53,7 @@ func (h *settingsHandler) UpdateSettings(ctx context.Context, req *pb.UpdateSett
 	if checkoutProvided || automaticProvided {
 		// Both must be present
 		if !checkoutProvided || !automaticProvided {
-			return nil, status.Errorf(codes.InvalidArgument, lang.T(locale, "both checkout_days_count and automatic_logout must be provided when updating checkout cadence"))
+			return nil, status.Errorf(codes.InvalidArgument, "%s", lang.T(locale, "both checkout_days_count and automatic_logout must be provided when updating checkout cadence"))
 		}
 		checkoutDaysCountVal := req.CheckoutDaysCount
 		automaticLogoutVal := req.AutomaticLogout
@@ -76,7 +76,7 @@ func (h *settingsHandler) UpdateSettings(ctx context.Context, req *pb.UpdateSett
 		case service.ErrInvalidCheckoutDays, service.ErrInvalidAutomaticLogout, service.ErrInvalidProfileSetting, service.ErrMissingRequiredFields:
 			return nil, status.Errorf(codes.InvalidArgument, "%v", err)
 		default:
-			return nil, status.Errorf(codes.Internal, lang.Tf(locale, "failed to update settings: %v", err))
+			return nil, status.Errorf(codes.Internal, "%s", lang.Tf(locale, "failed to update settings: %v", err))
 		}
 	}
 
@@ -87,7 +87,7 @@ func (h *settingsHandler) GetGeneralSettings(ctx context.Context, req *pb.GetGen
 	locale := getProjectLocale()
 	notifications, err := h.settingsService.GetGeneralSettings(ctx, req.UserId)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, lang.Tf(locale, "failed to get general settings: %v", err))
+		return nil, status.Errorf(codes.Internal, "%s", lang.Tf(locale, "failed to get general settings: %v", err))
 	}
 
 	return &pb.GetGeneralSettingsResponse{
@@ -125,15 +125,15 @@ func (h *settingsHandler) UpdateGeneralSettings(ctx context.Context, req *pb.Upd
 	if err != nil {
 		switch err {
 		case service.ErrSettingsNotFound:
-			return nil, status.Errorf(codes.NotFound, lang.T(locale, "settings not found"))
+			return nil, status.Errorf(codes.NotFound, "%s", lang.T(locale, "settings not found"))
 		default:
 			if err.Error() == "settings do not belong to user" {
-				return nil, status.Errorf(codes.PermissionDenied, lang.T(locale, "settings do not belong to user"))
+				return nil, status.Errorf(codes.PermissionDenied, "%s", lang.T(locale, "settings do not belong to user"))
 			}
 			if err.Error() == "missing required notification channel" {
 				return nil, status.Errorf(codes.InvalidArgument, "%v", err)
 			}
-			return nil, status.Errorf(codes.Internal, lang.Tf(locale, "failed to update general settings: %v", err))
+			return nil, status.Errorf(codes.Internal, "%s", lang.Tf(locale, "failed to update general settings: %v", err))
 		}
 	}
 
@@ -157,7 +157,7 @@ func (h *settingsHandler) GetPrivacySettings(ctx context.Context, req *pb.GetPri
 	locale := getProjectLocale()
 	privacy, err := h.settingsService.GetPrivacySettings(ctx, req.UserId)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, lang.Tf(locale, "failed to get privacy settings: %v", err))
+		return nil, status.Errorf(codes.Internal, "%s", lang.Tf(locale, "failed to get privacy settings: %v", err))
 	}
 
 	// Convert map[string]int to map[string]int32
@@ -179,7 +179,7 @@ func (h *settingsHandler) UpdatePrivacySettings(ctx context.Context, req *pb.Upd
 		case service.ErrInvalidPrivacyKey, service.ErrInvalidPrivacyValue:
 			return nil, status.Errorf(codes.InvalidArgument, "%v", err)
 		default:
-			return nil, status.Errorf(codes.Internal, lang.Tf(locale, "failed to update privacy settings: %v", err))
+			return nil, status.Errorf(codes.Internal, "%s", lang.Tf(locale, "failed to update privacy settings: %v", err))
 		}
 	}
 

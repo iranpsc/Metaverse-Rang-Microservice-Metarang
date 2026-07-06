@@ -2,18 +2,41 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
 	"metargb/dynasty-service/internal/models"
 	"metargb/dynasty-service/internal/repository"
 )
 
-type PrizeService struct {
-	prizeRepo *repository.PrizeRepository
+// WalletPort credits wallet balances via commercial-service (AddBalance gRPC).
+type WalletPort interface {
+	IncrementWalletPSC(ctx context.Context, userID uint64, amount float64) error
+	IncrementSatisfaction(ctx context.Context, userID uint64, amount float64) error
 }
 
-func NewPrizeService(prizeRepo *repository.PrizeRepository) *PrizeService {
-	return &PrizeService{prizeRepo: prizeRepo}
+type PrizeService struct {
+	prizeRepo    *repository.PrizeRepository
+	variableRepo *repository.VariableRepository
+	userVarRepo  *repository.UserVariableRepository
+	wallet       WalletPort
+	db           *sql.DB
+}
+
+func NewPrizeService(
+	db *sql.DB,
+	prizeRepo *repository.PrizeRepository,
+	variableRepo *repository.VariableRepository,
+	userVarRepo *repository.UserVariableRepository,
+	wallet WalletPort,
+) *PrizeService {
+	return &PrizeService{
+		prizeRepo:    prizeRepo,
+		variableRepo: variableRepo,
+		userVarRepo:  userVarRepo,
+		wallet:       wallet,
+		db:           db,
+	}
 }
 
 // GetAllPrizes retrieves all dynasty prizes
@@ -33,10 +56,17 @@ func (s *PrizeService) GetPrize(ctx context.Context, prizeID uint64) (*models.Dy
 	return prize, nil
 }
 
-// ClaimPrize allows a user to claim a dynasty prize
-func (s *PrizeService) ClaimPrize(ctx context.Context, prizeID, userID uint64) error {
-	// Get received prize (this is the ID of received_prizes table)
-	receivedPrize, err := s.prizeRepo.GetReceivedPrize(ctx, prizeID)
+// ClaimPrize redeems a received_dynasty_prize row: wallet credit (PSC rate), satisfaction,
+// user_variables multipliers, then deletes the receipt (Laravel DynastyPrizeController@store).
+func (s *PrizeService) ClaimPrize(ctx context.Context, receivedPrizeID, userID uint64) error {
+	if s.wallet == nil {
+		return fmt.Errorf("wallet client not configured")
+	}
+	if s.variableRepo == nil || s.userVarRepo == nil || s.db == nil {
+		return fmt.Errorf("prize claim dependencies not configured")
+	}
+
+	receivedPrize, err := s.prizeRepo.GetReceivedPrize(ctx, receivedPrizeID)
 	if err != nil {
 		return fmt.Errorf("failed to get received prize: %w", err)
 	}
@@ -44,15 +74,51 @@ func (s *PrizeService) ClaimPrize(ctx context.Context, prizeID, userID uint64) e
 		return fmt.Errorf("prize not found")
 	}
 
-	// Verify ownership
 	if receivedPrize.UserID != userID {
 		return fmt.Errorf("unauthorized: prize does not belong to user")
 	}
 
-	// TODO: Update wallet and variables via commercial service
-	// For now, just delete the received prize record
-	if err := s.prizeRepo.DeleteReceivedPrize(ctx, prizeID); err != nil {
-		return fmt.Errorf("failed to delete received prize: %w", err)
+	prize := receivedPrize.Prize
+	if prize == nil {
+		return fmt.Errorf("prize definition not found")
+	}
+
+	rate, err := s.variableRepo.GetPriceByAsset(ctx, "psc")
+	if err != nil {
+		return fmt.Errorf("psc rate: %w", err)
+	}
+	if rate <= 0 {
+		rate = 1
+	}
+
+	pscAmount := float64(prize.PSC) / rate
+	if err := s.wallet.IncrementWalletPSC(ctx, userID, pscAmount); err != nil {
+		return fmt.Errorf("wallet psc credit: %w", err)
+	}
+	if err := s.wallet.IncrementSatisfaction(ctx, userID, prize.Satisfaction); err != nil {
+		return fmt.Errorf("wallet satisfaction credit: %w", err)
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	if err := s.userVarRepo.ApplyDynastyPrizeMultipliers(ctx, tx, userID,
+		prize.IntroductionProfitIncrease,
+		prize.DataStorage,
+		prize.AccumulatedCapitalReserve,
+	); err != nil {
+		return err
+	}
+
+	if err := s.prizeRepo.DeleteReceivedPrizeTx(ctx, tx, receivedPrizeID); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit prize claim: %w", err)
 	}
 
 	return nil

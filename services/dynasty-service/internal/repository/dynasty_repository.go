@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"metargb/dynasty-service/internal/models"
 )
@@ -254,4 +255,64 @@ func (r *DynastyRepository) CheckFeatureHasPendingRequest(ctx context.Context, f
 	}
 
 	return exists, nil
+}
+
+// GetFeaturePenaltyData returns karbari + stability used for dynasty feature-change penalties.
+func (r *DynastyRepository) GetFeaturePenaltyData(ctx context.Context, featureID uint64) (karbari string, stability float64, err error) {
+	const q = `
+		SELECT fp.karbari, fp.stability
+		FROM feature_properties fp
+		WHERE fp.feature_id = ?
+		LIMIT 1
+	`
+	err = r.db.QueryRowContext(ctx, q, featureID).Scan(&karbari, &stability)
+	if err == sql.ErrNoRows {
+		return "", 0, nil
+	}
+	if err != nil {
+		return "", 0, fmt.Errorf("failed to get feature penalty data: %w", err)
+	}
+	return karbari, stability, nil
+}
+
+// CreateDebt inserts debt row in debts table and sets the color-specific column.
+func (r *DynastyRepository) CreateDebt(ctx context.Context, userID uint64, color string, amount float64, reason string) error {
+	colorColumn := "yellow"
+	switch color {
+	case "red":
+		colorColumn = "red"
+	case "blue":
+		colorColumn = "blue"
+	case "yellow":
+		colorColumn = "yellow"
+	}
+	q := fmt.Sprintf(`
+		INSERT INTO debts (user_id, %s, reason, status, created_at, updated_at)
+		VALUES (?, ?, ?, 1, NOW(), NOW())
+	`, colorColumn)
+	if _, err := r.db.ExecContext(ctx, q, userID, amount, reason); err != nil {
+		return fmt.Errorf("failed to create debt: %w", err)
+	}
+	return nil
+}
+
+// LockFeature inserts row into locked_features to prevent immediate reuse.
+func (r *DynastyRepository) LockFeature(ctx context.Context, featureID uint64, reason string, until time.Time, status int) error {
+	const q = `
+		INSERT INTO locked_features (feature_id, reason, until, status, created_at, updated_at)
+		VALUES (?, ?, ?, ?, NOW(), NOW())
+	`
+	if _, err := r.db.ExecContext(ctx, q, featureID, reason, until, status); err != nil {
+		return fmt.Errorf("failed to lock feature: %w", err)
+	}
+	return nil
+}
+
+// SetFeatureLabel updates feature_properties.label for given feature.
+func (r *DynastyRepository) SetFeatureLabel(ctx context.Context, featureID uint64, label string) error {
+	const q = `UPDATE feature_properties SET label = ?, updated_at = NOW() WHERE feature_id = ?`
+	if _, err := r.db.ExecContext(ctx, q, label, featureID); err != nil {
+		return fmt.Errorf("failed to update feature label: %w", err)
+	}
+	return nil
 }

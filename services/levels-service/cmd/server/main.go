@@ -53,6 +53,7 @@ func main() {
 	)
 	port := getEnv("GRPC_PORT", "50054")
 	metricsPort := getEnv("METRICS_PORT", "9090")
+	commercialServiceAddr := getEnv("COMMERCIAL_SERVICE_ADDR", "commercial-service:50052")
 
 	// Initialize database connection
 	database, err := sql.Open("mysql", dbDSN)
@@ -95,10 +96,16 @@ func main() {
 	challengeRepo := repository.NewChallengeRepository(database)
 	userLogRepo := repository.NewUserLogRepository(database)
 
+	commercialClient, err := client.NewCommercialClient(commercialServiceAddr)
+	if err != nil {
+		log.Fatal("Failed to connect to commercial service", "error", err, "address", commercialServiceAddr)
+	}
+	defer commercialClient.Close()
+
 	// Initialize services
-	levelService := service.NewLevelService(levelRepo, userLogRepo)
-	activityService := service.NewActivityService(activityRepo, userLogRepo, levelRepo)
-	challengeService := service.NewChallengeService(challengeRepo)
+	levelService := service.NewLevelService(levelRepo, userLogRepo, commercialClient)
+	activityService := service.NewActivityService(activityRepo, userLogRepo, levelRepo, commercialClient)
+	challengeService := service.NewChallengeService(challengeRepo, commercialClient)
 
 	// Initialize gRPC handlers
 	levelHandler := handler.NewLevelHandler(levelService)

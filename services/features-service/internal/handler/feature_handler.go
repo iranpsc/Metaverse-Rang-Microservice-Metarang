@@ -2,10 +2,11 @@ package handler
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"strconv"
 	"strings"
 
-	"metargb/features-service/internal/service"
 	pb "metargb/shared/pb/features"
 	"metargb/shared/pkg/auth"
 
@@ -18,10 +19,10 @@ type pbEmpty = emptypb.Empty
 
 type FeatureHandler struct {
 	pb.UnimplementedFeatureServiceServer
-	service *service.FeatureService
+	service FeatureServicePort
 }
 
-func NewFeatureHandler(service *service.FeatureService) *FeatureHandler {
+func NewFeatureHandler(service FeatureServicePort) *FeatureHandler {
 	return &FeatureHandler{
 		service: service,
 	}
@@ -74,7 +75,10 @@ func (h *FeatureHandler) GetFeature(ctx context.Context, req *pb.GetFeatureReque
 
 	feature, err := h.service.GetFeature(ctx, req.FeatureId)
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "feature not found: %v", err)
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, status.Errorf(codes.NotFound, "feature not found")
+		}
+		return nil, status.Errorf(codes.Internal, "failed to get feature: %v", err)
 	}
 
 	return &pb.FeatureResponse{

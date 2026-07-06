@@ -10,9 +10,10 @@ import (
 type UserEventService interface {
 	CreateUserEvent(ctx context.Context, userID uint64, title, description, eventDate string) (*models.UserEvent, error)
 	GetUserEvents(ctx context.Context, userID uint64, page, perPage int32) ([]*models.UserEvent, int, error)
-	GetUserEvent(ctx context.Context, eventID uint64) (*models.UserEventWithReport, error)
+	GetUserEvent(ctx context.Context, eventID, userID uint64) (*models.UserEventWithReport, error)
 	ReportUserEvent(ctx context.Context, eventID uint64, suspiciousCitizen, eventDescription string) (*models.UserEventReport, error)
-	SendEventReportResponse(ctx context.Context, reportID uint64, responderName, response string) error
+	SendEventReportResponse(ctx context.Context, eventID uint64, responderName, response string) (*models.UserEventReportResponse, error)
+	CloseUserEventReport(ctx context.Context, eventID, userID uint64) error
 }
 
 type userEventService struct {
@@ -26,13 +27,13 @@ func NewUserEventService(userEventRepo repository.UserEventRepository) UserEvent
 }
 
 func (s *userEventService) CreateUserEvent(ctx context.Context, userID uint64, title, description, eventDate string) (*models.UserEvent, error) {
-	// Note: The proto expects title, description, event_date but Laravel UserEvent has event, ip, device, status
-	// We'll store the title as event field
+	_ = description
+	_ = eventDate
 	event := &models.UserEvent{
 		UserID: userID,
 		Event:  title,
-		IP:     "0.0.0.0", // Default IP - should be provided by gateway
-		Device: "unknown", // Default device - should be provided by gateway
+		IP:     "0.0.0.0",
+		Device: "unknown",
 		Status: true,
 	}
 
@@ -50,8 +51,18 @@ func (s *userEventService) GetUserEvents(ctx context.Context, userID uint64, pag
 	return s.userEventRepo.GetByUserID(ctx, userID, page, perPage)
 }
 
-func (s *userEventService) GetUserEvent(ctx context.Context, eventID uint64) (*models.UserEventWithReport, error) {
-	return s.userEventRepo.GetByID(ctx, eventID)
+func (s *userEventService) GetUserEvent(ctx context.Context, eventID, userID uint64) (*models.UserEventWithReport, error) {
+	event, err := s.userEventRepo.GetByID(ctx, eventID)
+	if err != nil {
+		return nil, err
+	}
+	if event == nil {
+		return nil, nil
+	}
+	if event.UserID != userID {
+		return nil, fmt.Errorf("unauthorized: you don't have permission to view this event")
+	}
+	return event, nil
 }
 
 func (s *userEventService) ReportUserEvent(ctx context.Context, eventID uint64, suspiciousCitizen, eventDescription string) (*models.UserEventReport, error) {
@@ -64,31 +75,60 @@ func (s *userEventService) ReportUserEvent(ctx context.Context, eventID uint64, 
 		UserEventID:       eventID,
 		SuspeciousCitizen: suspiciousCitizenPtr,
 		EventDescription:  eventDescription,
-		Status:            0, // Default status
+		Status:            0,
 		Closed:            false,
 	}
 
 	return s.userEventRepo.CreateReport(ctx, report)
 }
 
-func (s *userEventService) SendEventReportResponse(ctx context.Context, reportID uint64, responderName, response string) error {
-	// Create response
+func (s *userEventService) SendEventReportResponse(ctx context.Context, eventID uint64, responderName, response string) (*models.UserEventReportResponse, error) {
+	report, err := s.userEventRepo.GetReportByEventID(ctx, eventID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get report: %w", err)
+	}
+	if report == nil {
+		return nil, fmt.Errorf("report not found")
+	}
+
 	reportResponse := &models.UserEventReportResponse{
-		UserEventReportID: reportID,
+		UserEventReportID: report.ID,
 		Response:          response,
 		ResponserName:     responderName,
 	}
 
-	_, err := s.userEventRepo.CreateReportResponse(ctx, reportResponse)
+	created, err := s.userEventRepo.CreateReportResponse(ctx, reportResponse)
 	if err != nil {
-		return fmt.Errorf("failed to create response: %w", err)
+		return nil, fmt.Errorf("failed to create response: %w", err)
 	}
 
-	// Update report status to 1 (matching Laravel)
-	err = s.userEventRepo.UpdateReportStatus(ctx, reportID, 1)
+	err = s.userEventRepo.UpdateReportStatus(ctx, report.ID, 1)
 	if err != nil {
-		return fmt.Errorf("failed to update report status: %w", err)
+		return nil, fmt.Errorf("failed to update report status: %w", err)
 	}
 
-	return nil
+	return created, nil
+}
+
+func (s *userEventService) CloseUserEventReport(ctx context.Context, eventID, userID uint64) error {
+	event, err := s.userEventRepo.GetByID(ctx, eventID)
+	if err != nil {
+		return err
+	}
+	if event == nil {
+		return fmt.Errorf("user event not found")
+	}
+	if event.UserID != userID {
+		return fmt.Errorf("unauthorized: you don't have permission to close this report")
+	}
+
+	report, err := s.userEventRepo.GetReportByEventID(ctx, eventID)
+	if err != nil {
+		return err
+	}
+	if report == nil {
+		return fmt.Errorf("report not found")
+	}
+
+	return s.userEventRepo.CloseReport(ctx, report.ID)
 }

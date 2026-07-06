@@ -45,6 +45,34 @@ func (h *SupportHandler) getAuthUserID(r *http.Request) (uint64, error) {
 	return userCtx.UserID, nil
 }
 
+func splitJalaliDateTime(s string) (date, clock string) {
+	parts := strings.SplitN(strings.TrimSpace(s), " ", 2)
+	if len(parts) == 2 {
+		return parts[0], parts[1]
+	}
+	return s, s
+}
+
+func userEventStatusLabel(ok bool) string {
+	if ok {
+		return "موفق"
+	}
+	return "ناموفق"
+}
+
+// displayNameFromAuth returns a short display name for ticket responses (Laravel uses user name).
+func (h *SupportHandler) displayNameFromAuth(r *http.Request) string {
+	userCtx, err := middleware.GetUserFromRequest(r)
+	if err != nil || userCtx == nil || userCtx.Email == "" {
+		return "User"
+	}
+	email := userCtx.Email
+	if i := strings.Index(email, "@"); i > 0 {
+		return email[:i]
+	}
+	return email
+}
+
 // ============================================================================
 // Tickets API
 // ============================================================================
@@ -78,8 +106,7 @@ func (h *SupportHandler) ListTickets(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Parse received parameter (not used but kept for future use)
-	// _ = r.URL.Query().Get("recieved")
+	received := r.URL.Query().Get("recieved") == "true" || r.URL.Query().Get("recieved") == "1"
 
 	grpcReq := &pbSupport.GetTicketsRequest{
 		UserId: userID,
@@ -87,6 +114,7 @@ func (h *SupportHandler) ListTickets(w http.ResponseWriter, r *http.Request) {
 			Page:    page,
 			PerPage: perPage,
 		},
+		Received: received,
 	}
 
 	resp, err := h.ticketClient.GetTickets(r.Context(), grpcReq)
@@ -98,14 +126,15 @@ func (h *SupportHandler) ListTickets(w http.ResponseWriter, r *http.Request) {
 	// Convert to Laravel-compatible format
 	tickets := make([]map[string]interface{}, 0, len(resp.Tickets))
 	for _, ticket := range resp.Tickets {
+		dateStr, timeStr := splitJalaliDateTime(ticket.UpdatedAt)
 		ticketMap := map[string]interface{}{
 			"id":      ticket.Id,
 			"title":   ticket.Title,
 			"content": ticket.Content,
 			"code":    ticket.Code,
 			"status":  ticket.Status,
-			"date":    ticket.UpdatedAt,
-			"time":    ticket.UpdatedAt,
+			"date":    dateStr,
+			"time":    timeStr,
 		}
 
 		if ticket.Sender != nil {
@@ -275,15 +304,15 @@ func (h *SupportHandler) GetTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Convert to Laravel-compatible format (same as CreateTicket)
+	dateStr, timeStr := splitJalaliDateTime(resp.UpdatedAt)
 	ticketMap := map[string]interface{}{
 		"id":      resp.Id,
 		"title":   resp.Title,
 		"content": resp.Content,
 		"code":    resp.Code,
 		"status":  resp.Status,
-		"date":    resp.UpdatedAt,
-		"time":    resp.UpdatedAt,
+		"date":    dateStr,
+		"time":    timeStr,
 	}
 
 	if resp.Sender != nil {
@@ -487,8 +516,8 @@ func formatTicketResponse(resp *pbSupport.TicketResponse) map[string]interface{}
 		"content": resp.Content,
 		"code":    resp.Code,
 		"status":  resp.Status,
-		"date":    resp.UpdatedAt,
-		"time":    resp.UpdatedAt,
+		"date":    dateStr,
+		"time":    timeStr,
 	}
 
 	if resp.CreatedAt != "" && resp.UpdatedAt == "" {
@@ -574,15 +603,15 @@ func (h *SupportHandler) CloseTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Return updated ticket
+	dateStr, timeStr := splitJalaliDateTime(resp.UpdatedAt)
 	ticketMap := map[string]interface{}{
 		"id":      resp.Id,
 		"title":   resp.Title,
 		"content": resp.Content,
 		"code":    resp.Code,
 		"status":  resp.Status,
-		"date":    resp.UpdatedAt,
-		"time":    resp.UpdatedAt,
+		"date":    dateStr,
+		"time":    timeStr,
 	}
 
 	writeJSON(w, http.StatusOK, ticketMap)
@@ -733,6 +762,12 @@ func (h *SupportHandler) GetReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID, err := h.getAuthUserID(r)
+	if err != nil {
+		writeGRPCError(w, err)
+		return
+	}
+
 	reportIDStr := extractIDFromPath(r.URL.Path, "/api/reports/")
 	if reportIDStr == "" {
 		writeError(w, http.StatusBadRequest, "report_id is required")
@@ -747,6 +782,7 @@ func (h *SupportHandler) GetReport(w http.ResponseWriter, r *http.Request) {
 
 	grpcReq := &pbSupport.GetReportRequest{
 		ReportId: reportID,
+		UserId:   userID,
 	}
 
 	resp, err := h.reportClient.GetReport(r.Context(), grpcReq)

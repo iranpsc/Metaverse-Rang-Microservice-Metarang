@@ -131,7 +131,7 @@ func TestDynastyService_UpdateDynastyFeature(t *testing.T) {
 		mock.ExpectQuery("SELECT id, user_id, feature_id").
 			WithArgs(dynastyID).
 			WillReturnRows(sqlmock.NewRows([]string{"id", "user_id", "feature_id", "created_at", "updated_at"}).
-				AddRow(dynastyID, userID, 100, time.Now(), time.Now()))
+				AddRow(dynastyID, userID, 100, time.Now().AddDate(0, 0, -60), time.Now().AddDate(0, 0, -31)))
 
 		// Update feature
 		mock.ExpectExec("UPDATE dynasties SET feature_id").
@@ -147,7 +147,7 @@ func TestDynastyService_UpdateDynastyFeature(t *testing.T) {
 		mock.ExpectQuery("SELECT id, user_id, feature_id").
 			WithArgs(dynastyID).
 			WillReturnRows(sqlmock.NewRows([]string{"id", "user_id", "feature_id", "created_at", "updated_at"}).
-				AddRow(dynastyID, userID, 100, time.Now(), time.Now()))
+				AddRow(dynastyID, userID, 100, time.Now().AddDate(0, 0, -60), time.Now().AddDate(0, 0, -31)))
 
 		err := service.UpdateDynastyFeature(ctx, dynastyID, newFeatureID, otherUserID)
 		assert.Error(t, err)

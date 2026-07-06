@@ -15,6 +15,18 @@ type UserLogRepository struct {
 	db *sql.DB
 }
 
+type UserLogRepositoryInterface interface {
+	GetUserScore(ctx context.Context, userID uint64) (int32, error)
+	GetUserLog(ctx context.Context, userID uint64) (*pb.UserLog, error)
+	UpdateScore(ctx context.Context, userID uint64, score int32) error
+	UpdateTransactionsCount(ctx context.Context, userID uint64, count string) error
+	IncrementDeposit(ctx context.Context, userID uint64, amount string) error
+	UpdateFollowersCount(ctx context.Context, userID uint64, totalFollowers int32) error
+	UpdateActivityHours(ctx context.Context, userID uint64, totalMinutes int32) error
+	GetTotalFollowers(ctx context.Context, userID uint64) (int32, error)
+	CalculateScore(ctx context.Context, userID uint64) (int32, error)
+}
+
 func NewUserLogRepository(db *sql.DB) *UserLogRepository {
 	return &UserLogRepository{db: db}
 }

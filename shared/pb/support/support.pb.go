@@ -188,7 +188,8 @@ type AddResponseRequest struct {
 	TicketId      uint64                 `protobuf:"varint,1,opt,name=ticket_id,json=ticketId,proto3" json:"ticket_id,omitempty"`
 	UserId        uint64                 `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Response      string                 `protobuf:"bytes,3,opt,name=response,proto3" json:"response,omitempty"`
-	Attachment    string                 `protobuf:"bytes,4,opt,name=attachment,proto3" json:"attachment,omitempty"` // URL or empty
+	Attachment    string                 `protobuf:"bytes,4,opt,name=attachment,proto3" json:"attachment,omitempty"`             // URL or empty
+	UserName      string                 `protobuf:"bytes,5,opt,name=user_name,json=userName,proto3" json:"user_name,omitempty"` // display name of responder (from gateway/auth)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -251,6 +252,13 @@ func (x *AddResponseRequest) GetAttachment() string {
 	return ""
 }
 
+func (x *AddResponseRequest) GetUserName() string {
+	if x != nil {
+		return x.UserName
+	}
+	return ""
+}
+
 type CloseTicketRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	TicketId      uint64                 `protobuf:"varint,1,opt,name=ticket_id,json=ticketId,proto3" json:"ticket_id,omitempty"`
@@ -308,6 +316,7 @@ type GetTicketsRequest struct {
 	UserId        uint64                    `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Pagination    *common.PaginationRequest `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	StatusFilter  int32                     `protobuf:"varint,3,opt,name=status_filter,json=statusFilter,proto3" json:"status_filter,omitempty"` // optional, 0=all
+	Received      bool                      `protobuf:"varint,4,opt,name=received,proto3" json:"received,omitempty"`                             // true = tickets where user is receiver (Laravel ?recieved=true)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -361,6 +370,13 @@ func (x *GetTicketsRequest) GetStatusFilter() int32 {
 		return x.StatusFilter
 	}
 	return 0
+}
+
+func (x *GetTicketsRequest) GetReceived() bool {
+	if x != nil {
+		return x.Received
+	}
+	return false
 }
 
 type GetTicketRequest struct {
@@ -703,7 +719,7 @@ func (x *TicketResponseItem) GetCreatedAt() string {
 type CreateReportRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	UserId         uint64                 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	ReportableType string                 `protobuf:"bytes,2,opt,name=reportable_type,json=reportableType,proto3" json:"reportable_type,omitempty"` // User, Feature, Comment, etc.
+	ReportableType string                 `protobuf:"bytes,2,opt,name=reportable_type,json=reportableType,proto3" json:"reportable_type,omitempty"` // maps to Laravel subject when using gateway
 	ReportableId   uint64                 `protobuf:"varint,3,opt,name=reportable_id,json=reportableId,proto3" json:"reportable_id,omitempty"`
 	Reason         string                 `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
 	Description    string                 `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
@@ -847,6 +863,7 @@ func (x *GetReportsRequest) GetPagination() *common.PaginationRequest {
 type GetReportRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ReportId      uint64                 `protobuf:"varint,1,opt,name=report_id,json=reportId,proto3" json:"report_id,omitempty"`
+	UserId        uint64                 `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // for ownership check (Laravel parity)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -884,6 +901,13 @@ func (*GetReportRequest) Descriptor() ([]byte, []int) {
 func (x *GetReportRequest) GetReportId() uint64 {
 	if x != nil {
 		return x.ReportId
+	}
+	return 0
+}
+
+func (x *GetReportRequest) GetUserId() uint64 {
+	if x != nil {
+		return x.UserId
 	}
 	return 0
 }
@@ -1172,6 +1196,7 @@ func (x *GetUserEventsRequest) GetPagination() *common.PaginationRequest {
 type GetUserEventRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	EventId       uint64                 `protobuf:"varint,1,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"`
+	UserId        uint64                 `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // scope to owner (Laravel parity)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1213,6 +1238,189 @@ func (x *GetUserEventRequest) GetEventId() uint64 {
 	return 0
 }
 
+func (x *GetUserEventRequest) GetUserId() uint64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+type UserEventReportResponseItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            uint64                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	ResponserName string                 `protobuf:"bytes,2,opt,name=responser_name,json=responserName,proto3" json:"responser_name,omitempty"`
+	Response      string                 `protobuf:"bytes,3,opt,name=response,proto3" json:"response,omitempty"`
+	Date          string                 `protobuf:"bytes,4,opt,name=date,proto3" json:"date,omitempty"` // Jalali Y/m/d
+	Time          string                 `protobuf:"bytes,5,opt,name=time,proto3" json:"time,omitempty"` // H:M:S
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UserEventReportResponseItem) Reset() {
+	*x = UserEventReportResponseItem{}
+	mi := &file_support_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UserEventReportResponseItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserEventReportResponseItem) ProtoMessage() {}
+
+func (x *UserEventReportResponseItem) ProtoReflect() protoreflect.Message {
+	mi := &file_support_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserEventReportResponseItem.ProtoReflect.Descriptor instead.
+func (*UserEventReportResponseItem) Descriptor() ([]byte, []int) {
+	return file_support_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *UserEventReportResponseItem) GetId() uint64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *UserEventReportResponseItem) GetResponserName() string {
+	if x != nil {
+		return x.ResponserName
+	}
+	return ""
+}
+
+func (x *UserEventReportResponseItem) GetResponse() string {
+	if x != nil {
+		return x.Response
+	}
+	return ""
+}
+
+func (x *UserEventReportResponseItem) GetDate() string {
+	if x != nil {
+		return x.Date
+	}
+	return ""
+}
+
+func (x *UserEventReportResponseItem) GetTime() string {
+	if x != nil {
+		return x.Time
+	}
+	return ""
+}
+
+type UserEventReportDetail struct {
+	state             protoimpl.MessageState         `protogen:"open.v1"`
+	Id                uint64                         `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	SuspiciousCitizen string                         `protobuf:"bytes,2,opt,name=suspicious_citizen,json=suspiciousCitizen,proto3" json:"suspicious_citizen,omitempty"`
+	EventDescription  string                         `protobuf:"bytes,3,opt,name=event_description,json=eventDescription,proto3" json:"event_description,omitempty"`
+	Status            int32                          `protobuf:"varint,4,opt,name=status,proto3" json:"status,omitempty"`
+	Closed            bool                           `protobuf:"varint,5,opt,name=closed,proto3" json:"closed,omitempty"`
+	Date              string                         `protobuf:"bytes,6,opt,name=date,proto3" json:"date,omitempty"`
+	Time              string                         `protobuf:"bytes,7,opt,name=time,proto3" json:"time,omitempty"`
+	Responses         []*UserEventReportResponseItem `protobuf:"bytes,8,rep,name=responses,proto3" json:"responses,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *UserEventReportDetail) Reset() {
+	*x = UserEventReportDetail{}
+	mi := &file_support_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UserEventReportDetail) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserEventReportDetail) ProtoMessage() {}
+
+func (x *UserEventReportDetail) ProtoReflect() protoreflect.Message {
+	mi := &file_support_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserEventReportDetail.ProtoReflect.Descriptor instead.
+func (*UserEventReportDetail) Descriptor() ([]byte, []int) {
+	return file_support_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *UserEventReportDetail) GetId() uint64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *UserEventReportDetail) GetSuspiciousCitizen() string {
+	if x != nil {
+		return x.SuspiciousCitizen
+	}
+	return ""
+}
+
+func (x *UserEventReportDetail) GetEventDescription() string {
+	if x != nil {
+		return x.EventDescription
+	}
+	return ""
+}
+
+func (x *UserEventReportDetail) GetStatus() int32 {
+	if x != nil {
+		return x.Status
+	}
+	return 0
+}
+
+func (x *UserEventReportDetail) GetClosed() bool {
+	if x != nil {
+		return x.Closed
+	}
+	return false
+}
+
+func (x *UserEventReportDetail) GetDate() string {
+	if x != nil {
+		return x.Date
+	}
+	return ""
+}
+
+func (x *UserEventReportDetail) GetTime() string {
+	if x != nil {
+		return x.Time
+	}
+	return ""
+}
+
+func (x *UserEventReportDetail) GetResponses() []*UserEventReportResponseItem {
+	if x != nil {
+		return x.Responses
+	}
+	return nil
+}
+
 type UserEventResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            uint64                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1221,13 +1429,17 @@ type UserEventResponse struct {
 	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
 	EventDate     string                 `protobuf:"bytes,5,opt,name=event_date,json=eventDate,proto3" json:"event_date,omitempty"` // Jalali formatted
 	CreatedAt     string                 `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"` // Jalali formatted
+	Ip            string                 `protobuf:"bytes,7,opt,name=ip,proto3" json:"ip,omitempty"`
+	Device        string                 `protobuf:"bytes,8,opt,name=device,proto3" json:"device,omitempty"`
+	StatusOk      bool                   `protobuf:"varint,9,opt,name=status_ok,json=statusOk,proto3" json:"status_ok,omitempty"` // Laravel UserEventResource maps to موفق / ناموفق
+	Report        *UserEventReportDetail `protobuf:"bytes,10,opt,name=report,proto3" json:"report,omitempty"`                     // set on GetUserEvent (show)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UserEventResponse) Reset() {
 	*x = UserEventResponse{}
-	mi := &file_support_proto_msgTypes[17]
+	mi := &file_support_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1239,7 +1451,7 @@ func (x *UserEventResponse) String() string {
 func (*UserEventResponse) ProtoMessage() {}
 
 func (x *UserEventResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_support_proto_msgTypes[17]
+	mi := &file_support_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1252,7 +1464,7 @@ func (x *UserEventResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserEventResponse.ProtoReflect.Descriptor instead.
 func (*UserEventResponse) Descriptor() ([]byte, []int) {
-	return file_support_proto_rawDescGZIP(), []int{17}
+	return file_support_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *UserEventResponse) GetId() uint64 {
@@ -1297,6 +1509,34 @@ func (x *UserEventResponse) GetCreatedAt() string {
 	return ""
 }
 
+func (x *UserEventResponse) GetIp() string {
+	if x != nil {
+		return x.Ip
+	}
+	return ""
+}
+
+func (x *UserEventResponse) GetDevice() string {
+	if x != nil {
+		return x.Device
+	}
+	return ""
+}
+
+func (x *UserEventResponse) GetStatusOk() bool {
+	if x != nil {
+		return x.StatusOk
+	}
+	return false
+}
+
+func (x *UserEventResponse) GetReport() *UserEventReportDetail {
+	if x != nil {
+		return x.Report
+	}
+	return nil
+}
+
 type UserEventsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Events        []*UserEventResponse   `protobuf:"bytes,1,rep,name=events,proto3" json:"events,omitempty"`
@@ -1307,7 +1547,7 @@ type UserEventsResponse struct {
 
 func (x *UserEventsResponse) Reset() {
 	*x = UserEventsResponse{}
-	mi := &file_support_proto_msgTypes[18]
+	mi := &file_support_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1319,7 +1559,7 @@ func (x *UserEventsResponse) String() string {
 func (*UserEventsResponse) ProtoMessage() {}
 
 func (x *UserEventsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_support_proto_msgTypes[18]
+	mi := &file_support_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1332,7 +1572,7 @@ func (x *UserEventsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserEventsResponse.ProtoReflect.Descriptor instead.
 func (*UserEventsResponse) Descriptor() ([]byte, []int) {
-	return file_support_proto_rawDescGZIP(), []int{18}
+	return file_support_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *UserEventsResponse) GetEvents() []*UserEventResponse {
@@ -1361,7 +1601,7 @@ type ReportUserEventRequest struct {
 
 func (x *ReportUserEventRequest) Reset() {
 	*x = ReportUserEventRequest{}
-	mi := &file_support_proto_msgTypes[19]
+	mi := &file_support_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1373,7 +1613,7 @@ func (x *ReportUserEventRequest) String() string {
 func (*ReportUserEventRequest) ProtoMessage() {}
 
 func (x *ReportUserEventRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_support_proto_msgTypes[19]
+	mi := &file_support_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1386,7 +1626,7 @@ func (x *ReportUserEventRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportUserEventRequest.ProtoReflect.Descriptor instead.
 func (*ReportUserEventRequest) Descriptor() ([]byte, []int) {
-	return file_support_proto_rawDescGZIP(), []int{19}
+	return file_support_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ReportUserEventRequest) GetEventId() uint64 {
@@ -1430,7 +1670,7 @@ type UserEventReportResponse struct {
 
 func (x *UserEventReportResponse) Reset() {
 	*x = UserEventReportResponse{}
-	mi := &file_support_proto_msgTypes[20]
+	mi := &file_support_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1442,7 +1682,7 @@ func (x *UserEventReportResponse) String() string {
 func (*UserEventReportResponse) ProtoMessage() {}
 
 func (x *UserEventReportResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_support_proto_msgTypes[20]
+	mi := &file_support_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1455,7 +1695,7 @@ func (x *UserEventReportResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserEventReportResponse.ProtoReflect.Descriptor instead.
 func (*UserEventReportResponse) Descriptor() ([]byte, []int) {
-	return file_support_proto_rawDescGZIP(), []int{20}
+	return file_support_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *UserEventReportResponse) GetId() uint64 {
@@ -1495,16 +1735,17 @@ func (x *UserEventReportResponse) GetCreatedAt() string {
 
 type SendEventReportResponseRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ReportId      uint64                 `protobuf:"varint,1,opt,name=report_id,json=reportId,proto3" json:"report_id,omitempty"`
+	EventId       uint64                 `protobuf:"varint,1,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"` // user_events.id (Laravel route /report/response/{userEvent})
 	ResponderId   uint64                 `protobuf:"varint,2,opt,name=responder_id,json=responderId,proto3" json:"responder_id,omitempty"`
 	Response      string                 `protobuf:"bytes,3,opt,name=response,proto3" json:"response,omitempty"`
+	ResponderName string                 `protobuf:"bytes,4,opt,name=responder_name,json=responderName,proto3" json:"responder_name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SendEventReportResponseRequest) Reset() {
 	*x = SendEventReportResponseRequest{}
-	mi := &file_support_proto_msgTypes[21]
+	mi := &file_support_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1516,7 +1757,7 @@ func (x *SendEventReportResponseRequest) String() string {
 func (*SendEventReportResponseRequest) ProtoMessage() {}
 
 func (x *SendEventReportResponseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_support_proto_msgTypes[21]
+	mi := &file_support_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1529,12 +1770,12 @@ func (x *SendEventReportResponseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendEventReportResponseRequest.ProtoReflect.Descriptor instead.
 func (*SendEventReportResponseRequest) Descriptor() ([]byte, []int) {
-	return file_support_proto_rawDescGZIP(), []int{21}
+	return file_support_proto_rawDescGZIP(), []int{23}
 }
 
-func (x *SendEventReportResponseRequest) GetReportId() uint64 {
+func (x *SendEventReportResponseRequest) GetEventId() uint64 {
 	if x != nil {
-		return x.ReportId
+		return x.EventId
 	}
 	return 0
 }
@@ -1553,20 +1794,155 @@ func (x *SendEventReportResponseRequest) GetResponse() string {
 	return ""
 }
 
+func (x *SendEventReportResponseRequest) GetResponderName() string {
+	if x != nil {
+		return x.ResponderName
+	}
+	return ""
+}
+
+type SendEventReportResponseReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            uint64                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	ResponserName string                 `protobuf:"bytes,2,opt,name=responser_name,json=responserName,proto3" json:"responser_name,omitempty"`
+	Response      string                 `protobuf:"bytes,3,opt,name=response,proto3" json:"response,omitempty"`
+	Date          string                 `protobuf:"bytes,4,opt,name=date,proto3" json:"date,omitempty"` // Jalali Y/m/d
+	Time          string                 `protobuf:"bytes,5,opt,name=time,proto3" json:"time,omitempty"` // H:M:S
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SendEventReportResponseReply) Reset() {
+	*x = SendEventReportResponseReply{}
+	mi := &file_support_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendEventReportResponseReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendEventReportResponseReply) ProtoMessage() {}
+
+func (x *SendEventReportResponseReply) ProtoReflect() protoreflect.Message {
+	mi := &file_support_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendEventReportResponseReply.ProtoReflect.Descriptor instead.
+func (*SendEventReportResponseReply) Descriptor() ([]byte, []int) {
+	return file_support_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *SendEventReportResponseReply) GetId() uint64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *SendEventReportResponseReply) GetResponserName() string {
+	if x != nil {
+		return x.ResponserName
+	}
+	return ""
+}
+
+func (x *SendEventReportResponseReply) GetResponse() string {
+	if x != nil {
+		return x.Response
+	}
+	return ""
+}
+
+func (x *SendEventReportResponseReply) GetDate() string {
+	if x != nil {
+		return x.Date
+	}
+	return ""
+}
+
+func (x *SendEventReportResponseReply) GetTime() string {
+	if x != nil {
+		return x.Time
+	}
+	return ""
+}
+
+type CloseUserEventReportRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	EventId       uint64                 `protobuf:"varint,1,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"`
+	UserId        uint64                 `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CloseUserEventReportRequest) Reset() {
+	*x = CloseUserEventReportRequest{}
+	mi := &file_support_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CloseUserEventReportRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CloseUserEventReportRequest) ProtoMessage() {}
+
+func (x *CloseUserEventReportRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_support_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CloseUserEventReportRequest.ProtoReflect.Descriptor instead.
+func (*CloseUserEventReportRequest) Descriptor() ([]byte, []int) {
+	return file_support_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *CloseUserEventReportRequest) GetEventId() uint64 {
+	if x != nil {
+		return x.EventId
+	}
+	return 0
+}
+
+func (x *CloseUserEventReportRequest) GetUserId() uint64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
 // Note Messages
 type CreateNoteRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        uint64                 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	Content       string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
-	Attachment    string                 `protobuf:"bytes,4,opt,name=attachment,proto3" json:"attachment,omitempty"` // URL or empty
+	Attachments   []string               `protobuf:"bytes,4,rep,name=attachments,proto3" json:"attachments,omitempty"` // URLs (Laravel notes.attachments JSON)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CreateNoteRequest) Reset() {
 	*x = CreateNoteRequest{}
-	mi := &file_support_proto_msgTypes[22]
+	mi := &file_support_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1578,7 +1954,7 @@ func (x *CreateNoteRequest) String() string {
 func (*CreateNoteRequest) ProtoMessage() {}
 
 func (x *CreateNoteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_support_proto_msgTypes[22]
+	mi := &file_support_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1591,7 +1967,7 @@ func (x *CreateNoteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateNoteRequest.ProtoReflect.Descriptor instead.
 func (*CreateNoteRequest) Descriptor() ([]byte, []int) {
-	return file_support_proto_rawDescGZIP(), []int{22}
+	return file_support_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *CreateNoteRequest) GetUserId() uint64 {
@@ -1615,11 +1991,11 @@ func (x *CreateNoteRequest) GetContent() string {
 	return ""
 }
 
-func (x *CreateNoteRequest) GetAttachment() string {
+func (x *CreateNoteRequest) GetAttachments() []string {
 	if x != nil {
-		return x.Attachment
+		return x.Attachments
 	}
-	return ""
+	return nil
 }
 
 type UpdateNoteRequest struct {
@@ -1628,14 +2004,14 @@ type UpdateNoteRequest struct {
 	UserId        uint64                 `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Title         string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
 	Content       string                 `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"`
-	Attachment    string                 `protobuf:"bytes,5,opt,name=attachment,proto3" json:"attachment,omitempty"` // URL or empty
+	Attachments   []string               `protobuf:"bytes,5,rep,name=attachments,proto3" json:"attachments,omitempty"` // replaces full list when non-empty
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UpdateNoteRequest) Reset() {
 	*x = UpdateNoteRequest{}
-	mi := &file_support_proto_msgTypes[23]
+	mi := &file_support_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1647,7 +2023,7 @@ func (x *UpdateNoteRequest) String() string {
 func (*UpdateNoteRequest) ProtoMessage() {}
 
 func (x *UpdateNoteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_support_proto_msgTypes[23]
+	mi := &file_support_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1660,7 +2036,7 @@ func (x *UpdateNoteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateNoteRequest.ProtoReflect.Descriptor instead.
 func (*UpdateNoteRequest) Descriptor() ([]byte, []int) {
-	return file_support_proto_rawDescGZIP(), []int{23}
+	return file_support_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *UpdateNoteRequest) GetNoteId() uint64 {
@@ -1691,11 +2067,11 @@ func (x *UpdateNoteRequest) GetContent() string {
 	return ""
 }
 
-func (x *UpdateNoteRequest) GetAttachment() string {
+func (x *UpdateNoteRequest) GetAttachments() []string {
 	if x != nil {
-		return x.Attachment
+		return x.Attachments
 	}
-	return ""
+	return nil
 }
 
 type GetNotesRequest struct {
@@ -1707,7 +2083,7 @@ type GetNotesRequest struct {
 
 func (x *GetNotesRequest) Reset() {
 	*x = GetNotesRequest{}
-	mi := &file_support_proto_msgTypes[24]
+	mi := &file_support_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1719,7 +2095,7 @@ func (x *GetNotesRequest) String() string {
 func (*GetNotesRequest) ProtoMessage() {}
 
 func (x *GetNotesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_support_proto_msgTypes[24]
+	mi := &file_support_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1732,7 +2108,7 @@ func (x *GetNotesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetNotesRequest.ProtoReflect.Descriptor instead.
 func (*GetNotesRequest) Descriptor() ([]byte, []int) {
-	return file_support_proto_rawDescGZIP(), []int{24}
+	return file_support_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *GetNotesRequest) GetUserId() uint64 {
@@ -1752,7 +2128,7 @@ type GetNoteRequest struct {
 
 func (x *GetNoteRequest) Reset() {
 	*x = GetNoteRequest{}
-	mi := &file_support_proto_msgTypes[25]
+	mi := &file_support_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1764,7 +2140,7 @@ func (x *GetNoteRequest) String() string {
 func (*GetNoteRequest) ProtoMessage() {}
 
 func (x *GetNoteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_support_proto_msgTypes[25]
+	mi := &file_support_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1777,7 +2153,7 @@ func (x *GetNoteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetNoteRequest.ProtoReflect.Descriptor instead.
 func (*GetNoteRequest) Descriptor() ([]byte, []int) {
-	return file_support_proto_rawDescGZIP(), []int{25}
+	return file_support_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *GetNoteRequest) GetNoteId() uint64 {
@@ -1804,7 +2180,7 @@ type DeleteNoteRequest struct {
 
 func (x *DeleteNoteRequest) Reset() {
 	*x = DeleteNoteRequest{}
-	mi := &file_support_proto_msgTypes[26]
+	mi := &file_support_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1816,7 +2192,7 @@ func (x *DeleteNoteRequest) String() string {
 func (*DeleteNoteRequest) ProtoMessage() {}
 
 func (x *DeleteNoteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_support_proto_msgTypes[26]
+	mi := &file_support_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1829,7 +2205,7 @@ func (x *DeleteNoteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteNoteRequest.ProtoReflect.Descriptor instead.
 func (*DeleteNoteRequest) Descriptor() ([]byte, []int) {
-	return file_support_proto_rawDescGZIP(), []int{26}
+	return file_support_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *DeleteNoteRequest) GetNoteId() uint64 {
@@ -1851,7 +2227,7 @@ type NoteResponse struct {
 	Id            uint64                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	Content       string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
-	Attachment    string                 `protobuf:"bytes,4,opt,name=attachment,proto3" json:"attachment,omitempty"`
+	Attachments   []string               `protobuf:"bytes,4,rep,name=attachments,proto3" json:"attachments,omitempty"`
 	Date          string                 `protobuf:"bytes,5,opt,name=date,proto3" json:"date,omitempty"` // Jalali formatted date (Y/m/d)
 	Time          string                 `protobuf:"bytes,6,opt,name=time,proto3" json:"time,omitempty"` // Jalali formatted time (H:m:s)
 	unknownFields protoimpl.UnknownFields
@@ -1860,7 +2236,7 @@ type NoteResponse struct {
 
 func (x *NoteResponse) Reset() {
 	*x = NoteResponse{}
-	mi := &file_support_proto_msgTypes[27]
+	mi := &file_support_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1872,7 +2248,7 @@ func (x *NoteResponse) String() string {
 func (*NoteResponse) ProtoMessage() {}
 
 func (x *NoteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_support_proto_msgTypes[27]
+	mi := &file_support_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1885,7 +2261,7 @@ func (x *NoteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NoteResponse.ProtoReflect.Descriptor instead.
 func (*NoteResponse) Descriptor() ([]byte, []int) {
-	return file_support_proto_rawDescGZIP(), []int{27}
+	return file_support_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *NoteResponse) GetId() uint64 {
@@ -1909,11 +2285,11 @@ func (x *NoteResponse) GetContent() string {
 	return ""
 }
 
-func (x *NoteResponse) GetAttachment() string {
+func (x *NoteResponse) GetAttachments() []string {
 	if x != nil {
-		return x.Attachment
+		return x.Attachments
 	}
-	return ""
+	return nil
 }
 
 func (x *NoteResponse) GetDate() string {
@@ -1939,7 +2315,7 @@ type NotesResponse struct {
 
 func (x *NotesResponse) Reset() {
 	*x = NotesResponse{}
-	mi := &file_support_proto_msgTypes[28]
+	mi := &file_support_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1951,7 +2327,7 @@ func (x *NotesResponse) String() string {
 func (*NotesResponse) ProtoMessage() {}
 
 func (x *NotesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_support_proto_msgTypes[28]
+	mi := &file_support_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1964,7 +2340,7 @@ func (x *NotesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NotesResponse.ProtoReflect.Descriptor instead.
 func (*NotesResponse) Descriptor() ([]byte, []int) {
-	return file_support_proto_rawDescGZIP(), []int{28}
+	return file_support_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *NotesResponse) GetNotes() []*NoteResponse {
@@ -1998,23 +2374,25 @@ const file_support_proto_rawDesc = "" +
 	"\acontent\x18\x04 \x01(\tR\acontent\x12\x1e\n" +
 	"\n" +
 	"attachment\x18\x05 \x01(\tR\n" +
-	"attachment\"\x86\x01\n" +
+	"attachment\"\xa3\x01\n" +
 	"\x12AddResponseRequest\x12\x1b\n" +
 	"\tticket_id\x18\x01 \x01(\x04R\bticketId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\x04R\x06userId\x12\x1a\n" +
 	"\bresponse\x18\x03 \x01(\tR\bresponse\x12\x1e\n" +
 	"\n" +
 	"attachment\x18\x04 \x01(\tR\n" +
-	"attachment\"J\n" +
+	"attachment\x12\x1b\n" +
+	"\tuser_name\x18\x05 \x01(\tR\buserName\"J\n" +
 	"\x12CloseTicketRequest\x12\x1b\n" +
 	"\tticket_id\x18\x01 \x01(\x04R\bticketId\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\x04R\x06userId\"\x8c\x01\n" +
+	"\auser_id\x18\x02 \x01(\x04R\x06userId\"\xa8\x01\n" +
 	"\x11GetTicketsRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x04R\x06userId\x129\n" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2\x19.common.PaginationRequestR\n" +
 	"pagination\x12#\n" +
-	"\rstatus_filter\x18\x03 \x01(\x05R\fstatusFilter\"H\n" +
+	"\rstatus_filter\x18\x03 \x01(\x05R\fstatusFilter\x12\x1a\n" +
+	"\breceived\x18\x04 \x01(\bR\breceived\"H\n" +
 	"\x10GetTicketRequest\x12\x1b\n" +
 	"\tticket_id\x18\x01 \x01(\x04R\bticketId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\x04R\x06userId\"\xaf\x03\n" +
@@ -2070,7 +2448,7 @@ const file_support_proto_rawDesc = "" +
 	"\auser_id\x18\x01 \x01(\x04R\x06userId\x129\n" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2\x19.common.PaginationRequestR\n" +
-	"pagination\"/\n" +
+	"pagination\"H\n" +
 	"\x10GetReportRequest\x12\x1b\n" +
 	"\treport_id\x18\x01 \x01(\x04R\breportId\"\x93\x02\n" +
 	"\x0eReportResponse\x12\x0e\n" +
@@ -2100,9 +2478,25 @@ const file_support_proto_rawDesc = "" +
 	"\auser_id\x18\x01 \x01(\x04R\x06userId\x129\n" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2\x19.common.PaginationRequestR\n" +
-	"pagination\"0\n" +
+	"pagination\"I\n" +
 	"\x13GetUserEventRequest\x12\x19\n" +
-	"\bevent_id\x18\x01 \x01(\x04R\aeventId\"\xb2\x01\n" +
+	"\bevent_id\x18\x01 \x01(\x04R\aeventId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x04R\x06userId\"\x98\x01\n" +
+	"\x1bUserEventReportResponseItem\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x04R\x02id\x12%\n" +
+	"\x0eresponser_name\x18\x02 \x01(\tR\rresponserName\x12\x1a\n" +
+	"\bresponse\x18\x03 \x01(\tR\bresponse\x12\x12\n" +
+	"\x04date\x18\x04 \x01(\tR\x04date\x12\x12\n" +
+	"\x04time\x18\x05 \x01(\tR\x04time\"\x9f\x02\n" +
+	"\x15UserEventReportDetail\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x04R\x02id\x12-\n" +
+	"\x12suspicious_citizen\x18\x02 \x01(\tR\x11suspiciousCitizen\x12+\n" +
+	"\x11event_description\x18\x03 \x01(\tR\x10eventDescription\x12\x16\n" +
+	"\x06status\x18\x04 \x01(\x05R\x06status\x12\x16\n" +
+	"\x06closed\x18\x05 \x01(\bR\x06closed\x12\x12\n" +
+	"\x04date\x18\x06 \x01(\tR\x04date\x12\x12\n" +
+	"\x04time\x18\a \x01(\tR\x04time\x12B\n" +
+	"\tresponses\x18\b \x03(\v2$.support.UserEventReportResponseItemR\tresponses\"\xaf\x02\n" +
 	"\x11UserEventResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\x04R\x06userId\x12\x14\n" +
@@ -2111,7 +2505,12 @@ const file_support_proto_rawDesc = "" +
 	"\n" +
 	"event_date\x18\x05 \x01(\tR\teventDate\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x06 \x01(\tR\tcreatedAt\"\x80\x01\n" +
+	"created_at\x18\x06 \x01(\tR\tcreatedAt\x12\x0e\n" +
+	"\x02ip\x18\a \x01(\tR\x02ip\x12\x16\n" +
+	"\x06device\x18\b \x01(\tR\x06device\x12\x1b\n" +
+	"\tstatus_ok\x18\t \x01(\bR\bstatusOk\x126\n" +
+	"\x06report\x18\n" +
+	" \x01(\v2\x1e.support.UserEventReportDetailR\x06report\"\x80\x01\n" +
 	"\x12UserEventsResponse\x122\n" +
 	"\x06events\x18\x01 \x03(\v2\x1a.support.UserEventResponseR\x06events\x126\n" +
 	"\n" +
@@ -2129,26 +2528,32 @@ const file_support_proto_rawDesc = "" +
 	"\x12suspicious_citizen\x18\x03 \x01(\tR\x11suspiciousCitizen\x12+\n" +
 	"\x11event_description\x18\x04 \x01(\tR\x10eventDescription\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x05 \x01(\tR\tcreatedAt\"|\n" +
-	"\x1eSendEventReportResponseRequest\x12\x1b\n" +
-	"\treport_id\x18\x01 \x01(\x04R\breportId\x12!\n" +
+	"created_at\x18\x05 \x01(\tR\tcreatedAt\"\xa1\x01\n" +
+	"\x1eSendEventReportResponseRequest\x12\x19\n" +
+	"\bevent_id\x18\x01 \x01(\x04R\aeventId\x12!\n" +
 	"\fresponder_id\x18\x02 \x01(\x04R\vresponderId\x12\x1a\n" +
-	"\bresponse\x18\x03 \x01(\tR\bresponse\"|\n" +
+	"\bresponse\x18\x03 \x01(\tR\bresponse\x12%\n" +
+	"\x0eresponder_name\x18\x04 \x01(\tR\rresponderName\"\x99\x01\n" +
+	"\x1cSendEventReportResponseReply\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x04R\x02id\x12%\n" +
+	"\x0eresponser_name\x18\x02 \x01(\tR\rresponserName\x12\x1a\n" +
+	"\bresponse\x18\x03 \x01(\tR\bresponse\x12\x12\n" +
+	"\x04date\x18\x04 \x01(\tR\x04date\x12\x12\n" +
+	"\x04time\x18\x05 \x01(\tR\x04time\"Q\n" +
+	"\x1bCloseUserEventReportRequest\x12\x19\n" +
+	"\bevent_id\x18\x01 \x01(\x04R\aeventId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x04R\x06userId\"~\n" +
 	"\x11CreateNoteRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x04R\x06userId\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
-	"\acontent\x18\x03 \x01(\tR\acontent\x12\x1e\n" +
-	"\n" +
-	"attachment\x18\x04 \x01(\tR\n" +
-	"attachment\"\x95\x01\n" +
+	"\acontent\x18\x03 \x01(\tR\acontent\x12 \n" +
+	"\vattachments\x18\x04 \x03(\tR\vattachments\"\x97\x01\n" +
 	"\x11UpdateNoteRequest\x12\x17\n" +
 	"\anote_id\x18\x01 \x01(\x04R\x06noteId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\x04R\x06userId\x12\x14\n" +
 	"\x05title\x18\x03 \x01(\tR\x05title\x12\x18\n" +
-	"\acontent\x18\x04 \x01(\tR\acontent\x12\x1e\n" +
-	"\n" +
-	"attachment\x18\x05 \x01(\tR\n" +
-	"attachment\"*\n" +
+	"\acontent\x18\x04 \x01(\tR\acontent\x12 \n" +
+	"\vattachments\x18\x05 \x03(\tR\vattachments\"*\n" +
 	"\x0fGetNotesRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x04R\x06userId\"B\n" +
 	"\x0eGetNoteRequest\x12\x17\n" +
@@ -2156,14 +2561,12 @@ const file_support_proto_rawDesc = "" +
 	"\auser_id\x18\x02 \x01(\x04R\x06userId\"E\n" +
 	"\x11DeleteNoteRequest\x12\x17\n" +
 	"\anote_id\x18\x01 \x01(\x04R\x06noteId\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\x04R\x06userId\"\x96\x01\n" +
+	"\auser_id\x18\x02 \x01(\x04R\x06userId\"\x98\x01\n" +
 	"\fNoteResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
-	"\acontent\x18\x03 \x01(\tR\acontent\x12\x1e\n" +
-	"\n" +
-	"attachment\x18\x04 \x01(\tR\n" +
-	"attachment\x12\x12\n" +
+	"\acontent\x18\x03 \x01(\tR\acontent\x12 \n" +
+	"\vattachments\x18\x04 \x03(\tR\vattachments\x12\x12\n" +
 	"\x04date\x18\x05 \x01(\tR\x04date\x12\x12\n" +
 	"\x04time\x18\x06 \x01(\tR\x04time\"<\n" +
 	"\rNotesResponse\x12+\n" +
@@ -2180,13 +2583,14 @@ const file_support_proto_rawDesc = "" +
 	"\fCreateReport\x12\x1c.support.CreateReportRequest\x1a\x17.support.ReportResponse\x12B\n" +
 	"\n" +
 	"GetReports\x12\x1a.support.GetReportsRequest\x1a\x18.support.ReportsResponse\x12?\n" +
-	"\tGetReport\x12\x19.support.GetReportRequest\x1a\x17.support.ReportResponse2\xa8\x03\n" +
+	"\tGetReport\x12\x19.support.GetReportRequest\x1a\x17.support.ReportResponse2\x8d\x04\n" +
 	"\x16UserEventReportService\x12N\n" +
 	"\x0fCreateUserEvent\x12\x1f.support.CreateUserEventRequest\x1a\x1a.support.UserEventResponse\x12K\n" +
 	"\rGetUserEvents\x12\x1d.support.GetUserEventsRequest\x1a\x1b.support.UserEventsResponse\x12H\n" +
 	"\fGetUserEvent\x12\x1c.support.GetUserEventRequest\x1a\x1a.support.UserEventResponse\x12T\n" +
-	"\x0fReportUserEvent\x12\x1f.support.ReportUserEventRequest\x1a .support.UserEventReportResponse\x12Q\n" +
-	"\x17SendEventReportResponse\x12'.support.SendEventReportResponseRequest\x1a\r.common.Empty2\xc1\x02\n" +
+	"\x0fReportUserEvent\x12\x1f.support.ReportUserEventRequest\x1a .support.UserEventReportResponse\x12i\n" +
+	"\x17SendEventReportResponse\x12'.support.SendEventReportResponseRequest\x1a%.support.SendEventReportResponseReply\x12K\n" +
+	"\x14CloseUserEventReport\x12$.support.CloseUserEventReportRequest\x1a\r.common.Empty2\xc1\x02\n" +
 	"\vNoteService\x12?\n" +
 	"\n" +
 	"CreateNote\x12\x1a.support.CreateNoteRequest\x1a\x15.support.NoteResponse\x12<\n" +
@@ -2209,7 +2613,7 @@ func file_support_proto_rawDescGZIP() []byte {
 	return file_support_proto_rawDescData
 }
 
-var file_support_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
+var file_support_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
 var file_support_proto_goTypes = []any{
 	(*CreateTicketRequest)(nil),            // 0: support.CreateTicketRequest
 	(*UpdateTicketRequest)(nil),            // 1: support.UpdateTicketRequest
@@ -2228,80 +2632,88 @@ var file_support_proto_goTypes = []any{
 	(*CreateUserEventRequest)(nil),         // 14: support.CreateUserEventRequest
 	(*GetUserEventsRequest)(nil),           // 15: support.GetUserEventsRequest
 	(*GetUserEventRequest)(nil),            // 16: support.GetUserEventRequest
-	(*UserEventResponse)(nil),              // 17: support.UserEventResponse
-	(*UserEventsResponse)(nil),             // 18: support.UserEventsResponse
-	(*ReportUserEventRequest)(nil),         // 19: support.ReportUserEventRequest
-	(*UserEventReportResponse)(nil),        // 20: support.UserEventReportResponse
-	(*SendEventReportResponseRequest)(nil), // 21: support.SendEventReportResponseRequest
-	(*CreateNoteRequest)(nil),              // 22: support.CreateNoteRequest
-	(*UpdateNoteRequest)(nil),              // 23: support.UpdateNoteRequest
-	(*GetNotesRequest)(nil),                // 24: support.GetNotesRequest
-	(*GetNoteRequest)(nil),                 // 25: support.GetNoteRequest
-	(*DeleteNoteRequest)(nil),              // 26: support.DeleteNoteRequest
-	(*NoteResponse)(nil),                   // 27: support.NoteResponse
-	(*NotesResponse)(nil),                  // 28: support.NotesResponse
-	(*common.PaginationRequest)(nil),       // 29: common.PaginationRequest
-	(*common.UserBasic)(nil),               // 30: common.UserBasic
-	(*common.PaginationMeta)(nil),          // 31: common.PaginationMeta
-	(*common.Empty)(nil),                   // 32: common.Empty
+	(*UserEventReportResponseItem)(nil),    // 17: support.UserEventReportResponseItem
+	(*UserEventReportDetail)(nil),          // 18: support.UserEventReportDetail
+	(*UserEventResponse)(nil),              // 19: support.UserEventResponse
+	(*UserEventsResponse)(nil),             // 20: support.UserEventsResponse
+	(*ReportUserEventRequest)(nil),         // 21: support.ReportUserEventRequest
+	(*UserEventReportResponse)(nil),        // 22: support.UserEventReportResponse
+	(*SendEventReportResponseRequest)(nil), // 23: support.SendEventReportResponseRequest
+	(*SendEventReportResponseReply)(nil),   // 24: support.SendEventReportResponseReply
+	(*CloseUserEventReportRequest)(nil),    // 25: support.CloseUserEventReportRequest
+	(*CreateNoteRequest)(nil),              // 26: support.CreateNoteRequest
+	(*UpdateNoteRequest)(nil),              // 27: support.UpdateNoteRequest
+	(*GetNotesRequest)(nil),                // 28: support.GetNotesRequest
+	(*GetNoteRequest)(nil),                 // 29: support.GetNoteRequest
+	(*DeleteNoteRequest)(nil),              // 30: support.DeleteNoteRequest
+	(*NoteResponse)(nil),                   // 31: support.NoteResponse
+	(*NotesResponse)(nil),                  // 32: support.NotesResponse
+	(*common.PaginationRequest)(nil),       // 33: common.PaginationRequest
+	(*common.UserBasic)(nil),               // 34: common.UserBasic
+	(*common.PaginationMeta)(nil),          // 35: common.PaginationMeta
+	(*common.Empty)(nil),                   // 36: common.Empty
 }
 var file_support_proto_depIdxs = []int32{
-	29, // 0: support.GetTicketsRequest.pagination:type_name -> common.PaginationRequest
-	30, // 1: support.TicketResponse.sender:type_name -> common.UserBasic
-	30, // 2: support.TicketResponse.receiver:type_name -> common.UserBasic
+	33, // 0: support.GetTicketsRequest.pagination:type_name -> common.PaginationRequest
+	34, // 1: support.TicketResponse.sender:type_name -> common.UserBasic
+	34, // 2: support.TicketResponse.receiver:type_name -> common.UserBasic
 	8,  // 3: support.TicketResponse.responses:type_name -> support.TicketResponseItem
 	6,  // 4: support.TicketsResponse.tickets:type_name -> support.TicketResponse
-	31, // 5: support.TicketsResponse.pagination:type_name -> common.PaginationMeta
-	29, // 6: support.GetReportsRequest.pagination:type_name -> common.PaginationRequest
+	35, // 5: support.TicketsResponse.pagination:type_name -> common.PaginationMeta
+	33, // 6: support.GetReportsRequest.pagination:type_name -> common.PaginationRequest
 	12, // 7: support.ReportsResponse.reports:type_name -> support.ReportResponse
-	31, // 8: support.ReportsResponse.pagination:type_name -> common.PaginationMeta
-	29, // 9: support.GetUserEventsRequest.pagination:type_name -> common.PaginationRequest
-	17, // 10: support.UserEventsResponse.events:type_name -> support.UserEventResponse
-	31, // 11: support.UserEventsResponse.pagination:type_name -> common.PaginationMeta
-	27, // 12: support.NotesResponse.notes:type_name -> support.NoteResponse
-	0,  // 13: support.TicketService.CreateTicket:input_type -> support.CreateTicketRequest
-	4,  // 14: support.TicketService.GetTickets:input_type -> support.GetTicketsRequest
-	5,  // 15: support.TicketService.GetTicket:input_type -> support.GetTicketRequest
-	1,  // 16: support.TicketService.UpdateTicket:input_type -> support.UpdateTicketRequest
-	2,  // 17: support.TicketService.AddResponse:input_type -> support.AddResponseRequest
-	3,  // 18: support.TicketService.CloseTicket:input_type -> support.CloseTicketRequest
-	9,  // 19: support.ReportService.CreateReport:input_type -> support.CreateReportRequest
-	10, // 20: support.ReportService.GetReports:input_type -> support.GetReportsRequest
-	11, // 21: support.ReportService.GetReport:input_type -> support.GetReportRequest
-	14, // 22: support.UserEventReportService.CreateUserEvent:input_type -> support.CreateUserEventRequest
-	15, // 23: support.UserEventReportService.GetUserEvents:input_type -> support.GetUserEventsRequest
-	16, // 24: support.UserEventReportService.GetUserEvent:input_type -> support.GetUserEventRequest
-	19, // 25: support.UserEventReportService.ReportUserEvent:input_type -> support.ReportUserEventRequest
-	21, // 26: support.UserEventReportService.SendEventReportResponse:input_type -> support.SendEventReportResponseRequest
-	22, // 27: support.NoteService.CreateNote:input_type -> support.CreateNoteRequest
-	24, // 28: support.NoteService.GetNotes:input_type -> support.GetNotesRequest
-	25, // 29: support.NoteService.GetNote:input_type -> support.GetNoteRequest
-	23, // 30: support.NoteService.UpdateNote:input_type -> support.UpdateNoteRequest
-	26, // 31: support.NoteService.DeleteNote:input_type -> support.DeleteNoteRequest
-	6,  // 32: support.TicketService.CreateTicket:output_type -> support.TicketResponse
-	7,  // 33: support.TicketService.GetTickets:output_type -> support.TicketsResponse
-	6,  // 34: support.TicketService.GetTicket:output_type -> support.TicketResponse
-	6,  // 35: support.TicketService.UpdateTicket:output_type -> support.TicketResponse
-	6,  // 36: support.TicketService.AddResponse:output_type -> support.TicketResponse
-	6,  // 37: support.TicketService.CloseTicket:output_type -> support.TicketResponse
-	12, // 38: support.ReportService.CreateReport:output_type -> support.ReportResponse
-	13, // 39: support.ReportService.GetReports:output_type -> support.ReportsResponse
-	12, // 40: support.ReportService.GetReport:output_type -> support.ReportResponse
-	17, // 41: support.UserEventReportService.CreateUserEvent:output_type -> support.UserEventResponse
-	18, // 42: support.UserEventReportService.GetUserEvents:output_type -> support.UserEventsResponse
-	17, // 43: support.UserEventReportService.GetUserEvent:output_type -> support.UserEventResponse
-	20, // 44: support.UserEventReportService.ReportUserEvent:output_type -> support.UserEventReportResponse
-	32, // 45: support.UserEventReportService.SendEventReportResponse:output_type -> common.Empty
-	27, // 46: support.NoteService.CreateNote:output_type -> support.NoteResponse
-	28, // 47: support.NoteService.GetNotes:output_type -> support.NotesResponse
-	27, // 48: support.NoteService.GetNote:output_type -> support.NoteResponse
-	27, // 49: support.NoteService.UpdateNote:output_type -> support.NoteResponse
-	32, // 50: support.NoteService.DeleteNote:output_type -> common.Empty
-	32, // [32:51] is the sub-list for method output_type
-	13, // [13:32] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	35, // 8: support.ReportsResponse.pagination:type_name -> common.PaginationMeta
+	33, // 9: support.GetUserEventsRequest.pagination:type_name -> common.PaginationRequest
+	17, // 10: support.UserEventReportDetail.responses:type_name -> support.UserEventReportResponseItem
+	18, // 11: support.UserEventResponse.report:type_name -> support.UserEventReportDetail
+	19, // 12: support.UserEventsResponse.events:type_name -> support.UserEventResponse
+	35, // 13: support.UserEventsResponse.pagination:type_name -> common.PaginationMeta
+	31, // 14: support.NotesResponse.notes:type_name -> support.NoteResponse
+	0,  // 15: support.TicketService.CreateTicket:input_type -> support.CreateTicketRequest
+	4,  // 16: support.TicketService.GetTickets:input_type -> support.GetTicketsRequest
+	5,  // 17: support.TicketService.GetTicket:input_type -> support.GetTicketRequest
+	1,  // 18: support.TicketService.UpdateTicket:input_type -> support.UpdateTicketRequest
+	2,  // 19: support.TicketService.AddResponse:input_type -> support.AddResponseRequest
+	3,  // 20: support.TicketService.CloseTicket:input_type -> support.CloseTicketRequest
+	9,  // 21: support.ReportService.CreateReport:input_type -> support.CreateReportRequest
+	10, // 22: support.ReportService.GetReports:input_type -> support.GetReportsRequest
+	11, // 23: support.ReportService.GetReport:input_type -> support.GetReportRequest
+	14, // 24: support.UserEventReportService.CreateUserEvent:input_type -> support.CreateUserEventRequest
+	15, // 25: support.UserEventReportService.GetUserEvents:input_type -> support.GetUserEventsRequest
+	16, // 26: support.UserEventReportService.GetUserEvent:input_type -> support.GetUserEventRequest
+	21, // 27: support.UserEventReportService.ReportUserEvent:input_type -> support.ReportUserEventRequest
+	23, // 28: support.UserEventReportService.SendEventReportResponse:input_type -> support.SendEventReportResponseRequest
+	25, // 29: support.UserEventReportService.CloseUserEventReport:input_type -> support.CloseUserEventReportRequest
+	26, // 30: support.NoteService.CreateNote:input_type -> support.CreateNoteRequest
+	28, // 31: support.NoteService.GetNotes:input_type -> support.GetNotesRequest
+	29, // 32: support.NoteService.GetNote:input_type -> support.GetNoteRequest
+	27, // 33: support.NoteService.UpdateNote:input_type -> support.UpdateNoteRequest
+	30, // 34: support.NoteService.DeleteNote:input_type -> support.DeleteNoteRequest
+	6,  // 35: support.TicketService.CreateTicket:output_type -> support.TicketResponse
+	7,  // 36: support.TicketService.GetTickets:output_type -> support.TicketsResponse
+	6,  // 37: support.TicketService.GetTicket:output_type -> support.TicketResponse
+	6,  // 38: support.TicketService.UpdateTicket:output_type -> support.TicketResponse
+	6,  // 39: support.TicketService.AddResponse:output_type -> support.TicketResponse
+	6,  // 40: support.TicketService.CloseTicket:output_type -> support.TicketResponse
+	12, // 41: support.ReportService.CreateReport:output_type -> support.ReportResponse
+	13, // 42: support.ReportService.GetReports:output_type -> support.ReportsResponse
+	12, // 43: support.ReportService.GetReport:output_type -> support.ReportResponse
+	19, // 44: support.UserEventReportService.CreateUserEvent:output_type -> support.UserEventResponse
+	20, // 45: support.UserEventReportService.GetUserEvents:output_type -> support.UserEventsResponse
+	19, // 46: support.UserEventReportService.GetUserEvent:output_type -> support.UserEventResponse
+	22, // 47: support.UserEventReportService.ReportUserEvent:output_type -> support.UserEventReportResponse
+	24, // 48: support.UserEventReportService.SendEventReportResponse:output_type -> support.SendEventReportResponseReply
+	36, // 49: support.UserEventReportService.CloseUserEventReport:output_type -> common.Empty
+	31, // 50: support.NoteService.CreateNote:output_type -> support.NoteResponse
+	32, // 51: support.NoteService.GetNotes:output_type -> support.NotesResponse
+	31, // 52: support.NoteService.GetNote:output_type -> support.NoteResponse
+	31, // 53: support.NoteService.UpdateNote:output_type -> support.NoteResponse
+	36, // 54: support.NoteService.DeleteNote:output_type -> common.Empty
+	35, // [35:55] is the sub-list for method output_type
+	15, // [15:35] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_support_proto_init() }
@@ -2315,7 +2727,7 @@ func file_support_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_support_proto_rawDesc), len(file_support_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   29,
+			NumMessages:   33,
 			NumExtensions: 0,
 			NumServices:   4,
 		},

@@ -29,7 +29,8 @@ service UserEventReportService {
   rpc GetUserEvents(GetUserEventsRequest) returns (UserEventsResponse);
   rpc GetUserEvent(GetUserEventRequest) returns (UserEventResponse);
   rpc ReportUserEvent(ReportUserEventRequest) returns (UserEventReportResponse);
-  rpc SendEventReportResponse(SendEventReportResponseRequest) returns (common.Empty);
+  rpc SendEventReportResponse(SendEventReportResponseRequest) returns (SendEventReportResponseReply);
+  rpc CloseUserEventReport(CloseUserEventReportRequest) returns (common.Empty);
 }
 
 // NoteService handles personal notes
@@ -66,6 +67,7 @@ message AddResponseRequest {
   uint64 user_id = 2;
   string response = 3;
   string attachment = 4; // URL or empty
+  string user_name = 5; // display name of responder (from gateway/auth)
 }
 
 message CloseTicketRequest {
@@ -77,6 +79,7 @@ message GetTicketsRequest {
   uint64 user_id = 1;
   common.PaginationRequest pagination = 2;
   int32 status_filter = 3; // optional, 0=all
+  bool received = 4; // true = tickets where user is receiver (Laravel ?recieved=true)
 }
 
 message GetTicketRequest {
@@ -118,7 +121,7 @@ message TicketResponseItem {
 // Report Messages
 message CreateReportRequest {
   uint64 user_id = 1;
-  string reportable_type = 2; // User, Feature, Comment, etc.
+  string reportable_type = 2; // maps to Laravel subject when using gateway
   uint64 reportable_id = 3;
   string reason = 4;
   string description = 5;
@@ -133,6 +136,7 @@ message GetReportsRequest {
 
 message GetReportRequest {
   uint64 report_id = 1;
+  uint64 user_id = 2; // for ownership check (Laravel parity)
 }
 
 message ReportResponse {
@@ -167,6 +171,26 @@ message GetUserEventsRequest {
 
 message GetUserEventRequest {
   uint64 event_id = 1;
+  uint64 user_id = 2; // scope to owner (Laravel parity)
+}
+
+message UserEventReportResponseItem {
+  uint64 id = 1;
+  string responser_name = 2;
+  string response = 3;
+  string date = 4; // Jalali Y/m/d
+  string time = 5; // H:M:S
+}
+
+message UserEventReportDetail {
+  uint64 id = 1;
+  string suspicious_citizen = 2;
+  string event_description = 3;
+  int32 status = 4;
+  bool closed = 5;
+  string date = 6;
+  string time = 7;
+  repeated UserEventReportResponseItem responses = 8;
 }
 
 message UserEventResponse {
@@ -176,6 +200,10 @@ message UserEventResponse {
   string description = 4;
   string event_date = 5; // Jalali formatted
   string created_at = 6; // Jalali formatted
+  string ip = 7;
+  string device = 8;
+  bool status_ok = 9; // Laravel UserEventResource maps to موفق / ناموفق
+  UserEventReportDetail report = 10; // set on GetUserEvent (show)
 }
 
 message UserEventsResponse {
@@ -199,9 +227,23 @@ message UserEventReportResponse {
 }
 
 message SendEventReportResponseRequest {
-  uint64 report_id = 1;
+  uint64 event_id = 1; // user_events.id (Laravel route /report/response/{userEvent})
   uint64 responder_id = 2;
   string response = 3;
+  string responder_name = 4;
+}
+
+message SendEventReportResponseReply {
+  uint64 id = 1;
+  string responser_name = 2;
+  string response = 3;
+  string date = 4; // Jalali Y/m/d
+  string time = 5; // H:M:S
+}
+
+message CloseUserEventReportRequest {
+  uint64 event_id = 1;
+  uint64 user_id = 2;
 }
 
 // Note Messages
@@ -209,7 +251,7 @@ message CreateNoteRequest {
   uint64 user_id = 1;
   string title = 2;
   string content = 3;
-  string attachment = 4; // URL or empty
+  repeated string attachments = 4; // URLs (Laravel notes.attachments JSON)
 }
 
 message UpdateNoteRequest {
@@ -217,7 +259,7 @@ message UpdateNoteRequest {
   uint64 user_id = 2;
   string title = 3;
   string content = 4;
-  string attachment = 5; // URL or empty
+  repeated string attachments = 5; // replaces full list when non-empty
 }
 
 message GetNotesRequest {
@@ -238,7 +280,7 @@ message NoteResponse {
   uint64 id = 1;
   string title = 2;
   string content = 3;
-  string attachment = 4;
+  repeated string attachments = 4;
   string date = 5; // Jalali formatted date (Y/m/d)
   string time = 6; // Jalali formatted time (H:m:s)
 }

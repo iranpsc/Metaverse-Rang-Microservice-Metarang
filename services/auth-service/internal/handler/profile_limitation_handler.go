@@ -41,7 +41,7 @@ func (h *profileLimitationHandler) CreateProfileLimitation(ctx context.Context, 
 	// Validate options
 	locale := getProjectLocale()
 	if err := h.limitationService.ValidateOptions(options); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, lang.Tf(locale, "invalid options: %v", err))
+		return nil, status.Errorf(codes.InvalidArgument, "%s", lang.Tf(locale, "invalid options: %v", err))
 	}
 
 	limitation, err := h.limitationService.Create(
@@ -74,7 +74,7 @@ func (h *profileLimitationHandler) UpdateProfileLimitation(ctx context.Context, 
 	// Validate options
 	locale := getProjectLocale()
 	if err := h.limitationService.ValidateOptions(options); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, lang.Tf(locale, "invalid options: %v", err))
+		return nil, status.Errorf(codes.InvalidArgument, "%s", lang.Tf(locale, "invalid options: %v", err))
 	}
 
 	limitation, err := h.limitationService.Update(
@@ -135,7 +135,7 @@ func mapProfileLimitationError(err error, locale string) error {
 	case errors.Is(err, service.ErrUnauthorized):
 		return status.Errorf(codes.PermissionDenied, "%s", err.Error())
 	default:
-		return status.Errorf(codes.Internal, lang.Tf(locale, "operation failed: %v", err))
+		return status.Errorf(codes.Internal, "%s", lang.Tf(locale, "operation failed: %v", err))
 	}
 }
 

@@ -8,7 +8,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/joho/godotenv v1.5.1
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.11.1
 	google.golang.org/grpc v1.76.0
 	metargb/shared v0.0.0
 )

@@ -41,33 +41,33 @@ func (h *kycHandler) UpdateKYC(ctx context.Context, req *pb.UpdateKYCRequest) (*
 
 	// Validate melli_card file
 	if len(req.MelliCardData) == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, lang.T(locale, "melli_card_data is required"))
+		return nil, status.Errorf(codes.InvalidArgument, "%s", lang.T(locale, "melli_card_data is required"))
 	}
 
 	if req.MelliCardFilename == "" {
-		return nil, status.Errorf(codes.InvalidArgument, lang.T(locale, "melli_card_filename is required"))
+		return nil, status.Errorf(codes.InvalidArgument, "%s", lang.T(locale, "melli_card_filename is required"))
 	}
 
 	if req.MelliCardContentType == "" {
-		return nil, status.Errorf(codes.InvalidArgument, lang.T(locale, "melli_card_content_type is required"))
+		return nil, status.Errorf(codes.InvalidArgument, "%s", lang.T(locale, "melli_card_content_type is required"))
 	}
 
 	// Validate file size (max 5MB = 5 * 1024 * 1024 bytes)
 	const maxSize = 5 * 1024 * 1024
 	if len(req.MelliCardData) > maxSize {
-		return nil, status.Errorf(codes.InvalidArgument, lang.T(locale, "melli_card file size exceeds maximum of 5MB"))
+		return nil, status.Errorf(codes.InvalidArgument, "%s", lang.T(locale, "melli_card file size exceeds maximum of 5MB"))
 	}
 
 	// Validate content type
 	contentType := strings.ToLower(req.MelliCardContentType)
 	if contentType != "image/png" && contentType != "image/jpeg" && contentType != "image/jpg" {
-		return nil, status.Errorf(codes.InvalidArgument, lang.T(locale, "melli_card must be a PNG or JPEG image"))
+		return nil, status.Errorf(codes.InvalidArgument, "%s", lang.T(locale, "melli_card must be a PNG or JPEG image"))
 	}
 
 	// Validate filename extension
 	filenameLower := strings.ToLower(req.MelliCardFilename)
 	if !strings.HasSuffix(filenameLower, ".png") && !strings.HasSuffix(filenameLower, ".jpg") && !strings.HasSuffix(filenameLower, ".jpeg") {
-		return nil, status.Errorf(codes.InvalidArgument, lang.T(locale, "melli_card filename must have .png, .jpg, or .jpeg extension"))
+		return nil, status.Errorf(codes.InvalidArgument, "%s", lang.T(locale, "melli_card filename must have .png, .jpg, or .jpeg extension"))
 	}
 
 	// Upload melli_card to storage-service
@@ -88,15 +88,15 @@ func (h *kycHandler) UpdateKYC(ctx context.Context, req *pb.UpdateKYCRequest) (*
 
 		chunkResp, err := h.storageClient.ChunkUpload(ctx, chunkReq)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, lang.Tf(locale, "failed to upload melli_card to storage service: %v", err))
+			return nil, status.Errorf(codes.Internal, "%s", lang.Tf(locale, "failed to upload melli_card to storage service: %v", err))
 		}
 
 		if !chunkResp.Success {
-			return nil, status.Errorf(codes.Internal, lang.Tf(locale, "storage service upload failed: %s", chunkResp.Message))
+			return nil, status.Errorf(codes.Internal, "%s", lang.Tf(locale, "storage service upload failed: %s", chunkResp.Message))
 		}
 
 		if !chunkResp.IsFinished {
-			return nil, status.Errorf(codes.Internal, lang.T(locale, "storage service upload did not complete"))
+			return nil, status.Errorf(codes.Internal, "%s", lang.T(locale, "storage service upload did not complete"))
 		}
 
 		// Construct full path from storage service response
@@ -107,12 +107,12 @@ func (h *kycHandler) UpdateKYC(ctx context.Context, req *pb.UpdateKYCRequest) (*
 		}
 
 		if dirPath == "" || filename == "" {
-			return nil, status.Errorf(codes.Internal, lang.T(locale, "storage service did not return complete file path"))
+			return nil, status.Errorf(codes.Internal, "%s", lang.T(locale, "storage service did not return complete file path"))
 		}
 
 		melliCardURL = strings.TrimSuffix(dirPath, "/") + "/" + filename
 	} else {
-		return nil, status.Errorf(codes.Internal, lang.T(locale, "storage service not available"))
+		return nil, status.Errorf(codes.Internal, "%s", lang.T(locale, "storage service not available"))
 	}
 
 	if req.Video == nil || req.Video.Path == "" || req.Video.Name == "" {
@@ -337,7 +337,7 @@ func mapKYCServiceError(err error, locale string) error {
 		}
 		return status.Errorf(codes.InvalidArgument, "%s", err.Error())
 	default:
-		return status.Errorf(codes.Internal, lang.Tf(locale, "operation failed: %v", err))
+		return status.Errorf(codes.Internal, "%s", lang.Tf(locale, "operation failed: %v", err))
 	}
 }
 
@@ -376,7 +376,7 @@ func mapServiceError(err error, locale string) error {
 		}
 		return status.Errorf(codes.InvalidArgument, "%s", err.Error())
 	default:
-		return status.Errorf(codes.Internal, lang.Tf(locale, "operation failed: %v", err))
+		return status.Errorf(codes.Internal, "%s", lang.Tf(locale, "operation failed: %v", err))
 	}
 }
 

@@ -42,6 +42,9 @@ help:
 	@echo "Test:"
 	@echo "  test             - Run integration tests"
 	@echo "  test-all         - Run all test suites"
+	@echo "  test-coverage-features - features-service handler coverage ≥70% (GOWORK=off)"
+	@echo "  test-coverage-financial - financial-service handler coverage ≥70%"
+	@echo "  test-coverage-social - social-service handler+service coverage ≥70%"
 	@echo ""
 	@echo "Database:"
 	@echo "  import-schema    - Import database schema only (schema.sql)"
@@ -68,11 +71,43 @@ test-unit:
 	@for service in services/*/; do \
 		if [ -f "$$service/go.mod" ]; then \
 			echo "Testing $$(basename $$service)..."; \
-			cd $$service && go test ./internal/... -v -race -coverprofile=coverage.out || exit 1; \
+			cd $$service && \
+			if [ -d internal ]; then \
+				go test ./internal/... -v -race -coverprofile=coverage.out || exit 1; \
+			else \
+				go test ./... -v -race -coverprofile=coverage.out || exit 1; \
+			fi; \
 			cd ../..; \
 		fi \
 	done
 	@echo "✅ All unit tests passed"
+
+# Features-service handler coverage gate (≥70%, no MySQL required; uses GOWORK=off for local replace)
+test-coverage-features:
+	@echo "🧪 features-service handler coverage (min 70%)..."
+	cd services/features-service && GOWORK=off go test ./internal/handler/... -race -coverprofile=coverage.out -covermode=atomic
+	@pct=$$(cd services/features-service && GOWORK=off go tool cover -func=coverage.out | tail -1 | grep -oE '[0-9]+\.[0-9]+' | tail -1); \
+	echo "handler statements coverage: $${pct}%"; \
+	awk -v p="$$pct" 'BEGIN{if (p+0 < 70.0) exit 1}'
+	@echo "✅ features-service handler coverage OK"
+
+# Financial-service handler coverage gate (≥70%)
+test-coverage-financial:
+	@echo "🧪 financial-service handler coverage (min 70%)..."
+	cd services/financial-service && go test ./internal/handler/... -race -coverprofile=coverage.out -covermode=atomic
+	@pct=$$(cd services/financial-service && go tool cover -func=coverage.out | tail -1 | grep -oE '[0-9]+\.[0-9]+' | tail -1); \
+	echo "financial-service handler statements coverage: $${pct}%"; \
+	awk -v p="$$pct" 'BEGIN{if (p+0 < 70.0) exit 1}'
+	@echo "✅ financial-service handler coverage OK"
+
+# Social-service handler + service coverage gate (≥70%, combined packages)
+test-coverage-social:
+	@echo "🧪 social-service handler+service coverage (min 70%)..."
+	cd services/social-service && go test ./internal/handler/... ./internal/service/... -race -coverprofile=coverage.out -covermode=atomic
+	@pct=$$(cd services/social-service && go tool cover -func=coverage.out | tail -1 | grep -oE '[0-9]+\.[0-9]+' | tail -1); \
+	echo "social-service handler+service statements coverage: $${pct}%"; \
+	awk -v p="$$pct" 'BEGIN{if (p+0 < 70.0) exit 1}'
+	@echo "✅ social-service coverage OK"
 
 # Integration tests
 test-integration:

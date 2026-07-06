@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"metargb/features-service/internal/lang"
-	"metargb/features-service/internal/service"
 	pb "metargb/shared/pb/features"
 
 	"google.golang.org/grpc/codes"
@@ -14,10 +13,10 @@ import (
 
 type BuildingHandler struct {
 	pb.UnimplementedBuildingServiceServer
-	service *service.BuildingService
+	service BuildingServicePort
 }
 
-func NewBuildingHandler(service *service.BuildingService) *BuildingHandler {
+func NewBuildingHandler(service BuildingServicePort) *BuildingHandler {
 	return &BuildingHandler{
 		service: service,
 	}
@@ -28,7 +27,7 @@ func NewBuildingHandler(service *service.BuildingService) *BuildingHandler {
 func (h *BuildingHandler) GetBuildPackage(ctx context.Context, req *pb.GetBuildPackageRequest) (*pb.BuildPackageResponse, error) {
 	locale := getProjectLocale()
 	if req.FeatureId == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, lang.T(locale, "feature_id is required"))
+		return nil, status.Errorf(codes.InvalidArgument, "%s", lang.T(locale, "feature_id is required"))
 	}
 
 	models, coordinates, err := h.service.GetBuildPackage(ctx, req.FeatureId, req.Page)
@@ -36,7 +35,7 @@ func (h *BuildingHandler) GetBuildPackage(ctx context.Context, req *pb.GetBuildP
 		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "does not own") {
 			return nil, status.Errorf(codes.PermissionDenied, "%s", err.Error())
 		}
-		return nil, status.Errorf(codes.Internal, lang.Tf(locale, "failed to get build package: %v", err))
+		return nil, status.Errorf(codes.Internal, "%s", lang.Tf(locale, "failed to get build package: %v", err))
 	}
 
 	return &pb.BuildPackageResponse{
@@ -50,7 +49,7 @@ func (h *BuildingHandler) GetBuildPackage(ctx context.Context, req *pb.GetBuildP
 func (h *BuildingHandler) BuildFeature(ctx context.Context, req *pb.BuildFeatureRequest) (*pb.BuildFeatureResponse, error) {
 	locale := getProjectLocale()
 	if req.FeatureId == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, lang.T(locale, "feature_id is required"))
+		return nil, status.Errorf(codes.InvalidArgument, "%s", lang.T(locale, "feature_id is required"))
 	}
 	if strings.TrimSpace(req.BuildingModelId) == "" {
 		return nil, status.Errorf(codes.InvalidArgument, lang.T(locale, "building_model_id is required"))
@@ -67,7 +66,7 @@ func (h *BuildingHandler) BuildFeature(ctx context.Context, req *pb.BuildFeature
 		if strings.Contains(err.Error(), "invalid") {
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
 		}
-		return nil, status.Errorf(codes.Internal, lang.Tf(locale, "failed to build feature: %v", err))
+		return nil, status.Errorf(codes.Internal, "%s", lang.Tf(locale, "failed to build feature: %v", err))
 	}
 
 	return &pb.BuildFeatureResponse{
@@ -80,12 +79,12 @@ func (h *BuildingHandler) BuildFeature(ctx context.Context, req *pb.BuildFeature
 func (h *BuildingHandler) GetBuildings(ctx context.Context, req *pb.GetBuildingsRequest) (*pb.BuildingsResponse, error) {
 	locale := getProjectLocale()
 	if req.FeatureId == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, lang.T(locale, "feature_id is required"))
+		return nil, status.Errorf(codes.InvalidArgument, "%s", lang.T(locale, "feature_id is required"))
 	}
 
 	buildings, err := h.service.GetBuildings(ctx, req.FeatureId)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, lang.Tf(locale, "failed to get buildings: %v", err))
+		return nil, status.Errorf(codes.Internal, "%s", lang.Tf(locale, "failed to get buildings: %v", err))
 	}
 
 	return &pb.BuildingsResponse{
@@ -98,7 +97,7 @@ func (h *BuildingHandler) GetBuildings(ctx context.Context, req *pb.GetBuildings
 func (h *BuildingHandler) UpdateBuilding(ctx context.Context, req *pb.UpdateBuildingRequest) (*pb.BuildingResponse, error) {
 	locale := getProjectLocale()
 	if req.FeatureId == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, lang.T(locale, "feature_id is required"))
+		return nil, status.Errorf(codes.InvalidArgument, "%s", lang.T(locale, "feature_id is required"))
 	}
 	if strings.TrimSpace(req.BuildingModelId) == "" {
 		return nil, status.Errorf(codes.InvalidArgument, lang.T(locale, "building_model_id is required"))
@@ -115,7 +114,7 @@ func (h *BuildingHandler) UpdateBuilding(ctx context.Context, req *pb.UpdateBuil
 		if strings.Contains(err.Error(), "invalid") {
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
 		}
-		return nil, status.Errorf(codes.Internal, lang.Tf(locale, "failed to update building: %v", err))
+		return nil, status.Errorf(codes.Internal, "%s", lang.Tf(locale, "failed to update building: %v", err))
 	}
 
 	return &pb.BuildingResponse{
@@ -130,7 +129,7 @@ func (h *BuildingHandler) UpdateBuilding(ctx context.Context, req *pb.UpdateBuil
 func (h *BuildingHandler) DestroyBuilding(ctx context.Context, req *pb.DestroyBuildingRequest) (*pb.BuildingResponse, error) {
 	locale := getProjectLocale()
 	if req.FeatureId == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, lang.T(locale, "feature_id is required"))
+		return nil, status.Errorf(codes.InvalidArgument, "%s", lang.T(locale, "feature_id is required"))
 	}
 	if strings.TrimSpace(req.BuildingModelId) == "" {
 		return nil, status.Errorf(codes.InvalidArgument, lang.T(locale, "building_model_id is required"))
@@ -142,7 +141,7 @@ func (h *BuildingHandler) DestroyBuilding(ctx context.Context, req *pb.DestroyBu
 		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "does not own") {
 			return nil, status.Errorf(codes.PermissionDenied, "%s", err.Error())
 		}
-		return nil, status.Errorf(codes.Internal, lang.Tf(locale, "failed to destroy building: %v", err))
+		return nil, status.Errorf(codes.Internal, "%s", lang.Tf(locale, "failed to destroy building: %v", err))
 	}
 
 	return &pb.BuildingResponse{

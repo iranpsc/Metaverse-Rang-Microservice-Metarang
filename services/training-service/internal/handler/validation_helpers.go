@@ -12,7 +12,7 @@ import (
 // returnValidationError returns a gRPC InvalidArgument error with encoded validation fields
 func returnValidationError(fields map[string]string) error {
 	encodedError := helpers.EncodeValidationError(fields)
-	return status.Errorf(codes.InvalidArgument, encodedError)
+	return status.Errorf(codes.InvalidArgument, "%s", encodedError)
 }
 
 // validateRequired validates that a field is not empty/zero
@@ -33,4 +33,3 @@ func validateRequired(fieldName string, value interface{}, locale string) map[st
 
 	return validationErrors
 }
-

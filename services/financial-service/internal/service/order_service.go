@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log"
 	"net/url"
 	"strconv"
 
@@ -27,6 +28,21 @@ var (
 type OrderService interface {
 	CreateOrder(ctx context.Context, userID uint64, amount int32, asset string) (string, error)
 	HandleCallback(ctx context.Context, orderID uint64, token string, resCode string, additionalParams map[string]string) (string, error)
+}
+
+// WalletTopUp credits the buyer wallet via commercial-service (optional).
+type WalletTopUp interface {
+	AddBalance(ctx context.Context, userID uint64, asset string, amount float64) error
+}
+
+// ReferralProcessor triggers referral commission via commercial-service (optional).
+type ReferralProcessor interface {
+	ProcessReferral(ctx context.Context, buyerUserID, orderID uint64, asset string, amount float64) error
+}
+
+// PurchaseNotifier sends post-payment notifications via notifications-service (optional).
+type PurchaseNotifier interface {
+	NotifyPurchaseSuccess(ctx context.Context, userID, orderID uint64, asset string, amount float64) error
 }
 
 type orderService struct {

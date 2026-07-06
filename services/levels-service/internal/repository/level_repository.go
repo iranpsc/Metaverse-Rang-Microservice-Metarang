@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,6 +17,25 @@ import (
 type LevelRepository struct {
 	db            *sql.DB
 	adminPanelURL string
+}
+
+type LevelRepositoryInterface interface {
+	GetUserLatestLevel(ctx context.Context, userID uint64) (*pb.Level, error)
+	GetLevelsBelowScore(ctx context.Context, score int32) ([]*pb.Level, error)
+	GetNextLevel(ctx context.Context, currentScore int32) (*pb.Level, error)
+	GetAllLevels(ctx context.Context) ([]*pb.Level, error)
+	FindByID(ctx context.Context, id uint64) (*pb.Level, error)
+	FindBySlug(ctx context.Context, slug string) (*pb.Level, error)
+	GetLevelGeneralInfo(ctx context.Context, levelID uint64) (*pb.LevelGeneralInfo, error)
+	GetLevelPrize(ctx context.Context, levelID uint64) (*pb.LevelPrize, error)
+	GetLevelGem(ctx context.Context, levelID uint64) (*pb.LevelGem, error)
+	GetLevelGift(ctx context.Context, levelID uint64) (*pb.LevelGift, error)
+	GetLevelLicenses(ctx context.Context, levelID uint64) (*pb.LevelLicense, error)
+	GetNextLevelForScore(ctx context.Context, userID uint64, score int32) (*pb.Level, error)
+	AttachLevelToUser(ctx context.Context, userID, levelID uint64) error
+	HasUserReceivedPrize(ctx context.Context, userID, prizeID uint64) (bool, error)
+	RecordReceivedPrize(ctx context.Context, userID, prizeID uint64) error
+	GetVariableRate(ctx context.Context, name string) (float64, error)
 }
 
 func NewLevelRepository(db *sql.DB, adminPanelURL string) *LevelRepository {
@@ -719,4 +739,19 @@ func (r *LevelRepository) RecordReceivedPrize(ctx context.Context, userID, prize
 	query := "INSERT INTO recieved_level_prizes (user_id, level_prize_id, created_at, updated_at) VALUES (?, ?, NOW(), NOW())"
 	_, err := r.db.ExecContext(ctx, query, userID, prizeID)
 	return err
+}
+
+// GetVariableRate returns numeric value from system_variables table.
+func (r *LevelRepository) GetVariableRate(ctx context.Context, name string) (float64, error) {
+	query := "SELECT value FROM system_variables WHERE name = ? LIMIT 1"
+	var value string
+	if err := r.db.QueryRowContext(ctx, query, name).Scan(&value); err != nil {
+		return 0, err
+	}
+
+	rate, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse variable %s rate: %w", name, err)
+	}
+	return rate, nil
 }

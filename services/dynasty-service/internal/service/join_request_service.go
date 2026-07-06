@@ -4,16 +4,22 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"metargb/dynasty-service/internal/models"
 	"metargb/dynasty-service/internal/repository"
 )
+
+type NotificationPort interface {
+	SendNotification(ctx context.Context, userID uint64, notificationType, title, message string, data map[string]string, sendSMS, sendEmail bool) error
+}
 
 type JoinRequestService struct {
 	joinRequestRepo         *repository.JoinRequestRepository
 	dynastyRepo             *repository.DynastyRepository
 	familyRepo              *repository.FamilyRepository
 	prizeRepo               *repository.PrizeRepository
+	notificationClient      NotificationPort
 	notificationServiceAddr string
 }
 
@@ -22,6 +28,7 @@ func NewJoinRequestService(
 	dynastyRepo *repository.DynastyRepository,
 	familyRepo *repository.FamilyRepository,
 	prizeRepo *repository.PrizeRepository,
+	notificationClient NotificationPort,
 	notificationServiceAddr string,
 ) *JoinRequestService {
 	return &JoinRequestService{
@@ -29,6 +36,7 @@ func NewJoinRequestService(
 		dynastyRepo:             dynastyRepo,
 		familyRepo:              familyRepo,
 		prizeRepo:               prizeRepo,
+		notificationClient:      notificationClient,
 		notificationServiceAddr: notificationServiceAddr,
 	}
 }
@@ -73,8 +81,8 @@ func (s *JoinRequestService) SendJoinRequest(ctx context.Context, fromUserID, to
 		}
 	}
 
-	// TODO: Send notifications via gRPC to notification service
-	_ = messageTemplate // Use message template for notification
+	// Send notifications (best effort, non-blocking for main flow)
+	s.notifyJoinRequestCreated(ctx, fromUserID, toUserID, relationship, messageTemplate)
 
 	return joinRequest, nil
 }
@@ -201,7 +209,8 @@ func (s *JoinRequestService) AcceptJoinRequest(ctx context.Context, requestID, u
 		}
 	}
 
-	// TODO: Send notifications via gRPC
+	// Send accept notifications (best effort)
+	s.notifyJoinRequestAccepted(ctx, request.FromUser, request.ToUser, request.Relationship)
 
 	return nil
 }
@@ -227,7 +236,8 @@ func (s *JoinRequestService) RejectJoinRequest(ctx context.Context, requestID, u
 		return fmt.Errorf("failed to update request status: %w", err)
 	}
 
-	// TODO: Send notification
+	// Send reject notifications (best effort)
+	s.notifyJoinRequestRejected(ctx, request.FromUser, request.ToUser)
 
 	return nil
 }
@@ -268,6 +278,118 @@ func (s *JoinRequestService) FormatRelationshipMessage(message string, senderNam
 	message = strings.ReplaceAll(message, "{relationship}", relationship)
 	message = strings.ReplaceAll(message, "{date}", date)
 	return message
+}
+
+func (s *JoinRequestService) fillDynastyTemplate(template string, sender, receiver *models.UserBasic, relationship string, when time.Time) string {
+	if template == "" {
+		return ""
+	}
+	relationshipTitle := s.getRelationshipTitle(relationship)
+	result := template
+	result = strings.ReplaceAll(result, "[sender-code]", sender.Code)
+	result = strings.ReplaceAll(result, "[reciever-code]", receiver.Code)
+	result = strings.ReplaceAll(result, "[sender-name]", sender.Name)
+	result = strings.ReplaceAll(result, "[reciever-name]", receiver.Name)
+	result = strings.ReplaceAll(result, "[relationship]", relationshipTitle)
+	result = strings.ReplaceAll(result, "[created_at]", when.Format("2006/01/02"))
+	return result
+}
+
+func (s *JoinRequestService) getRelationshipTitle(relationship string) string {
+	titles := map[string]string{
+		"brother":   "برادر",
+		"sister":    "خواهر",
+		"offspring": "فرزند",
+		"father":    "پدر",
+		"mother":    "مادر",
+		"husband":   "شوهر",
+		"wife":      "زن",
+		"owner":     "مالک",
+	}
+	if t, ok := titles[relationship]; ok {
+		return t
+	}
+	return relationship
+}
+
+func (s *JoinRequestService) notifyJoinRequestCreated(ctx context.Context, senderID, receiverID uint64, relationship, receiverTemplate string) {
+	if s.notificationClient == nil {
+		return
+	}
+	senderInfo, err := s.joinRequestRepo.GetUserBasicInfo(ctx, senderID)
+	if err != nil || senderInfo == nil {
+		return
+	}
+	receiverInfo, err := s.joinRequestRepo.GetUserBasicInfo(ctx, receiverID)
+	if err != nil || receiverInfo == nil {
+		return
+	}
+	requesterTemplate, _ := s.dynastyRepo.GetDynastyMessage(ctx, "requester_confirmation_message")
+	now := time.Now()
+	senderMsg := s.fillDynastyTemplate(requesterTemplate, senderInfo, receiverInfo, relationship, now)
+	receiverMsg := s.fillDynastyTemplate(receiverTemplate, senderInfo, receiverInfo, relationship, now)
+	if senderMsg != "" {
+		_ = s.notificationClient.SendNotification(ctx, senderID, "dynasty_join_request", "Dynasty", senderMsg, map[string]string{"relationship": relationship}, false, false)
+	}
+	if receiverMsg != "" {
+		_ = s.notificationClient.SendNotification(ctx, receiverID, "dynasty_join_request", "Dynasty", receiverMsg, map[string]string{"relationship": relationship}, false, false)
+	}
+}
+
+func (s *JoinRequestService) notifyJoinRequestAccepted(ctx context.Context, requesterID, receiverID uint64, relationship string) {
+	if s.notificationClient == nil {
+		return
+	}
+	requesterInfo, err := s.joinRequestRepo.GetUserBasicInfo(ctx, requesterID)
+	if err != nil || requesterInfo == nil {
+		return
+	}
+	receiverInfo, err := s.joinRequestRepo.GetUserBasicInfo(ctx, receiverID)
+	if err != nil || receiverInfo == nil {
+		return
+	}
+	requesterTemplate, _ := s.dynastyRepo.GetDynastyMessage(ctx, "requester_accept_message")
+	receiverTemplate, _ := s.dynastyRepo.GetDynastyMessage(ctx, "reciever_accept_message")
+	now := time.Now()
+	requesterMsg := s.fillDynastyTemplate(requesterTemplate, requesterInfo, receiverInfo, relationship, now)
+	receiverMsg := s.fillDynastyTemplate(receiverTemplate, requesterInfo, receiverInfo, relationship, now)
+	if requesterMsg != "" {
+		_ = s.notificationClient.SendNotification(ctx, requesterID, "dynasty_join_request_accept", "Dynasty", requesterMsg, map[string]string{"relationship": relationship}, false, false)
+	}
+	if receiverMsg != "" {
+		_ = s.notificationClient.SendNotification(ctx, receiverID, "dynasty_join_request_accept", "Dynasty", receiverMsg, map[string]string{"relationship": relationship}, false, false)
+	}
+}
+
+func (s *JoinRequestService) notifyJoinRequestRejected(ctx context.Context, requesterID, receiverID uint64) {
+	if s.notificationClient == nil {
+		return
+	}
+	requesterInfo, err := s.joinRequestRepo.GetUserBasicInfo(ctx, requesterID)
+	if err != nil || requesterInfo == nil {
+		return
+	}
+	receiverInfo, err := s.joinRequestRepo.GetUserBasicInfo(ctx, receiverID)
+	if err != nil || receiverInfo == nil {
+		return
+	}
+	requesterTemplate, _ := s.dynastyRepo.GetDynastyMessage(ctx, "requester_reject_message")
+	receiverTemplate, _ := s.dynastyRepo.GetDynastyMessage(ctx, "reciever_reject_message")
+	if requesterTemplate == "" {
+		requesterTemplate = "درخواست پیوستن به سلسله شما توسط کاربر [reciever-code] رد شد!"
+	}
+	if receiverTemplate == "" {
+		receiverTemplate = "درخواست پیوستن به سلسله از طرف [sender-code] توسط شما رد شد."
+	}
+	now := time.Now()
+	requesterMsg := s.fillDynastyTemplate(requesterTemplate, requesterInfo, receiverInfo, "", now)
+	receiverMsg := s.fillDynastyTemplate(receiverTemplate, requesterInfo, receiverInfo, "", now)
+	if requesterMsg != "" {
+		_ = s.notificationClient.SendNotification(ctx, requesterID, "dynasty_join_request_reject", "Dynasty", requesterMsg, nil, false, false)
+	}
+	if receiverMsg != "" {
+		_ = s.notificationClient.SendNotification(ctx, receiverID, "dynasty_join_request_reject", "Dynasty", receiverMsg, nil, false, false)
+	}
 }
 
 // GetPrizeByRelationship retrieves dynasty prize by relationship type

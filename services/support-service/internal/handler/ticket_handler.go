@@ -2,16 +2,18 @@ package handler
 
 import (
 	"context"
-	"fmt"
+	"strings"
+
 	"metargb/support-service/internal/models"
 	"metargb/support-service/internal/service"
 	"metargb/support-service/internal/utils"
 
+	pbCommon "metargb/shared/pb/common"
+	pb "metargb/shared/pb/support"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	pbCommon "metargb/shared/pb/common"
-	pb "metargb/shared/pb/support"
 )
 
 type TicketHandler struct {
@@ -31,22 +33,26 @@ func RegisterTicketHandler(grpcServer *grpc.Server, ticketService service.Ticket
 }
 
 func (h *TicketHandler) CreateTicket(ctx context.Context, req *pb.CreateTicketRequest) (*pb.TicketResponse, error) {
-	if req.UserId == 0 {
-		return nil, status.Error(codes.InvalidArgument, "user_id is required")
-	}
-	if req.Title == "" {
-		return nil, status.Error(codes.InvalidArgument, "title is required")
-	}
-	if req.Content == "" {
-		return nil, status.Error(codes.InvalidArgument, "content is required")
-	}
-
-	// Validate that either receiver_id or department is provided (matching Laravel validation)
+	locale := handlerLocale(ctx)
+	validationErrors := mergeValidationErrors(
+		validateRequired("user_id", req.UserId, locale),
+		validateRequired("title", req.Title, locale),
+		validateRequired("content", req.Content, locale),
+		validateMaxLen("title", req.Title, 250, locale),
+		validateMaxLen("content", req.Content, 500, locale),
+	)
 	if req.ReceiverId == 0 && req.Department == "" {
-		return nil, status.Error(codes.InvalidArgument, "either receiver_id or department is required")
+		validationErrors = mergeValidationErrors(validationErrors, map[string]string{
+			"reciever": "Either reciever or department is required",
+		})
 	}
 	if req.ReceiverId != 0 && req.Department != "" {
-		return nil, status.Error(codes.InvalidArgument, "cannot specify both receiver_id and department")
+		validationErrors = mergeValidationErrors(validationErrors, map[string]string{
+			"department": "Cannot specify both reciever and department",
+		})
+	}
+	if len(validationErrors) > 0 {
+		return nil, returnValidationError(validationErrors)
 	}
 
 	var receiverID *uint64
@@ -61,15 +67,17 @@ func (h *TicketHandler) CreateTicket(ctx context.Context, req *pb.CreateTicketRe
 
 	ticket, err := h.ticketService.CreateTicket(ctx, req.UserId, req.Title, req.Content, req.Attachment, receiverID, department)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create ticket: %v", err)
+		return nil, MapServiceError(err)
 	}
 
 	return convertTicketToProto(ticket), nil
 }
 
 func (h *TicketHandler) GetTickets(ctx context.Context, req *pb.GetTicketsRequest) (*pb.TicketsResponse, error) {
-	if req.UserId == 0 {
-		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	locale := handlerLocale(ctx)
+	validationErrors := validateRequired("user_id", req.UserId, locale)
+	if len(validationErrors) > 0 {
+		return nil, returnValidationError(validationErrors)
 	}
 
 	page := int32(1)
@@ -83,14 +91,11 @@ func (h *TicketHandler) GetTickets(ctx context.Context, req *pb.GetTicketsReques
 		}
 	}
 
-	// In Laravel, 'received' parameter determines if we get tickets where user is receiver
-	// The proto doesn't have this, so we'll check status_filter or always get user's sent tickets
-	// For now, we'll get sent tickets by default (matching Laravel default behavior)
-	received := false
+	received := req.Received
 
 	tickets, total, err := h.ticketService.GetTickets(ctx, req.UserId, page, perPage, received)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get tickets: %v", err)
+		return nil, MapServiceError(err)
 	}
 
 	response := &pb.TicketsResponse{
@@ -111,16 +116,18 @@ func (h *TicketHandler) GetTickets(ctx context.Context, req *pb.GetTicketsReques
 }
 
 func (h *TicketHandler) GetTicket(ctx context.Context, req *pb.GetTicketRequest) (*pb.TicketResponse, error) {
-	if req.TicketId == 0 {
-		return nil, status.Error(codes.InvalidArgument, "ticket_id is required")
-	}
-	if req.UserId == 0 {
-		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	locale := handlerLocale(ctx)
+	validationErrors := mergeValidationErrors(
+		validateRequired("ticket_id", req.TicketId, locale),
+		validateRequired("user_id", req.UserId, locale),
+	)
+	if len(validationErrors) > 0 {
+		return nil, returnValidationError(validationErrors)
 	}
 
 	ticket, err := h.ticketService.GetTicket(ctx, req.TicketId, req.UserId)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get ticket: %v", err)
+		return nil, MapServiceError(err)
 	}
 
 	if ticket == nil {
@@ -131,67 +138,70 @@ func (h *TicketHandler) GetTicket(ctx context.Context, req *pb.GetTicketRequest)
 }
 
 func (h *TicketHandler) UpdateTicket(ctx context.Context, req *pb.UpdateTicketRequest) (*pb.TicketResponse, error) {
-	if req.TicketId == 0 {
-		return nil, status.Error(codes.InvalidArgument, "ticket_id is required")
-	}
-	if req.UserId == 0 {
-		return nil, status.Error(codes.InvalidArgument, "user_id is required")
-	}
-	if req.Title == "" {
-		return nil, status.Error(codes.InvalidArgument, "title is required")
-	}
-	if req.Content == "" {
-		return nil, status.Error(codes.InvalidArgument, "content is required")
+	locale := handlerLocale(ctx)
+	validationErrors := mergeValidationErrors(
+		validateRequired("ticket_id", req.TicketId, locale),
+		validateRequired("user_id", req.UserId, locale),
+		validateRequired("title", req.Title, locale),
+		validateRequired("content", req.Content, locale),
+		validateMaxLen("title", req.Title, 250, locale),
+		validateMaxLen("content", req.Content, 500, locale),
+	)
+	if len(validationErrors) > 0 {
+		return nil, returnValidationError(validationErrors)
 	}
 
 	ticket, err := h.ticketService.UpdateTicket(ctx, req.TicketId, req.UserId, req.Title, req.Content, req.Attachment)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update ticket: %v", err)
+		return nil, MapServiceError(err)
 	}
 
 	return convertTicketToProto(ticket), nil
 }
 
 func (h *TicketHandler) AddResponse(ctx context.Context, req *pb.AddResponseRequest) (*pb.TicketResponse, error) {
-	if req.TicketId == 0 {
-		return nil, status.Error(codes.InvalidArgument, "ticket_id is required")
-	}
-	if req.UserId == 0 {
-		return nil, status.Error(codes.InvalidArgument, "user_id is required")
-	}
-	if req.Response == "" {
-		return nil, status.Error(codes.InvalidArgument, "response is required")
+	locale := handlerLocale(ctx)
+	validationErrors := mergeValidationErrors(
+		validateRequired("ticket_id", req.TicketId, locale),
+		validateRequired("user_id", req.UserId, locale),
+		validateRequired("response", req.Response, locale),
+		validateMaxLen("response", req.Response, 500, locale),
+	)
+	if len(validationErrors) > 0 {
+		return nil, returnValidationError(validationErrors)
 	}
 
-	// We need to get the user's name - for now we'll use empty string
-	// In production, this should query the user service
-	userName := fmt.Sprintf("User_%d", req.UserId)
+	userName := strings.TrimSpace(req.UserName)
+	if userName == "" {
+		userName = "User"
+	}
 
 	ticket, err := h.ticketService.AddResponse(ctx, req.TicketId, req.UserId, req.Response, req.Attachment, userName)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to add response: %v", err)
+		return nil, MapServiceError(err)
 	}
 
 	return convertTicketToProto(ticket), nil
 }
 
 func (h *TicketHandler) CloseTicket(ctx context.Context, req *pb.CloseTicketRequest) (*pb.TicketResponse, error) {
-	if req.TicketId == 0 {
-		return nil, status.Error(codes.InvalidArgument, "ticket_id is required")
-	}
-	if req.UserId == 0 {
-		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	locale := handlerLocale(ctx)
+	validationErrors := mergeValidationErrors(
+		validateRequired("ticket_id", req.TicketId, locale),
+		validateRequired("user_id", req.UserId, locale),
+	)
+	if len(validationErrors) > 0 {
+		return nil, returnValidationError(validationErrors)
 	}
 
 	ticket, err := h.ticketService.CloseTicket(ctx, req.TicketId, req.UserId)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to close ticket: %v", err)
+		return nil, MapServiceError(err)
 	}
 
 	return convertTicketToProto(ticket), nil
 }
 
-// Helper function to convert ticket model to proto response
 func convertTicketToProto(ticket *models.TicketWithRelations) *pb.TicketResponse {
 	response := &pb.TicketResponse{
 		Id:         ticket.ID,
@@ -201,15 +211,14 @@ func convertTicketToProto(ticket *models.TicketWithRelations) *pb.TicketResponse
 		Code:       ticket.Code,
 		Status:     ticket.Status,
 		Importance: ticket.Importance,
-		CreatedAt:  utils.FormatJalaliDate(ticket.CreatedAt),
-		UpdatedAt:  utils.FormatJalaliDate(ticket.UpdatedAt),
+		CreatedAt:  utils.FormatJalaliDateTime(ticket.CreatedAt),
+		UpdatedAt:  utils.FormatJalaliDateTime(ticket.UpdatedAt),
 	}
 
 	if ticket.Department != nil {
 		response.Department = *ticket.Department
 	}
 
-	// Sender info
 	response.Sender = &pbCommon.UserBasic{
 		Id:   ticket.UserID,
 		Code: ticket.SenderCode,
@@ -219,7 +228,6 @@ func convertTicketToProto(ticket *models.TicketWithRelations) *pb.TicketResponse
 		response.Sender.ProfilePhoto = *ticket.SenderProfilePhoto
 	}
 
-	// Receiver info
 	if ticket.ReceiverID != nil {
 		response.Receiver = &pbCommon.UserBasic{
 			Id: *ticket.ReceiverID,
@@ -235,7 +243,6 @@ func convertTicketToProto(ticket *models.TicketWithRelations) *pb.TicketResponse
 		}
 	}
 
-	// Responses
 	response.Responses = make([]*pb.TicketResponseItem, len(ticket.Responses))
 	for i, resp := range ticket.Responses {
 		response.Responses[i] = &pb.TicketResponseItem{

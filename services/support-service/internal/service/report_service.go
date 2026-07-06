@@ -10,7 +10,7 @@ import (
 type ReportService interface {
 	CreateReport(ctx context.Context, userID uint64, subject, title, content, url string, imageURLs []string) (*models.ReportWithImages, error)
 	GetReports(ctx context.Context, userID uint64, page, perPage int32) ([]*models.Report, int, error)
-	GetReport(ctx context.Context, reportID uint64) (*models.ReportWithImages, error)
+	GetReport(ctx context.Context, reportID, userID uint64) (*models.ReportWithImages, error)
 }
 
 type reportService struct {
@@ -38,7 +38,6 @@ func (s *reportService) CreateReport(ctx context.Context, userID uint64, subject
 		return nil, fmt.Errorf("failed to create report: %w", err)
 	}
 
-	// Create images if provided
 	for _, imageURL := range imageURLs {
 		err := s.reportRepo.CreateImage(ctx, createdReport.ID, imageURL)
 		if err != nil {
@@ -46,7 +45,6 @@ func (s *reportService) CreateReport(ctx context.Context, userID uint64, subject
 		}
 	}
 
-	// Get full report with images
 	return s.reportRepo.GetByID(ctx, createdReport.ID)
 }
 
@@ -61,6 +59,16 @@ func (s *reportService) GetReports(ctx context.Context, userID uint64, page, per
 	return s.reportRepo.GetByUserID(ctx, userID, page, perPage)
 }
 
-func (s *reportService) GetReport(ctx context.Context, reportID uint64) (*models.ReportWithImages, error) {
-	return s.reportRepo.GetByID(ctx, reportID)
+func (s *reportService) GetReport(ctx context.Context, reportID, userID uint64) (*models.ReportWithImages, error) {
+	report, err := s.reportRepo.GetByID(ctx, reportID)
+	if err != nil {
+		return nil, err
+	}
+	if report == nil {
+		return nil, nil
+	}
+	if report.UserID != userID {
+		return nil, fmt.Errorf("unauthorized: you don't have permission to view this report")
+	}
+	return report, nil
 }

@@ -2,15 +2,18 @@ package handler
 
 import (
 	"context"
+	"strings"
+
 	"metargb/support-service/internal/models"
 	"metargb/support-service/internal/service"
 	"metargb/support-service/internal/utils"
 
+	pbCommon "metargb/shared/pb/common"
+	pb "metargb/shared/pb/support"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	pbCommon "metargb/shared/pb/common"
-	pb "metargb/shared/pb/support"
 )
 
 type UserEventHandler struct {
@@ -41,7 +44,7 @@ func (h *UserEventHandler) CreateUserEvent(ctx context.Context, req *pb.CreateUs
 
 	event, err := h.userEventService.CreateUserEvent(ctx, req.UserId, req.Title, req.Description, req.EventDate)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create user event: %v", err)
+		return nil, MapServiceError(err)
 	}
 
 	return convertUserEventToProto(event), nil
@@ -67,7 +70,7 @@ func (h *UserEventHandler) GetUserEvents(ctx context.Context, req *pb.GetUserEve
 
 	events, total, err := h.userEventService.GetUserEvents(ctx, req.UserId, page, perPage)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get user events: %v", err)
+		return nil, MapServiceError(err)
 	}
 
 	response := &pb.UserEventsResponse{
@@ -88,15 +91,18 @@ func (h *UserEventHandler) GetUserEvents(ctx context.Context, req *pb.GetUserEve
 }
 
 func (h *UserEventHandler) GetUserEvent(ctx context.Context, req *pb.GetUserEventRequest) (*pb.UserEventResponse, error) {
-	locale := "en" // TODO: Get locale from config or context
-	validationErrors := validateRequired("event_id", req.EventId, locale)
+	locale := handlerLocale(ctx)
+	validationErrors := mergeValidationErrors(
+		validateRequired("event_id", req.EventId, locale),
+		validateRequired("user_id", req.UserId, locale),
+	)
 	if len(validationErrors) > 0 {
 		return nil, returnValidationError(validationErrors)
 	}
 
-	event, err := h.userEventService.GetUserEvent(ctx, req.EventId)
+	event, err := h.userEventService.GetUserEvent(ctx, req.EventId, req.UserId)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get user event: %v", err)
+		return nil, MapServiceError(err)
 	}
 
 	if event == nil {
@@ -118,28 +124,54 @@ func (h *UserEventHandler) ReportUserEvent(ctx context.Context, req *pb.ReportUs
 
 	report, err := h.userEventService.ReportUserEvent(ctx, req.EventId, req.SuspiciousCitizen, req.EventDescription)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to report user event: %v", err)
+		return nil, MapServiceError(err)
 	}
 
 	return convertUserEventReportToProto(report), nil
 }
 
-func (h *UserEventHandler) SendEventReportResponse(ctx context.Context, req *pb.SendEventReportResponseRequest) (*pbCommon.Empty, error) {
-	locale := "en" // TODO: Get locale from config or context
+func (h *UserEventHandler) SendEventReportResponse(ctx context.Context, req *pb.SendEventReportResponseRequest) (*pb.SendEventReportResponseReply, error) {
+	locale := handlerLocale(ctx)
 	validationErrors := mergeValidationErrors(
-		validateRequired("report_id", req.ReportId, locale),
+		validateRequired("event_id", req.EventId, locale),
 		validateRequired("response", req.Response, locale),
 	)
 	if len(validationErrors) > 0 {
 		return nil, returnValidationError(validationErrors)
 	}
 
-	// Get responder name (should query user service in production)
-	responderName := "Admin"
+	responderName := strings.TrimSpace(req.ResponderName)
+	if responderName == "" {
+		responderName = "Admin"
+	}
 
-	err := h.userEventService.SendEventReportResponse(ctx, req.ReportId, responderName, req.Response)
+	created, err := h.userEventService.SendEventReportResponse(ctx, req.EventId, responderName, req.Response)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to send response: %v", err)
+		return nil, MapServiceError(err)
+	}
+
+	return &pb.SendEventReportResponseReply{
+		Id:            created.ID,
+		ResponserName: created.ResponserName,
+		Response:      created.Response,
+		Date:          utils.FormatJalaliDate(created.CreatedAt),
+		Time:          utils.FormatJalaliTime(created.CreatedAt),
+	}, nil
+}
+
+func (h *UserEventHandler) CloseUserEventReport(ctx context.Context, req *pb.CloseUserEventReportRequest) (*pbCommon.Empty, error) {
+	locale := handlerLocale(ctx)
+	validationErrors := mergeValidationErrors(
+		validateRequired("event_id", req.EventId, locale),
+		validateRequired("user_id", req.UserId, locale),
+	)
+	if len(validationErrors) > 0 {
+		return nil, returnValidationError(validationErrors)
+	}
+
+	err := h.userEventService.CloseUserEventReport(ctx, req.EventId, req.UserId)
+	if err != nil {
+		return nil, MapServiceError(err)
 	}
 
 	return &pbCommon.Empty{}, nil
@@ -147,27 +179,52 @@ func (h *UserEventHandler) SendEventReportResponse(ctx context.Context, req *pb.
 
 // Helper functions to convert models to proto
 func convertUserEventToProto(event *models.UserEvent) *pb.UserEventResponse {
-	return &pb.UserEventResponse{
-		Id:          event.ID,
-		UserId:      event.UserID,
-		Title:       event.Event, // Using Event field as Title
-		Description: "",          // Not stored in Laravel UserEvent
-		EventDate:   utils.FormatJalaliDate(event.CreatedAt),
-		CreatedAt:   utils.FormatJalaliDateTime(event.CreatedAt),
+	if event == nil {
+		return nil
 	}
-}
-
-func convertUserEventWithReportToProto(event *models.UserEventWithReport) *pb.UserEventResponse {
-	response := &pb.UserEventResponse{
+	return &pb.UserEventResponse{
 		Id:          event.ID,
 		UserId:      event.UserID,
 		Title:       event.Event,
 		Description: "",
 		EventDate:   utils.FormatJalaliDate(event.CreatedAt),
 		CreatedAt:   utils.FormatJalaliDateTime(event.CreatedAt),
+		Ip:          event.IP,
+		Device:      event.Device,
+		StatusOk:    event.Status,
 	}
+}
 
-	return response
+func convertUserEventWithReportToProto(event *models.UserEventWithReport) *pb.UserEventResponse {
+	if event == nil {
+		return nil
+	}
+	resp := convertUserEventToProto(&event.UserEvent)
+	if event.Report != nil {
+		r := event.Report
+		detail := &pb.UserEventReportDetail{
+			Id:               r.ID,
+			EventDescription: r.EventDescription,
+			Status:           r.Status,
+			Closed:           r.Closed,
+			Date:             utils.FormatJalaliDate(r.CreatedAt),
+			Time:             utils.FormatJalaliTime(r.CreatedAt),
+		}
+		if r.SuspeciousCitizen != nil {
+			detail.SuspiciousCitizen = *r.SuspeciousCitizen
+		}
+		for _, rr := range event.Responses {
+			detail.Responses = append(detail.Responses, &pb.UserEventReportResponseItem{
+				Id:            rr.ID,
+				ResponserName: rr.ResponserName,
+				Response:      rr.Response,
+				Date:          utils.FormatJalaliDate(rr.CreatedAt),
+				Time:          utils.FormatJalaliTime(rr.CreatedAt),
+			})
+		}
+		resp.Report = detail
+	}
+	return resp
 }
 
 func convertUserEventReportToProto(report *models.UserEventReport) *pb.UserEventReportResponse {
