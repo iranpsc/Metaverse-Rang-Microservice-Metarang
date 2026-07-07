@@ -1,5 +1,5 @@
 # Multi-stage build for Features Service
-FROM golang:1.25-alpine AS builder
+FROM golang:1.26.4-alpine3.23 AS builder
 
 ENV CGO_ENABLED=0
 
@@ -16,7 +16,7 @@ COPY ./services/features-service/go.mod ./services/features-service/go.sum* /wor
 COPY ./services/features-service/ /workspace/metargb/features-service/
 
 WORKDIR /workspace
-RUN echo 'go 1.25.0' > go.work && \
+RUN echo 'go 1.26.4' > go.work && \
     printf '\nuse (\n\t./metargb/features-service\n\t./metargb/shared\n)\n' >> go.work
 
 WORKDIR /workspace/metargb/features-service
@@ -28,7 +28,7 @@ ENV GOWORK=/workspace/go.work
 RUN go build -trimpath -ldflags="-s -w" -o /app/features-service ./cmd/server && \
     go build -trimpath -ldflags="-s -w" -o /app/calculate-hourly-profits ./cmd/calculate-profits
 
-FROM alpine:3.21
+FROM alpine:3.23.0
 
 RUN apk add --no-cache ca-certificates tzdata netcat-openbsd && \
     addgroup -g 1000 appuser && \

@@ -1,5 +1,5 @@
 # Multi-stage build for Training Service
-FROM golang:1.25-alpine AS builder
+FROM golang:1.26.4-alpine3.23 AS builder
 
 ENV CGO_ENABLED=0
 
@@ -27,7 +27,7 @@ COPY ./services/training-service/go.mod ./services/training-service/go.sum* /wor
 COPY ./services/training-service/ /workspace/metargb/training-service/
 
 WORKDIR /workspace
-RUN echo 'go 1.25.0' > go.work && \
+RUN echo 'go 1.26.4' > go.work && \
     printf '\nuse (\n\t./metargb/training-service\n\t./metargb/shared\n)\n' >> go.work
 
 WORKDIR /workspace/metargb/training-service
@@ -38,7 +38,7 @@ RUN sed -i 's|replace metargb/shared => ../../shared|replace metargb/shared => /
 ENV GOWORK=/workspace/go.work
 RUN go build -trimpath -ldflags="-s -w" -o /app/training-service ./cmd/server
 
-FROM alpine:3.21
+FROM alpine:3.23.0
 
 RUN apk add --no-cache ca-certificates tzdata netcat-openbsd && \
     addgroup -g 1000 appuser && \

@@ -1,5 +1,5 @@
 # Multi-stage build for Social Service
-FROM golang:1.25-alpine AS builder
+FROM golang:1.26.4-alpine3.23 AS builder
 
 ENV CGO_ENABLED=0
 
@@ -16,7 +16,7 @@ COPY ./services/social-service/go.mod ./services/social-service/go.sum* /workspa
 COPY ./services/social-service/ /workspace/metargb/social-service/
 
 WORKDIR /workspace
-RUN echo 'go 1.25.0' > go.work && \
+RUN echo 'go 1.26.4' > go.work && \
     printf '\nuse (\n\t./metargb/social-service\n\t./metargb/shared\n)\n' >> go.work
 
 WORKDIR /workspace/metargb/social-service
@@ -27,7 +27,7 @@ RUN sed -i 's|replace metargb/shared => ../../shared|replace metargb/shared => /
 ENV GOWORK=/workspace/go.work
 RUN go build -trimpath -ldflags="-s -w" -o /app/social-service ./cmd/server
 
-FROM alpine:3.21
+FROM alpine:3.23.0
 
 RUN apk add --no-cache ca-certificates tzdata netcat-openbsd && \
     addgroup -g 1000 appuser && \

@@ -8,7 +8,7 @@ on:
 
 env:
   DOCKER_REGISTRY: metargb
-  GO_VERSION: '1.21'
+  GO_VERSION: '1.26.4'
 
 permissions:
   contents: read

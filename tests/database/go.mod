@@ -1,6 +1,6 @@
 module github.com/metargb/metargb-microservices/tests/database
 
-go 1.25.0
+go 1.26.4
 
 require (
 	github.com/go-sql-driver/mysql v1.7.1
