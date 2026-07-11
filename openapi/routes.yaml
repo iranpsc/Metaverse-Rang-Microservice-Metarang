@@ -1,5 +1,6 @@
 # Route registry for MetaRGB REST API (Laravel-compatible paths via grpc-gateway).
-# Run `make openapi` to regenerate openapi/openapi.yaml from this file.
+# Path and query parameters are auto-discovered from grpc-gateway handlers.
+# Run `make openapi` to regenerate openapi/openapi.yaml from this file + handler discovery.
 
 routes:
   # --- Auth ---
@@ -347,11 +348,6 @@ routes:
     methods: [get]
     tag: Features
     summary: List authenticated user features
-    security: bearer
-  - path: /api/v2/features/{id}
-    methods: [get]
-    tag: Features
-    summary: Get feature details (v2)
     security: bearer
   - path: /api/buy-requests
     methods: [get, post]

@@ -46,7 +46,7 @@ func (h *LevelsHandler) prefixImageURL(url string) string {
 	return h.appURL + "/" + path
 }
 
-// GetAllLevels handles GET /api/v2/levels
+// GetAllLevels handles GET /api/levels
 // Implements Laravel LevelController@index
 func (h *LevelsHandler) GetAllLevels(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -86,7 +86,7 @@ func (h *LevelsHandler) GetAllLevels(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, levels)
 }
 
-// GetLevel handles GET /api/v2/levels/{slug}
+// GetLevel handles GET /api/levels/{slug}
 // Implements Laravel LevelController@show
 func (h *LevelsHandler) GetLevel(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -94,17 +94,7 @@ func (h *LevelsHandler) GetLevel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Extract slug from path (supports both /api/levels and /api/v2/levels)
-	var slug string
-	if strings.HasPrefix(r.URL.Path, "/api/v2/levels/") {
-		slug = extractSlugFromPath(r.URL.Path, "/api/v2/levels/")
-	} else if strings.HasPrefix(r.URL.Path, "/api/levels/") {
-		slug = extractSlugFromPath(r.URL.Path, "/api/levels/")
-	} else {
-		writeError(w, http.StatusBadRequest, "invalid path")
-		return
-	}
-	
+	slug := extractSlugFromPath(r.URL.Path, "/api/levels/")
 	if slug == "" {
 		writeError(w, http.StatusBadRequest, "level slug is required")
 		return
@@ -124,7 +114,7 @@ func (h *LevelsHandler) GetLevel(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, level)
 }
 
-// GetLevelGeneralInfo handles GET /api/v2/levels/{slug}/general-info
+// GetLevelGeneralInfo handles GET /api/levels/{slug}/general-info
 // Implements Laravel LevelController@getGeneralInfo
 func (h *LevelsHandler) GetLevelGeneralInfo(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -132,17 +122,7 @@ func (h *LevelsHandler) GetLevelGeneralInfo(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Extract slug from path (supports both /api/levels and /api/v2/levels)
-	var slug string
-	if strings.HasPrefix(r.URL.Path, "/api/v2/levels/") {
-		slug = extractSlugFromPath(r.URL.Path, "/api/v2/levels/")
-	} else if strings.HasPrefix(r.URL.Path, "/api/levels/") {
-		slug = extractSlugFromPath(r.URL.Path, "/api/levels/")
-	} else {
-		writeError(w, http.StatusBadRequest, "invalid path")
-		return
-	}
-	
+	slug := extractSlugFromPath(r.URL.Path, "/api/levels/")
 	if slug == "" {
 		writeError(w, http.StatusBadRequest, "level slug is required")
 		return
@@ -191,7 +171,7 @@ func (h *LevelsHandler) GetLevelGeneralInfo(w http.ResponseWriter, r *http.Reque
 	writeJSON(w, http.StatusOK, generalInfo)
 }
 
-// GetLevelGem handles GET /api/v2/levels/{slug}/gem
+// GetLevelGem handles GET /api/levels/{slug}/gem
 // Implements Laravel LevelController@gem
 func (h *LevelsHandler) GetLevelGem(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -199,17 +179,7 @@ func (h *LevelsHandler) GetLevelGem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Extract slug from path (supports both /api/levels and /api/v2/levels)
-	var slug string
-	if strings.HasPrefix(r.URL.Path, "/api/v2/levels/") {
-		slug = extractSlugFromPath(r.URL.Path, "/api/v2/levels/")
-	} else if strings.HasPrefix(r.URL.Path, "/api/levels/") {
-		slug = extractSlugFromPath(r.URL.Path, "/api/levels/")
-	} else {
-		writeError(w, http.StatusBadRequest, "invalid path")
-		return
-	}
-	
+	slug := extractSlugFromPath(r.URL.Path, "/api/levels/")
 	if slug == "" {
 		writeError(w, http.StatusBadRequest, "level slug is required")
 		return
@@ -255,7 +225,7 @@ func (h *LevelsHandler) GetLevelGem(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, gem)
 }
 
-// GetLevelGift handles GET /api/v2/levels/{slug}/gift
+// GetLevelGift handles GET /api/levels/{slug}/gift
 // Implements Laravel LevelController@gift
 func (h *LevelsHandler) GetLevelGift(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -263,17 +233,7 @@ func (h *LevelsHandler) GetLevelGift(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Extract slug from path (supports both /api/levels and /api/v2/levels)
-	var slug string
-	if strings.HasPrefix(r.URL.Path, "/api/v2/levels/") {
-		slug = extractSlugFromPath(r.URL.Path, "/api/v2/levels/")
-	} else if strings.HasPrefix(r.URL.Path, "/api/levels/") {
-		slug = extractSlugFromPath(r.URL.Path, "/api/levels/")
-	} else {
-		writeError(w, http.StatusBadRequest, "invalid path")
-		return
-	}
-	
+	slug := extractSlugFromPath(r.URL.Path, "/api/levels/")
 	if slug == "" {
 		writeError(w, http.StatusBadRequest, "level slug is required")
 		return
@@ -327,7 +287,7 @@ func (h *LevelsHandler) GetLevelGift(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, gift)
 }
 
-// GetLevelLicenses handles GET /api/v2/levels/{slug}/licenses
+// GetLevelLicenses handles GET /api/levels/{slug}/licenses
 // Implements Laravel LevelController@licenses
 func (h *LevelsHandler) GetLevelLicenses(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -335,17 +295,7 @@ func (h *LevelsHandler) GetLevelLicenses(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Extract slug from path (supports both /api/levels and /api/v2/levels)
-	var slug string
-	if strings.HasPrefix(r.URL.Path, "/api/v2/levels/") {
-		slug = extractSlugFromPath(r.URL.Path, "/api/v2/levels/")
-	} else if strings.HasPrefix(r.URL.Path, "/api/levels/") {
-		slug = extractSlugFromPath(r.URL.Path, "/api/levels/")
-	} else {
-		writeError(w, http.StatusBadRequest, "invalid path")
-		return
-	}
-	
+	slug := extractSlugFromPath(r.URL.Path, "/api/levels/")
 	if slug == "" {
 		writeError(w, http.StatusBadRequest, "level slug is required")
 		return
@@ -395,7 +345,7 @@ func (h *LevelsHandler) GetLevelLicenses(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, licenses)
 }
 
-// GetLevelPrize handles GET /api/v2/levels/{slug}/prize
+// GetLevelPrize handles GET /api/levels/{slug}/prize
 // Implements Laravel LevelController@prizes
 func (h *LevelsHandler) GetLevelPrize(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -403,17 +353,7 @@ func (h *LevelsHandler) GetLevelPrize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Extract slug from path (supports both /api/levels and /api/v2/levels)
-	var slug string
-	if strings.HasPrefix(r.URL.Path, "/api/v2/levels/") {
-		slug = extractSlugFromPath(r.URL.Path, "/api/v2/levels/")
-	} else if strings.HasPrefix(r.URL.Path, "/api/levels/") {
-		slug = extractSlugFromPath(r.URL.Path, "/api/levels/")
-	} else {
-		writeError(w, http.StatusBadRequest, "invalid path")
-		return
-	}
-	
+	slug := extractSlugFromPath(r.URL.Path, "/api/levels/")
 	if slug == "" {
 		writeError(w, http.StatusBadRequest, "level slug is required")
 		return
@@ -493,49 +433,36 @@ func (h *LevelsHandler) formatLevelResponse(level *levelspb.Level) map[string]in
 	return levelMap
 }
 
-// HandleLevelsRoutes is the main router for levels endpoints
-// Handles both /api/levels and /api/v2/levels prefixes
-// Routes to appropriate handler based on path structure
+// HandleLevelsRoutes is the main router for levels endpoints under /api/levels
 func (h *LevelsHandler) HandleLevelsRoutes(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
-	
-	// Determine the base prefix used (/api/levels or /api/v2/levels)
-	var basePrefix string
-	if strings.HasPrefix(path, "/api/v2/levels") {
-		basePrefix = "/api/v2/levels"
-	} else if strings.HasPrefix(path, "/api/levels") {
-		basePrefix = "/api/levels"
-	} else {
+	const basePrefix = "/api/levels"
+
+	if !strings.HasPrefix(path, basePrefix) {
 		writeError(w, http.StatusNotFound, "not found")
 		return
 	}
-	
-	// Handle exact match: /api/levels or /api/v2/levels
+
 	if path == basePrefix {
 		h.GetAllLevels(w, r)
 		return
 	}
-	
-	// Extract the path after the prefix
+
 	suffix := strings.TrimPrefix(path, basePrefix)
 	suffix = strings.TrimPrefix(suffix, "/")
-	
+
 	if suffix == "" {
-		// This is /api/levels/ or /api/v2/levels/ - treat as list
 		h.GetAllLevels(w, r)
 		return
 	}
-	
-	// Split the suffix into parts
+
 	parts := strings.Split(suffix, "/")
 	slug := parts[0]
-	
-	// Handle nested routes: /api/levels/{slug}/general-info, etc.
+
 	if len(parts) == 2 {
 		resource := parts[1]
 		switch resource {
 		case "general-info":
-			// Temporarily update the path for the handler
 			r.URL.Path = basePrefix + "/" + slug + "/general-info"
 			h.GetLevelGeneralInfo(w, r)
 			return
@@ -557,35 +484,17 @@ func (h *LevelsHandler) HandleLevelsRoutes(w http.ResponseWriter, r *http.Reques
 			return
 		}
 	}
-	
-	// Handle single level: /api/levels/{slug} or /api/v2/levels/{slug}
+
 	if len(parts) == 1 {
 		r.URL.Path = basePrefix + "/" + slug
 		h.GetLevel(w, r)
 		return
 	}
-	
-	// No match found
+
 	writeError(w, http.StatusNotFound, "not found")
 }
 
-// extractSlugFromPath extracts slug from URL path
-// Supports both /api/levels and /api/v2/levels prefixes
-// e.g., "/api/levels/my-level" -> "my-level"
-// e.g., "/api/v2/levels/my-level/general-info" -> "my-level/general-info"
 func extractSlugFromPath(path, prefix string) string {
-	// Support both /api/levels and /api/v2/levels
-	if strings.HasPrefix(path, "/api/v2/levels/") {
-		if prefix == "/api/v2/levels/" || prefix == "/api/levels/" {
-			return strings.TrimPrefix(path, "/api/v2/levels/")
-		}
-	} else if strings.HasPrefix(path, "/api/levels/") {
-		if prefix == "/api/levels/" || prefix == "/api/v2/levels/" {
-			return strings.TrimPrefix(path, "/api/levels/")
-		}
-	}
-	
-	// Fallback to original logic
 	if !strings.HasPrefix(path, prefix) {
 		return ""
 	}

@@ -21,7 +21,7 @@ func NewMapsHandler(mapsConn *grpc.ClientConn) *MapsHandler {
 	}
 }
 
-// ListMaps handles GET /api/v2/maps
+// ListMaps handles GET /api/maps
 // Returns all maps with basic information (no authentication required)
 func (h *MapsHandler) ListMaps(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -56,7 +56,7 @@ func (h *MapsHandler) ListMaps(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, maps)
 }
 
-// GetMap handles GET /api/v2/maps/{map}
+// GetMap handles GET /api/maps/{map}
 // Returns a single map with detailed information (no authentication required)
 func (h *MapsHandler) GetMap(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -65,7 +65,7 @@ func (h *MapsHandler) GetMap(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Extract map ID from path
-	// Path format: /api/v2/maps/{map}
+	// Path format: /api/maps/{map}
 	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 	if len(pathParts) < 3 {
 		writeError(w, http.StatusBadRequest, "invalid path: map ID required")
@@ -137,7 +137,7 @@ func (h *MapsHandler) GetMap(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, mapData)
 }
 
-// GetMapBorder handles GET /api/v2/maps/{map}/border
+// GetMapBorder handles GET /api/maps/{map}/border
 // Returns just the border coordinates (no authentication required)
 func (h *MapsHandler) GetMapBorder(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -146,7 +146,7 @@ func (h *MapsHandler) GetMapBorder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Extract map ID from path
-	// Path format: /api/v2/maps/{map}/border
+	// Path format: /api/maps/{map}/border
 	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 	if len(pathParts) < 4 || pathParts[len(pathParts)-1] != "border" {
 		writeError(w, http.StatusBadRequest, "invalid path: map ID and /border required")

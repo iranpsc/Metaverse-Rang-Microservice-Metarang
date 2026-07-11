@@ -366,9 +366,9 @@ func (h *FeaturesHandler) BuyFeature(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]interface{}{"data": featureMap})
 }
 
-// Building Feature API Handlers (v2) - See api-docs/features-service/build_feature_api.md
+// Building Feature API Handlers - See api-docs/features-service/build_feature_api.md
 
-// GetBuildPackage handles GET /api/v2/features/{feature}/build/package
+// GetBuildPackage handles GET /api/features/{feature}/build/package
 func (h *FeaturesHandler) GetBuildPackage(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -382,7 +382,7 @@ func (h *FeaturesHandler) GetBuildPackage(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	pathParts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/v2/features/"), "/")
+	pathParts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/features/"), "/")
 	if len(pathParts) == 0 {
 		writeError(w, http.StatusBadRequest, "feature ID is required")
 		return
@@ -441,7 +441,7 @@ func (h *FeaturesHandler) GetBuildPackage(w http.ResponseWriter, r *http.Request
 	writeJSON(w, http.StatusOK, response)
 }
 
-// BuildFeature handles POST /api/v2/features/{feature}/build/{buildingModel}
+// BuildFeature handles POST /api/features/{feature}/build/{buildingModel}
 func (h *FeaturesHandler) BuildFeature(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -455,7 +455,7 @@ func (h *FeaturesHandler) BuildFeature(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pathParts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/v2/features/"), "/")
+	pathParts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/features/"), "/")
 	if len(pathParts) < 3 {
 		writeError(w, http.StatusBadRequest, "feature ID and building model ID are required")
 		return
@@ -533,14 +533,14 @@ func (h *FeaturesHandler) BuildFeature(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]interface{}{})
 }
 
-// GetBuildings handles GET /api/v2/features/{feature}/build/buildings
+// GetBuildings handles GET /api/features/{feature}/build/buildings
 func (h *FeaturesHandler) GetBuildings(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
-	pathParts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/v2/features/"), "/")
+	pathParts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/features/"), "/")
 	if len(pathParts) == 0 {
 		writeError(w, http.StatusBadRequest, "feature ID is required")
 		return
@@ -597,7 +597,7 @@ func (h *FeaturesHandler) GetBuildings(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]interface{}{"data": buildings})
 }
 
-// UpdateBuilding handles PUT /api/v2/features/{feature}/build/buildings/{buildingModel}
+// UpdateBuilding handles PUT /api/features/{feature}/build/buildings/{buildingModel}
 func (h *FeaturesHandler) UpdateBuilding(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -611,7 +611,7 @@ func (h *FeaturesHandler) UpdateBuilding(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	pathParts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/v2/features/"), "/")
+	pathParts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/features/"), "/")
 	if len(pathParts) < 4 {
 		writeError(w, http.StatusBadRequest, "feature ID and building model ID are required")
 		return
@@ -689,7 +689,7 @@ func (h *FeaturesHandler) UpdateBuilding(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, map[string]interface{}{})
 }
 
-// DestroyBuilding handles DELETE /api/v2/features/{feature}/build/buildings/{buildingModel}
+// DestroyBuilding handles DELETE /api/features/{feature}/build/buildings/{buildingModel}
 func (h *FeaturesHandler) DestroyBuilding(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -703,7 +703,7 @@ func (h *FeaturesHandler) DestroyBuilding(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	pathParts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/v2/features/"), "/")
+	pathParts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/features/"), "/")
 	if len(pathParts) < 4 {
 		writeError(w, http.StatusBadRequest, "feature ID and building model ID are required")
 		return

@@ -407,19 +407,6 @@ func (h *FeaturesHandler) HandleFeaturesRoutes(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if path != "" {
-		h.GetFeature(w, r)
-		return
-	}
-
-	http.NotFound(w, r)
-}
-
-// HandleV2FeaturesRoutes dispatches v2 feature build routes under /api/v2/features/
-func (h *FeaturesHandler) HandleV2FeaturesRoutes(w http.ResponseWriter, r *http.Request) {
-	path := strings.TrimPrefix(r.URL.Path, "/api/v2/features/")
-	path = strings.Trim(path, "/")
-
 	if strings.Contains(path, "/build/package") {
 		if r.Method == http.MethodGet {
 			h.GetBuildPackage(w, r)
@@ -463,6 +450,11 @@ func (h *FeaturesHandler) HandleV2FeaturesRoutes(w http.ResponseWriter, r *http.
 			}
 			return
 		}
+	}
+
+	if path != "" {
+		h.GetFeature(w, r)
+		return
 	}
 
 	http.NotFound(w, r)

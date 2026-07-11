@@ -662,8 +662,6 @@ func main() {
 		mux.Handle("/api/my-features", authMiddleware(http.HandlerFunc(featuresHandler.ListMyFeatures)))
 		mux.Handle("/api/my-features/", authMiddleware(http.HandlerFunc(featuresHandler.HandleMyFeaturesRoutes)))
 
-		mux.Handle("/api/v2/features/", authMiddleware(http.HandlerFunc(featuresHandler.HandleV2FeaturesRoutes)))
-
 		mux.Handle("/api/buy-requests", authMiddleware(http.HandlerFunc(featuresHandler.HandleBuyRequestsRoutes)))
 		mux.Handle("/api/buy-requests/", authMiddleware(http.HandlerFunc(featuresHandler.HandleBuyRequestsRoutes)))
 
