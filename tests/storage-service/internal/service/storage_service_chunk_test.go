@@ -1,4 +1,4 @@
-package service
+package service_test
 
 import (
 	"os"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"metargb/storage-service/internal/ftp"
+	"metargb/storage-service/internal/service"
 )
 
 func TestHandleChunkUploadProfilePath(t *testing.T) {
@@ -13,13 +14,13 @@ func TestHandleChunkUploadProfilePath(t *testing.T) {
 	uploadBase := filepath.Join(tempDir, "uploads")
 	chunkTemp := filepath.Join(tempDir, "chunks")
 
-	chunkManager, err := NewChunkManager(chunkTemp)
+	chunkManager, err := service.NewChunkManager(chunkTemp)
 	if err != nil {
 		t.Fatalf("NewChunkManager: %v", err)
 	}
 
 	mockFTP := ftp.NewMockFTPClient(filepath.Join(tempDir, "ftp"), "http://localhost/uploads")
-	svc := NewStorageService(mockFTP, chunkManager, uploadBase)
+	svc := service.NewStorageService(mockFTP, chunkManager, uploadBase)
 
 	finished, progress, publicDir, filename, mimeType, err := svc.HandleChunkUpload(
 		"test-upload-1",

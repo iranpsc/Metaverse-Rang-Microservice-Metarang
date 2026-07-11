@@ -1,0 +1,23 @@
+module metargb/storage-service/tests
+
+go 1.25.0
+
+require metargb/storage-service v0.0.0
+
+require (
+	github.com/getsentry/sentry-go v0.47.0 // indirect
+	github.com/hashicorp/errwrap v1.0.0 // indirect
+	github.com/hashicorp/go-multierror v1.1.1 // indirect
+	github.com/jlaffaye/ftp v0.2.0 // indirect
+	golang.org/x/net v0.56.0 // indirect
+	golang.org/x/sys v0.46.0 // indirect
+	golang.org/x/text v0.39.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
+	google.golang.org/grpc v1.79.3 // indirect
+	google.golang.org/protobuf v1.36.11 // indirect
+	metargb/shared v0.0.0 // indirect
+)
+
+replace metargb/shared => ../../shared
+
+replace metargb/storage-service => ../../services/storage-service

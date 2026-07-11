@@ -1,4 +1,4 @@
-.PHONY: proto clean-proto gen-auth gen-commercial gen-features gen-levels gen-dynasty gen-support gen-training gen-notifications gen-calendar gen-storage gen-financial gen-all help build-all deploy-all test up down restart logs ps build clean clean-runtime dev dev-up dev-down link-uploads init-storage-uploads init-storage-uploads openapi docs docs-up
+.PHONY: proto clean-proto gen-auth gen-commercial gen-features gen-levels gen-dynasty gen-support gen-training gen-notifications gen-calendar gen-storage gen-financial gen-all help build-all deploy-all test test-unit test-services test-integration test-golden test-database test-all up down restart logs ps build clean clean-runtime dev dev-up dev-down link-uploads init-storage-uploads init-storage-uploads openapi docs docs-up
 
 # Proto generation
 PROTO_DIR=shared/proto
@@ -47,7 +47,9 @@ help:
 	@echo ""
 	@echo "Testing:"
 	@echo "  test             - Run integration tests"
-	@echo "  test-all         - Run all test suites (unit, integration, golden, database)"
+	@echo "  test-unit        - Run unit tests inside each service module"
+	@echo "  test-services    - Run dedicated service test modules (tests/*-service/)"
+	@echo "  test-all         - Run all test suites (unit, services, integration, golden, database)"
 	@echo "  test-coverage-features  - features-service handler coverage ≥70%"
 	@echo "  test-coverage-financial - financial-service handler coverage ≥70%"
 	@echo "  test-coverage-social    - social-service handler+service coverage ≥70%"
@@ -133,6 +135,30 @@ test-unit:
 	done
 	@echo "✅ All unit tests passed"
 
+# Dedicated service test modules under tests/ (excludes integration, golden, database)
+SERVICE_TEST_MODULES=auth-service dynasty-service features-service financial-service storage-service support-service
+
+test-services:
+	@echo "🧪 Running dedicated service test modules..."
+ifeq ($(OS),Windows_NT)
+	@powershell -NoProfile -Command "$$ErrorActionPreference='Stop'; \
+		@('auth-service','dynasty-service','features-service','financial-service','storage-service','support-service') | ForEach-Object { \
+			Write-Host ('Testing ' + $$_ + '...'); \
+			Set-Location ('tests/' + $$_); \
+			$$env:GOWORK='off'; \
+			go test ./... -v -coverprofile=coverage.out; \
+			if ($$LASTEXITCODE -ne 0) { exit $$LASTEXITCODE }; \
+			Set-Location ../.. \
+		}"
+else
+	@for module in $(SERVICE_TEST_MODULES); do \
+		echo "Testing $$module..."; \
+		cd tests/$$module && GOWORK=off go test ./... -v -race -coverprofile=coverage.out || exit 1; \
+		cd ../..; \
+	done
+endif
+	@echo "✅ All service test modules passed"
+
 # Features-service handler coverage gate (≥70%, no MySQL required; uses GOWORK=off for local replace)
 test-coverage-features:
 	@echo "🧪 features-service handler coverage (min 70%)..."
@@ -176,7 +202,7 @@ test-database:
 	cd tests/database && go test -v ./...
 
 # Run all tests
-test-all: test-unit test-integration test-golden test-database
+test-all: test-unit test-services test-integration test-golden test-database
 	@echo "✅ All test suites passed"
 
 # Legacy test target (kept for backward compatibility)

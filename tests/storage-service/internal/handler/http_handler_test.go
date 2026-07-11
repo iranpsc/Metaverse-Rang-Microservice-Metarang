@@ -1,4 +1,4 @@
-package handler
+package handler_test
 
 import (
 	"bytes"
@@ -13,22 +13,14 @@ import (
 	"testing"
 
 	"metargb/storage-service/internal/ftp"
+	"metargb/storage-service/internal/handler"
 	"metargb/storage-service/internal/service"
 )
 
-// mockStorageService is a mock storage service for testing
-type mockStorageService struct {
-	handleChunkUploadFunc func(uploadID, filename, contentType string, chunkData []byte, chunkIndex, totalChunks int32, totalSize int64, uploadPath string) (bool, float64, string, string, string, error)
-}
-
-func (m *mockStorageService) HandleChunkUpload(uploadID, filename, contentType string, chunkData []byte, chunkIndex, totalChunks int32, totalSize int64, uploadPath string) (bool, float64, string, string, string, error) {
-	if m.handleChunkUploadFunc != nil {
-		return m.handleChunkUploadFunc(uploadID, filename, contentType, chunkData, chunkIndex, totalChunks, totalSize, uploadPath)
-	}
-	return false, 0, "", "", "", fmt.Errorf("not implemented")
-}
-
 func TestHTTPHandler_HandleChunkUpload(t *testing.T) {
+	// Default-layout uploads are written relative to the test working directory.
+	t.Cleanup(func() { _ = os.RemoveAll("uploads") })
+
 	// Create a temporary directory for testing
 	tempDir := t.TempDir()
 	chunkManager, err := service.NewChunkManager(filepath.Join(tempDir, "chunks"))
@@ -39,14 +31,14 @@ func TestHTTPHandler_HandleChunkUpload(t *testing.T) {
 	storageBase := filepath.Join(tempDir, "storage", "app")
 	ftpClient := ftp.NewMockFTPClient(filepath.Join(tempDir, "ftp"), "http://example.com")
 	storageService := service.NewStorageService(ftpClient, chunkManager, storageBase)
-	handler := NewHTTPHandler(storageService, storageBase)
+	h := handler.NewHTTPHandler(storageService, storageBase)
 
 	t.Run("missing file field returns 400", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/api/upload", nil)
 		req.Header.Set("Content-Type", "multipart/form-data")
 		w := httptest.NewRecorder()
 
-		handler.HandleChunkUpload(w, req)
+		h.HandleChunkUpload(w, req)
 
 		if w.Code != http.StatusBadRequest {
 			t.Errorf("Expected status 400, got %d", w.Code)
@@ -81,7 +73,7 @@ func TestHTTPHandler_HandleChunkUpload(t *testing.T) {
 		req.Header.Set("Content-Type", writer.FormDataContentType())
 		w := httptest.NewRecorder()
 
-		handler.HandleChunkUpload(w, req)
+		h.HandleChunkUpload(w, req)
 
 		if w.Code != http.StatusOK {
 			t.Errorf("Expected status 200, got %d. Body: %s", w.Code, w.Body.String())
@@ -103,13 +95,13 @@ func TestHTTPHandler_HandleChunkUpload(t *testing.T) {
 			t.Error("Expected 'mime_type' field in response")
 		}
 
-		// Verify path format: upload/{mime}/{date}/
+		// Verify path format: uploads/{mime}/{date}/
 		path, ok := response["path"].(string)
 		if !ok {
 			t.Fatal("Path should be a string")
 		}
-		if !strings.HasPrefix(path, "upload/") {
-			t.Errorf("Path should start with 'upload/', got: %s", path)
+		if !strings.HasPrefix(path, "uploads/") {
+			t.Errorf("Path should start with 'uploads/', got: %s", path)
 		}
 		if !strings.HasSuffix(path, "/") {
 			t.Errorf("Path should end with '/', got: %s", path)
@@ -142,7 +134,7 @@ func TestHTTPHandler_HandleChunkUpload(t *testing.T) {
 		req.Header.Set("Content-Type", writer.FormDataContentType())
 		w := httptest.NewRecorder()
 
-		handler.HandleChunkUpload(w, req)
+		h.HandleChunkUpload(w, req)
 
 		if w.Code != http.StatusOK {
 			t.Errorf("Expected status 200, got %d. Body: %s", w.Code, w.Body.String())
@@ -182,7 +174,7 @@ func TestHTTPHandler_HandleChunkUpload(t *testing.T) {
 		req := httptest.NewRequest(http.MethodOptions, "/api/upload", nil)
 		w := httptest.NewRecorder()
 
-		handler.HandleChunkUpload(w, req)
+		h.HandleChunkUpload(w, req)
 
 		if w.Code != http.StatusOK {
 			t.Errorf("Expected status 200 for OPTIONS, got %d", w.Code)
@@ -193,7 +185,7 @@ func TestHTTPHandler_HandleChunkUpload(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/api/upload", nil)
 		w := httptest.NewRecorder()
 
-		handler.HandleChunkUpload(w, req)
+		h.HandleChunkUpload(w, req)
 
 		if w.Code != http.StatusMethodNotAllowed {
 			t.Errorf("Expected status 405, got %d", w.Code)
@@ -219,7 +211,7 @@ func TestHTTPHandler_HandleChunkUpload(t *testing.T) {
 		req.Header.Set("Content-Type", writer.FormDataContentType())
 		w := httptest.NewRecorder()
 
-		handler.HandleChunkUpload(w, req)
+		h.HandleChunkUpload(w, req)
 
 		if w.Code != http.StatusOK {
 			t.Fatalf("Expected status 200, got %d. Body: %s", w.Code, w.Body.String())
@@ -240,12 +232,9 @@ func TestHTTPHandler_HandleChunkUpload(t *testing.T) {
 			t.Fatal("Name should be a string")
 		}
 
-		// Construct expected file path
-		// Path is like "upload/image-jpeg/2024-01-15/"
-		// Name is like "image_abc123.jpg"
-		// Full path should be: storage/app/upload/image-jpeg/2024-01-15/image_abc123.jpg
-		expectedPath := filepath.Join(storageBase, path, name)
-		expectedPath = filepath.Clean(expectedPath)
+		// Construct expected file path for default layout uploads.
+		// Path is like "uploads/image-jpeg/2024-01-15/"; files are written relative to CWD.
+		expectedPath := filepath.FromSlash(strings.TrimSuffix(path, "/") + "/" + name)
 
 		// Check if file exists
 		if _, err := os.Stat(expectedPath); os.IsNotExist(err) {
@@ -260,6 +249,7 @@ func TestHTTPHandler_HandleChunkUpload(t *testing.T) {
 		if !bytes.Equal(savedContent, fileContent) {
 			t.Error("Saved file content does not match original")
 		}
+		t.Cleanup(func() { _ = os.Remove(expectedPath) })
 	})
 
 	t.Run("response format matches Laravel API exactly", func(t *testing.T) {
@@ -281,7 +271,7 @@ func TestHTTPHandler_HandleChunkUpload(t *testing.T) {
 		req.Header.Set("Content-Type", writer.FormDataContentType())
 		w := httptest.NewRecorder()
 
-		handler.HandleChunkUpload(w, req)
+		h.HandleChunkUpload(w, req)
 
 		if w.Code != http.StatusOK {
 			t.Fatalf("Expected status 200, got %d", w.Code)
@@ -308,8 +298,8 @@ func TestHTTPHandler_HandleChunkUpload(t *testing.T) {
 
 		// Verify path format
 		path := response["path"].(string)
-		if !strings.HasPrefix(path, "upload/") {
-			t.Errorf("Path should start with 'upload/', got: %s", path)
+		if !strings.HasPrefix(path, "uploads/") {
+			t.Errorf("Path should start with 'uploads/', got: %s", path)
 		}
 		if !strings.HasSuffix(path, "/") {
 			t.Errorf("Path should end with '/', got: %s", path)
@@ -338,7 +328,7 @@ func TestHTTPHandler_ServeUploadsStatic(t *testing.T) {
 	chunkManager, _ := service.NewChunkManager(filepath.Join(tempDir, "chunks"))
 	ftpClient := ftp.NewMockFTPClient(filepath.Join(tempDir, "ftp"), "http://example.com")
 	storageService := service.NewStorageService(ftpClient, chunkManager, uploadRoot)
-	h := NewHTTPHandler(storageService, uploadRoot)
+	h := handler.NewHTTPHandler(storageService, uploadRoot)
 
 	req := httptest.NewRequest(http.MethodGet, "/uploads/profile/photo.jpg", nil)
 	w := httptest.NewRecorder()
@@ -358,12 +348,12 @@ func TestHTTPHandler_HandleHealthCheck(t *testing.T) {
 	ftpClient := ftp.NewMockFTPClient(filepath.Join(tempDir, "ftp"), "http://example.com")
 	uploadRoot := filepath.Join(tempDir, "storage", "app")
 	storageService := service.NewStorageService(ftpClient, chunkManager, uploadRoot)
-	handler := NewHTTPHandler(storageService, uploadRoot)
+	h := handler.NewHTTPHandler(storageService, uploadRoot)
 
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	w := httptest.NewRecorder()
 
-	handler.HandleHealthCheck(w, req)
+	h.HandleHealthCheck(w, req)
 
 	if w.Code != http.StatusOK {
 		t.Errorf("Expected status 200, got %d", w.Code)
@@ -408,6 +398,9 @@ func createMultipartFormData(filename string, content []byte, fields map[string]
 }
 
 func TestChunkUpload_CompleteFlow(t *testing.T) {
+	// Default-layout uploads are written relative to the test working directory.
+	t.Cleanup(func() { _ = os.RemoveAll("uploads") })
+
 	// Test complete chunk upload flow with multiple chunks
 	tempDir := t.TempDir()
 	chunkManager, err := service.NewChunkManager(filepath.Join(tempDir, "chunks"))
@@ -418,11 +411,12 @@ func TestChunkUpload_CompleteFlow(t *testing.T) {
 	storageBase := filepath.Join(tempDir, "storage", "app")
 	ftpClient := ftp.NewMockFTPClient(filepath.Join(tempDir, "ftp"), "http://example.com")
 	storageService := service.NewStorageService(ftpClient, chunkManager, storageBase)
-	handler := NewHTTPHandler(storageService, storageBase)
+	h := handler.NewHTTPHandler(storageService, storageBase)
 
 	uploadID := "test-upload-complete"
 	totalChunks := int32(3)
 	chunkSize := 10
+	var finalPath, finalName string
 
 	// Upload chunks 0, 1, 2
 	for i := int32(0); i < totalChunks; i++ {
@@ -442,7 +436,7 @@ func TestChunkUpload_CompleteFlow(t *testing.T) {
 		req.Header.Set("Content-Type", contentType)
 		w := httptest.NewRecorder()
 
-		handler.HandleChunkUpload(w, req)
+		h.HandleChunkUpload(w, req)
 
 		if w.Code != http.StatusOK {
 			t.Fatalf("Chunk %d upload failed with status %d: %s", i, w.Code, w.Body.String())
@@ -474,25 +468,25 @@ func TestChunkUpload_CompleteFlow(t *testing.T) {
 			if response["mime_type"] == nil {
 				t.Error("Last chunk: Expected 'mime_type' field in completed response")
 			}
+			finalPath, _ = response["path"].(string)
+			finalName, _ = response["name"].(string)
 		}
 	}
 
-	// Verify final file was assembled correctly
-	// Check if any file was saved in the upload directory
-	files, err := filepath.Glob(filepath.Join(storageBase, "upload", "*", "*", "*"))
-	if err == nil && len(files) > 0 {
-		// File was saved, verify content
-		savedContent, err := os.ReadFile(files[0])
-		if err != nil {
-			t.Fatalf("Failed to read saved file: %v", err)
-		}
+	// Verify final file was assembled correctly (default layout writes relative to CWD).
+	if finalPath == "" || finalName == "" {
+		t.Fatal("missing path/name in completed response")
+	}
+	savedFile := filepath.FromSlash(strings.TrimSuffix(finalPath, "/") + "/" + finalName)
+	savedContent, err := os.ReadFile(savedFile)
+	if err != nil {
+		t.Fatalf("Failed to read saved file %s: %v", savedFile, err)
+	}
+	t.Cleanup(func() { _ = os.Remove(savedFile) })
 
-		// Expected content: "chunk 0 contentchunk 1 contentchunk 2 content"
-		expectedContent := []byte("chunk 0 contentchunk 1 contentchunk 2 content")
-		if !bytes.Equal(savedContent, expectedContent) {
-			t.Errorf("File content mismatch. Expected %d bytes, got %d bytes", len(expectedContent), len(savedContent))
-		}
-	} else {
-		t.Error("No file was saved after complete chunk upload")
+	// Expected content: "chunk 0 contentchunk 1 contentchunk 2 content"
+	expectedContent := []byte("chunk 0 contentchunk 1 contentchunk 2 content")
+	if !bytes.Equal(savedContent, expectedContent) {
+		t.Errorf("File content mismatch. Expected %d bytes, got %d bytes", len(expectedContent), len(savedContent))
 	}
 }
