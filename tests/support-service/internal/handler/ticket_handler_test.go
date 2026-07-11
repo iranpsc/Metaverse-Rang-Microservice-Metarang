@@ -1,182 +1,241 @@
-package handler
+package handler_test
 
 import (
 	"context"
-	"errors"
 	"testing"
+	"time"
 
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	pbCommon "metargb/shared/pb/common"
 	pb "metargb/shared/pb/support"
+
+	"metargb/support-service/internal/handler"
 	"metargb/support-service/internal/models"
+	"metargb/support-service/internal/service"
+	"metargb/support-service/tests/internal/testutil"
 )
 
-// mockTicketService implements TicketService for testing
-type mockTicketService struct {
-	createTicketFunc func(ctx context.Context, userID uint64, title, content, attachment string, receiverID *uint64, department *string) (*models.TicketWithRelations, error)
-	getTicketsFunc   func(ctx context.Context, userID uint64, page, perPage int32, received bool) ([]*models.TicketWithRelations, int, error)
-	getTicketFunc    func(ctx context.Context, ticketID, userID uint64) (*models.TicketWithRelations, error)
-}
-
-func (m *mockTicketService) CreateTicket(ctx context.Context, userID uint64, title, content, attachment string, receiverID *uint64, department *string) (*models.TicketWithRelations, error) {
-	if m.createTicketFunc != nil {
-		return m.createTicketFunc(ctx, userID, title, content, attachment, receiverID, department)
+func ticketRelations(id, userID uint64) *models.TicketWithRelations {
+	return &models.TicketWithRelations{
+		Ticket: models.Ticket{
+			ID:        id,
+			UserID:    userID,
+			Status:    models.TicketStatusNew,
+			Title:     "t",
+			Content:   "c",
+			Code:      222222,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
+		SenderName: "S",
 	}
-	return nil, errors.New("not implemented")
 }
 
-func (m *mockTicketService) GetTickets(ctx context.Context, userID uint64, page, perPage int32, received bool) ([]*models.TicketWithRelations, int, error) {
-	if m.getTicketsFunc != nil {
-		return m.getTicketsFunc(ctx, userID, page, perPage, received)
+func TestTicketHandler_CreateTicket_ValidationNoReceiverOrDept(t *testing.T) {
+	repo := &testutil.MockTicketRepo{}
+	svc := service.NewTicketService(repo, "127.0.0.1:1")
+	conn, cleanup := testutil.DialBufConn(func(s *grpc.Server) {
+		handler.RegisterTicketHandler(s, svc)
+	})
+	defer cleanup()
+	client := pb.NewTicketServiceClient(conn)
+	_, err := client.CreateTicket(context.Background(), &pb.CreateTicketRequest{
+		UserId: 1, Title: "a", Content: "b",
+	})
+	st, ok := status.FromError(err)
+	if !ok || st.Code() != codes.InvalidArgument {
+		t.Fatalf("got %v", err)
 	}
-	return nil, 0, errors.New("not implemented")
 }
 
-func (m *mockTicketService) GetTicket(ctx context.Context, ticketID, userID uint64) (*models.TicketWithRelations, error) {
-	if m.getTicketFunc != nil {
-		return m.getTicketFunc(ctx, ticketID, userID)
+func TestTicketHandler_CreateTicket_Success(t *testing.T) {
+	repo := &testutil.MockTicketRepo{
+		CreateFunc: func(ctx context.Context, ticket *models.Ticket) (*models.Ticket, error) {
+			ticket.ID = 77
+			return ticket, nil
+		},
+		GetByIDFunc: func(ctx context.Context, ticketID uint64) (*models.TicketWithRelations, error) {
+			return ticketRelations(ticketID, 5), nil
+		},
 	}
-	return nil, errors.New("not implemented")
-}
-
-func (m *mockTicketService) UpdateTicket(ctx context.Context, ticketID, userID uint64, title, content, attachment string) (*models.TicketWithRelations, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (m *mockTicketService) AddResponse(ctx context.Context, ticketID, userID uint64, response, attachment, userName string) (*models.TicketWithRelations, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (m *mockTicketService) CloseTicket(ctx context.Context, ticketID, userID uint64) (*models.TicketWithRelations, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (m *mockTicketService) CheckAuthorization(ctx context.Context, ticketID, userID uint64, action string) error {
-	return nil
-}
-
-func TestTicketHandler_CreateTicket(t *testing.T) {
-	ctx := context.Background()
-
-	t.Run("missing user_id", func(t *testing.T) {
-		mockService := &mockTicketService{}
-		handler := NewTicketHandler(mockService)
-
-		req := &pb.CreateTicketRequest{
-			Title:   "Test",
-			Content: "Content",
-		}
-
-		_, err := handler.CreateTicket(ctx, req)
-		if err == nil {
-			t.Error("Expected error for missing user_id")
-		}
-		if status.Code(err) != codes.InvalidArgument {
-			t.Errorf("Expected InvalidArgument, got %v", status.Code(err))
-		}
+	svc := service.NewTicketService(repo, "127.0.0.1:1")
+	conn, cleanup := testutil.DialBufConn(func(s *grpc.Server) {
+		handler.RegisterTicketHandler(s, svc)
 	})
-
-	t.Run("missing title", func(t *testing.T) {
-		mockService := &mockTicketService{}
-		handler := NewTicketHandler(mockService)
-
-		req := &pb.CreateTicketRequest{
-			UserId:  1,
-			Content: "Content",
-		}
-
-		_, err := handler.CreateTicket(ctx, req)
-		if err == nil {
-			t.Error("Expected error for missing title")
-		}
+	defer cleanup()
+	client := pb.NewTicketServiceClient(conn)
+	dept := models.DeptTechnicalSupport
+	resp, err := client.CreateTicket(context.Background(), &pb.CreateTicketRequest{
+		UserId:     5,
+		Title:      "t",
+		Content:    "c",
+		Department: dept,
 	})
-
-	t.Run("successful creation", func(t *testing.T) {
-		mockService := &mockTicketService{}
-		mockService.createTicketFunc = func(ctx context.Context, userID uint64, title, content, attachment string, receiverID *uint64, department *string) (*models.TicketWithRelations, error) {
-			return &models.TicketWithRelations{
-				Ticket: models.Ticket{
-					ID:      1,
-					Title:   title,
-					Content: content,
-					UserID:  userID,
-					Status:  models.TicketStatusNew,
-					Code:    123456,
-				},
-				SenderName: "Test User",
-				SenderCode: "hm-1234567",
-			}, nil
-		}
-
-		handler := NewTicketHandler(mockService)
-
-		req := &pb.CreateTicketRequest{
-			UserId:     1,
-			Title:      "Test Ticket",
-			Content:    "Test Content",
-			ReceiverId: 2,
-		}
-
-		resp, err := handler.CreateTicket(ctx, req)
-		if err != nil {
-			t.Fatalf("CreateTicket failed: %v", err)
-		}
-
-		if resp.Id != 1 {
-			t.Errorf("Expected ID 1, got %d", resp.Id)
-		}
-		if resp.Title != "Test Ticket" {
-			t.Errorf("Expected title 'Test Ticket', got %s", resp.Title)
-		}
-	})
+	if err != nil || resp.Id != 77 {
+		t.Fatalf("err=%v resp=%+v", err, resp)
+	}
 }
 
-func TestTicketHandler_GetTickets(t *testing.T) {
-	ctx := context.Background()
-
-	t.Run("missing user_id", func(t *testing.T) {
-		mockService := &mockTicketService{}
-		handler := NewTicketHandler(mockService)
-
-		req := &pb.GetTicketsRequest{}
-
-		_, err := handler.GetTickets(ctx, req)
-		if err == nil {
-			t.Error("Expected error for missing user_id")
-		}
+func TestTicketHandler_GetTicket_PermissionDenied(t *testing.T) {
+	repo := &testutil.MockTicketRepo{
+		GetTicketSenderReceiverFunc: func(ctx context.Context, ticketID uint64) (uint64, uint64, error) {
+			return 1, 2, nil
+		},
+	}
+	svc := service.NewTicketService(repo, "127.0.0.1:1")
+	conn, cleanup := testutil.DialBufConn(func(s *grpc.Server) {
+		handler.RegisterTicketHandler(s, svc)
 	})
+	defer cleanup()
+	client := pb.NewTicketServiceClient(conn)
+	_, err := client.GetTicket(context.Background(), &pb.GetTicketRequest{TicketId: 9, UserId: 99})
+	st, ok := status.FromError(err)
+	if !ok || st.Code() != codes.PermissionDenied {
+		t.Fatalf("got %v", err)
+	}
+}
 
-	t.Run("successful get", func(t *testing.T) {
-		mockService := &mockTicketService{}
-		mockService.getTicketsFunc = func(ctx context.Context, userID uint64, page, perPage int32, received bool) ([]*models.TicketWithRelations, int, error) {
-			return []*models.TicketWithRelations{
-				{
-					Ticket: models.Ticket{
-						ID:      1,
-						Title:   "Ticket 1",
-						Content: "Content 1",
-						UserID:  userID,
-					},
-					SenderName: "User",
-					SenderCode: "hm-1234567",
-				},
-			}, 1, nil
-		}
-
-		handler := NewTicketHandler(mockService)
-
-		req := &pb.GetTicketsRequest{
-			UserId: 1,
-		}
-
-		resp, err := handler.GetTickets(ctx, req)
-		if err != nil {
-			t.Fatalf("GetTickets failed: %v", err)
-		}
-
-		if len(resp.Tickets) != 1 {
-			t.Errorf("Expected 1 ticket, got %d", len(resp.Tickets))
-		}
+func TestTicketHandler_GetTickets_WithReceived(t *testing.T) {
+	repo := &testutil.MockTicketRepo{
+		GetByUserIDFunc: func(ctx context.Context, userID uint64, page, perPage int32, received bool) ([]*models.TicketWithRelations, int, error) {
+			if received {
+				return []*models.TicketWithRelations{ticketRelations(1, userID)}, 1, nil
+			}
+			return nil, 0, nil
+		},
+	}
+	svc := service.NewTicketService(repo, "127.0.0.1:1")
+	conn, cleanup := testutil.DialBufConn(func(s *grpc.Server) {
+		handler.RegisterTicketHandler(s, svc)
 	})
+	defer cleanup()
+	client := pb.NewTicketServiceClient(conn)
+	resp, err := client.GetTickets(context.Background(), &pb.GetTicketsRequest{
+		UserId:   3,
+		Received: true,
+		Pagination: &pbCommon.PaginationRequest{
+			Page: 1, PerPage: 10,
+		},
+	})
+	if err != nil || len(resp.Tickets) != 1 {
+		t.Fatalf("err=%v tickets=%d", err, len(resp.Tickets))
+	}
+}
+
+func TestTicketHandler_GetTicket_Success(t *testing.T) {
+	rid := uint64(8)
+	rname := "Recv"
+	rcode := "R1"
+	rphoto := "p.jpg"
+	repo := &testutil.MockTicketRepo{
+		GetTicketSenderReceiverFunc: func(ctx context.Context, ticketID uint64) (uint64, uint64, error) {
+			return 5, rid, nil
+		},
+		GetByIDFunc: func(ctx context.Context, ticketID uint64) (*models.TicketWithRelations, error) {
+			tr := ticketRelations(ticketID, 5)
+			tr.ReceiverID = &rid
+			tr.ReceiverName = &rname
+			tr.ReceiverCode = &rcode
+			tr.ReceiverProfilePhoto = &rphoto
+			tr.Responses = []models.TicketResponse{{
+				ID: 1, TicketID: ticketID, Response: "hi", ResponserName: "Bob", ResponserID: 5,
+				CreatedAt: time.Now(), UpdatedAt: time.Now(),
+			}}
+			return tr, nil
+		},
+	}
+	svc := service.NewTicketService(repo, "127.0.0.1:1")
+	conn, cleanup := testutil.DialBufConn(func(s *grpc.Server) {
+		handler.RegisterTicketHandler(s, svc)
+	})
+	defer cleanup()
+	client := pb.NewTicketServiceClient(conn)
+	resp, err := client.GetTicket(context.Background(), &pb.GetTicketRequest{TicketId: 3, UserId: 5})
+	if err != nil || resp.Id != 3 || len(resp.Responses) != 1 || resp.Receiver == nil {
+		t.Fatalf("err=%v resp=%+v", err, resp)
+	}
+}
+
+func TestTicketHandler_UpdateTicket_Success(t *testing.T) {
+	tk := ticketRelations(10, 6)
+	repo := &testutil.MockTicketRepo{
+		GetTicketSenderReceiverFunc: func(ctx context.Context, ticketID uint64) (uint64, uint64, error) {
+			return 6, 0, nil
+		},
+		GetByIDFunc: func(ctx context.Context, ticketID uint64) (*models.TicketWithRelations, error) {
+			return tk, nil
+		},
+		UpdateFunc: func(ctx context.Context, ticket *models.Ticket) error {
+			tk.Title = ticket.Title
+			tk.Content = ticket.Content
+			return nil
+		},
+	}
+	svc := service.NewTicketService(repo, "127.0.0.1:1")
+	conn, cleanup := testutil.DialBufConn(func(s *grpc.Server) {
+		handler.RegisterTicketHandler(s, svc)
+	})
+	defer cleanup()
+	client := pb.NewTicketServiceClient(conn)
+	resp, err := client.UpdateTicket(context.Background(), &pb.UpdateTicketRequest{
+		TicketId: 10, UserId: 6, Title: "nt", Content: "nc", Attachment: "",
+	})
+	if err != nil || resp.Title != "nt" {
+		t.Fatalf("err=%v %+v", err, resp)
+	}
+}
+
+func TestTicketHandler_CloseTicket_Success(t *testing.T) {
+	tk := ticketRelations(11, 8)
+	repo := &testutil.MockTicketRepo{
+		GetTicketSenderReceiverFunc: func(ctx context.Context, ticketID uint64) (uint64, uint64, error) {
+			return 8, 0, nil
+		},
+		GetByIDFunc: func(ctx context.Context, ticketID uint64) (*models.TicketWithRelations, error) {
+			return tk, nil
+		},
+		UpdateStatusFunc: func(ctx context.Context, ticketID uint64, status int32) error {
+			tk.Status = status
+			return nil
+		},
+	}
+	svc := service.NewTicketService(repo, "127.0.0.1:1")
+	conn, cleanup := testutil.DialBufConn(func(s *grpc.Server) {
+		handler.RegisterTicketHandler(s, svc)
+	})
+	defer cleanup()
+	client := pb.NewTicketServiceClient(conn)
+	resp, err := client.CloseTicket(context.Background(), &pb.CloseTicketRequest{TicketId: 11, UserId: 8})
+	if err != nil || resp.Status != models.TicketStatusClosed {
+		t.Fatalf("err=%v st=%d", err, resp.Status)
+	}
+}
+
+func TestTicketHandler_AddResponse_FailedPreconditionClosed(t *testing.T) {
+	tk := ticketRelations(4, 1)
+	tk.Status = models.TicketStatusClosed
+	repo := &testutil.MockTicketRepo{
+		GetTicketSenderReceiverFunc: func(ctx context.Context, ticketID uint64) (uint64, uint64, error) {
+			return 1, 2, nil
+		},
+		GetByIDFunc: func(ctx context.Context, ticketID uint64) (*models.TicketWithRelations, error) {
+			return tk, nil
+		},
+	}
+	svc := service.NewTicketService(repo, "127.0.0.1:1")
+	conn, cleanup := testutil.DialBufConn(func(s *grpc.Server) {
+		handler.RegisterTicketHandler(s, svc)
+	})
+	defer cleanup()
+	client := pb.NewTicketServiceClient(conn)
+	_, err := client.AddResponse(context.Background(), &pb.AddResponseRequest{
+		TicketId: 4, UserId: 1, Response: "hi", UserName: "Bob",
+	})
+	st, ok := status.FromError(err)
+	if !ok || st.Code() != codes.FailedPrecondition {
+		t.Fatalf("got %v", err)
+	}
 }

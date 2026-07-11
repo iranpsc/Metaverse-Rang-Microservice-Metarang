@@ -1,11 +1,12 @@
-package service
+package service_test
 
 import (
 	"context"
 	"testing"
 
 	"metargb/support-service/internal/models"
-	"metargb/support-service/internal/testutil"
+	"metargb/support-service/internal/service"
+	"metargb/support-service/tests/internal/testutil"
 )
 
 func TestUserEventService_CreateAndList(t *testing.T) {
@@ -19,7 +20,7 @@ func TestUserEventService_CreateAndList(t *testing.T) {
 			return []*models.UserEvent{{ID: 50, UserID: userID, Event: "login"}}, 1, nil
 		},
 	}
-	svc := NewUserEventService(repo)
+	svc := service.NewUserEventService(repo)
 	ev, err := svc.CreateUserEvent(context.Background(), 3, "login", "d", "2024-01-01")
 	if err != nil || ev.ID != 50 {
 		t.Fatalf("create err=%v ev=%+v", err, ev)
@@ -38,7 +39,7 @@ func TestUserEventService_ReportUserEvent(t *testing.T) {
 			return &r, nil
 		},
 	}
-	svc := NewUserEventService(repo)
+	svc := service.NewUserEventService(repo)
 	rep, err := svc.ReportUserEvent(context.Background(), 10, "citizen", "desc")
 	if err != nil || rep.ID != 88 {
 		t.Fatalf("err=%v rep=%+v", err, rep)
@@ -53,7 +54,7 @@ func TestUserEventService_GetUserEventScoped(t *testing.T) {
 			}, nil
 		},
 	}
-	svc := NewUserEventService(repo)
+	svc := service.NewUserEventService(repo)
 	_, err := svc.GetUserEvent(context.Background(), 1, 99)
 	if err == nil {
 		t.Fatal("expected unauthorized")
@@ -77,7 +78,7 @@ func TestUserEventService_SendEventReportResponse(t *testing.T) {
 			return nil
 		},
 	}
-	svc := NewUserEventService(repo)
+	svc := service.NewUserEventService(repo)
 	created, err := svc.SendEventReportResponse(context.Background(), 3, "admin", "hello")
 	if err != nil || created.ID != 100 {
 		t.Fatalf("err=%v created=%+v", err, created)
@@ -101,7 +102,7 @@ func TestUserEventService_CloseUserEventReport(t *testing.T) {
 			return nil
 		},
 	}
-	svc := NewUserEventService(repo)
+	svc := service.NewUserEventService(repo)
 	if err := svc.CloseUserEventReport(context.Background(), 1, 5); err != nil {
 		t.Fatal(err)
 	}

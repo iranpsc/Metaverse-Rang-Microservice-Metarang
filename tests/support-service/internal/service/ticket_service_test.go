@@ -1,267 +1,177 @@
-package service
+package service_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
 	"metargb/support-service/internal/models"
+	"metargb/support-service/internal/service"
+	"metargb/support-service/tests/internal/testutil"
 )
 
-// mockTicketRepository implements TicketRepository for testing
-type mockTicketRepository struct {
-	tickets             map[uint64]*models.TicketWithRelations
-	responses           map[uint64][]models.TicketResponse
-	createCount         int
-	updateCount         int
-	createResponseCount int
-	getByIDFunc         func(ctx context.Context, ticketID uint64) (*models.TicketWithRelations, error)
-	getByUserIDFunc     func(ctx context.Context, userID uint64, page, perPage int32, received bool) ([]*models.TicketWithRelations, int, error)
-}
-
-func newMockTicketRepository() *mockTicketRepository {
-	return &mockTicketRepository{
-		tickets:   make(map[uint64]*models.TicketWithRelations),
-		responses: make(map[uint64][]models.TicketResponse),
+func ticketFull(id, userID uint64, status int32) *models.TicketWithRelations {
+	return &models.TicketWithRelations{
+		Ticket: models.Ticket{
+			ID:        id,
+			UserID:    userID,
+			Status:    status,
+			Title:     "t",
+			Content:   "c",
+			Code:      111111,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
+		SenderName: "Alice",
 	}
 }
 
-func (m *mockTicketRepository) Create(ctx context.Context, ticket *models.Ticket) (*models.Ticket, error) {
-	m.createCount++
-	id := uint64(len(m.tickets) + 1)
-	ticket.ID = id
-	ticket.CreatedAt = time.Now()
-	ticket.UpdatedAt = time.Now()
-
-	// Convert to TicketWithRelations for storage
-	twr := &models.TicketWithRelations{
-		Ticket:     *ticket,
-		SenderName: "Test User",
-		SenderCode: "hm-1234567",
-	}
-	m.tickets[id] = twr
-	return ticket, nil
-}
-
-func (m *mockTicketRepository) GetByID(ctx context.Context, ticketID uint64) (*models.TicketWithRelations, error) {
-	if m.getByIDFunc != nil {
-		return m.getByIDFunc(ctx, ticketID)
-	}
-	ticket, exists := m.tickets[ticketID]
-	if !exists {
-		return nil, nil
-	}
-	// Copy responses if any
-	if responses, ok := m.responses[ticketID]; ok {
-		ticket.Responses = responses
-	}
-	return ticket, nil
-}
-
-func (m *mockTicketRepository) GetByUserID(ctx context.Context, userID uint64, page, perPage int32, received bool) ([]*models.TicketWithRelations, int, error) {
-	if m.getByUserIDFunc != nil {
-		return m.getByUserIDFunc(ctx, userID, page, perPage, received)
-	}
-	var result []*models.TicketWithRelations
-	for _, ticket := range m.tickets {
-		if received {
-			if ticket.ReceiverID != nil && *ticket.ReceiverID == userID {
-				result = append(result, ticket)
+func TestTicketService_CreateAndList(t *testing.T) {
+	var createdID uint64
+	repo := &testutil.MockTicketRepo{
+		CreateFunc: func(ctx context.Context, ticket *models.Ticket) (*models.Ticket, error) {
+			createdID = 42
+			ticket.ID = createdID
+			return ticket, nil
+		},
+		GetByIDFunc: func(ctx context.Context, ticketID uint64) (*models.TicketWithRelations, error) {
+			return ticketFull(ticketID, 10, models.TicketStatusNew), nil
+		},
+		GetByUserIDFunc: func(ctx context.Context, userID uint64, page, perPage int32, received bool) ([]*models.TicketWithRelations, int, error) {
+			if !received {
+				return []*models.TicketWithRelations{ticketFull(1, userID, models.TicketStatusNew)}, 1, nil
 			}
-		} else {
-			if ticket.UserID == userID {
-				result = append(result, ticket)
-			}
-		}
+			return nil, 0, nil
+		},
+		GetTicketSenderReceiverFunc: func(ctx context.Context, ticketID uint64) (uint64, uint64, error) {
+			return 10, 20, nil
+		},
 	}
-	return result, len(result), nil
-}
-
-func (m *mockTicketRepository) Update(ctx context.Context, ticket *models.Ticket) error {
-	m.updateCount++
-	if existing, ok := m.tickets[ticket.ID]; ok {
-		existing.Ticket = *ticket
-		existing.UpdatedAt = time.Now()
-		return nil
+	svc := service.NewTicketService(repo, "127.0.0.1:1")
+	dept := models.DeptTechnicalSupport
+	got, err := svc.CreateTicket(context.Background(), 10, "t", "c", "", nil, &dept)
+	if err != nil || got.ID != createdID {
+		t.Fatalf("create err=%v id=%d", err, got.ID)
 	}
-	return errors.New("ticket not found")
-}
-
-func (m *mockTicketRepository) UpdateStatus(ctx context.Context, ticketID uint64, status int32) error {
-	if ticket, ok := m.tickets[ticketID]; ok {
-		ticket.Status = status
-		ticket.UpdatedAt = time.Now()
-		return nil
+	list, total, err := svc.GetTickets(context.Background(), 10, 1, 10, false)
+	if err != nil || total != 1 || len(list) != 1 {
+		t.Fatalf("list err=%v total=%d n=%d", err, total, len(list))
 	}
-	return errors.New("ticket not found")
 }
 
-func (m *mockTicketRepository) GetResponsesByTicketID(ctx context.Context, ticketID uint64) ([]models.TicketResponse, error) {
-	return m.responses[ticketID], nil
-}
-
-func (m *mockTicketRepository) CreateResponse(ctx context.Context, response *models.TicketResponse) (*models.TicketResponse, error) {
-	m.createResponseCount++
-	id := uint64(len(m.responses[response.TicketID]) + 1)
-	response.ID = id
-	response.CreatedAt = time.Now()
-	response.UpdatedAt = time.Now()
-	m.responses[response.TicketID] = append(m.responses[response.TicketID], *response)
-	return response, nil
-}
-
-func (m *mockTicketRepository) CheckUserOwnership(ctx context.Context, ticketID, userID uint64) (bool, error) {
-	ticket, ok := m.tickets[ticketID]
-	if !ok {
-		return false, nil
+func TestTicketService_GetTicketViewDenied(t *testing.T) {
+	repo := &testutil.MockTicketRepo{
+		GetTicketSenderReceiverFunc: func(ctx context.Context, ticketID uint64) (uint64, uint64, error) {
+			return 1, 2, nil
+		},
 	}
-	return ticket.UserID == userID || (ticket.ReceiverID != nil && *ticket.ReceiverID == userID), nil
-}
-
-func (m *mockTicketRepository) GetTicketSenderReceiver(ctx context.Context, ticketID uint64) (senderID, receiverID uint64, err error) {
-	ticket, ok := m.tickets[ticketID]
-	if !ok {
-		return 0, 0, errors.New("ticket not found")
+	svc := service.NewTicketService(repo, "127.0.0.1:1")
+	_, err := svc.GetTicket(context.Background(), 9, 99)
+	if err == nil {
+		t.Fatal("expected unauthorized")
 	}
-	senderID = ticket.UserID
-	if ticket.ReceiverID != nil {
-		receiverID = *ticket.ReceiverID
+}
+
+func TestTicketService_UpdateTicketSenderOnly(t *testing.T) {
+	tk := ticketFull(5, 7, models.TicketStatusNew)
+	repo := &testutil.MockTicketRepo{
+		GetTicketSenderReceiverFunc: func(ctx context.Context, ticketID uint64) (uint64, uint64, error) {
+			return 7, 8, nil
+		},
+		GetByIDFunc: func(ctx context.Context, ticketID uint64) (*models.TicketWithRelations, error) {
+			return tk, nil
+		},
+		UpdateFunc: func(ctx context.Context, ticket *models.Ticket) error {
+			tk.Title = ticket.Title
+			return nil
+		},
 	}
-	return senderID, receiverID, nil
+	svc := service.NewTicketService(repo, "127.0.0.1:1")
+	_, err := svc.UpdateTicket(context.Background(), 5, 8, "x", "y", "")
+	if err == nil {
+		t.Fatal("expected non-sender denied")
+	}
+	_, err = svc.UpdateTicket(context.Background(), 5, 7, "x", "y", "")
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
-func TestTicketService_CreateTicket(t *testing.T) {
-	ctx := context.Background()
-	repo := newMockTicketRepository()
-	service := NewTicketService(repo, "")
-
-	t.Run("successful creation", func(t *testing.T) {
-		userID := uint64(1)
-		receiverID := uint64(2)
-		title := "Test Ticket"
-		content := "Test Content"
-
-		ticket, err := service.CreateTicket(ctx, userID, title, content, "", &receiverID, nil)
-		if err != nil {
-			t.Fatalf("CreateTicket failed: %v", err)
-		}
-
-		if ticket.Title != title {
-			t.Errorf("Expected title %s, got %s", title, ticket.Title)
-		}
-		if ticket.Status != models.TicketStatusNew {
-			t.Errorf("Expected status %d, got %d", models.TicketStatusNew, ticket.Status)
-		}
-		if ticket.Code == 0 {
-			t.Error("Expected code to be generated")
-		}
-	})
-
-	t.Run("creation with department", func(t *testing.T) {
-		userID := uint64(1)
-		department := models.DeptTechnicalSupport
-		title := "Department Ticket"
-		content := "Department Content"
-
-		ticket, err := service.CreateTicket(ctx, userID, title, content, "", nil, &department)
-		if err != nil {
-			t.Fatalf("CreateTicket failed: %v", err)
-		}
-
-		if ticket.Department == nil || *ticket.Department != department {
-			t.Errorf("Expected department %s, got %v", department, ticket.Department)
-		}
-	})
+func TestTicketService_AddResponseClosedTicket(t *testing.T) {
+	tk := ticketFull(3, 1, models.TicketStatusClosed)
+	repo := &testutil.MockTicketRepo{
+		GetTicketSenderReceiverFunc: func(ctx context.Context, ticketID uint64) (uint64, uint64, error) {
+			return 1, 2, nil
+		},
+		GetByIDFunc: func(ctx context.Context, ticketID uint64) (*models.TicketWithRelations, error) {
+			return tk, nil
+		},
+	}
+	svc := service.NewTicketService(repo, "127.0.0.1:1")
+	_, err := svc.AddResponse(context.Background(), 3, 1, "hi", "", "Bob")
+	if err == nil {
+		t.Fatal("expected error on closed ticket")
+	}
 }
 
-func TestTicketService_GetTickets(t *testing.T) {
-	ctx := context.Background()
-	repo := newMockTicketRepository()
-	service := NewTicketService(repo, "")
-
-	// Create test tickets
-	userID := uint64(1)
-	receiverID := uint64(2)
-	_, _ = service.CreateTicket(ctx, userID, "Ticket 1", "Content 1", "", &receiverID, nil)
-	_, _ = service.CreateTicket(ctx, userID, "Ticket 2", "Content 2", "", nil, nil)
-
-	t.Run("get sent tickets", func(t *testing.T) {
-		tickets, total, err := service.GetTickets(ctx, userID, 1, 10, false)
-		if err != nil {
-			t.Fatalf("GetTickets failed: %v", err)
-		}
-
-		if len(tickets) != 2 {
-			t.Errorf("Expected 2 tickets, got %d", len(tickets))
-		}
-		if total != 2 {
-			t.Errorf("Expected total 2, got %d", total)
-		}
-	})
+func TestTicketService_CloseTicketAlreadyClosed(t *testing.T) {
+	tk := ticketFull(4, 9, models.TicketStatusClosed)
+	repo := &testutil.MockTicketRepo{
+		GetTicketSenderReceiverFunc: func(ctx context.Context, ticketID uint64) (uint64, uint64, error) {
+			return 9, 0, nil
+		},
+		GetByIDFunc: func(ctx context.Context, ticketID uint64) (*models.TicketWithRelations, error) {
+			return tk, nil
+		},
+	}
+	svc := service.NewTicketService(repo, "127.0.0.1:1")
+	_, err := svc.CloseTicket(context.Background(), 4, 9)
+	if err == nil {
+		t.Fatal("expected already closed")
+	}
 }
 
-func TestTicketService_AddResponse(t *testing.T) {
-	ctx := context.Background()
-	repo := newMockTicketRepository()
-	service := NewTicketService(repo, "")
-
-	userID := uint64(1)
-	receiverID := uint64(2)
-	ticket, _ := service.CreateTicket(ctx, userID, "Test", "Content", "", &receiverID, nil)
-
-	t.Run("successful response", func(t *testing.T) {
-		response := "Test Response"
-		updatedTicket, err := service.AddResponse(ctx, ticket.ID, receiverID, response, "", "Receiver")
-		if err != nil {
-			t.Fatalf("AddResponse failed: %v", err)
-		}
-
-		if updatedTicket.Status != models.TicketStatusAnswered {
-			t.Errorf("Expected status %d, got %d", models.TicketStatusAnswered, updatedTicket.Status)
-		}
-		if len(updatedTicket.Responses) != 1 {
-			t.Errorf("Expected 1 response, got %d", len(updatedTicket.Responses))
-		}
-	})
-
-	t.Run("response to closed ticket fails", func(t *testing.T) {
-		// Close ticket first
-		_, _ = service.CloseTicket(ctx, ticket.ID, userID)
-
-		_, err := service.AddResponse(ctx, ticket.ID, receiverID, "Response", "", "Receiver")
-		if err == nil {
-			t.Error("Expected error when responding to closed ticket")
-		}
-	})
+func TestTicketService_AddResponseOK(t *testing.T) {
+	tk := ticketFull(8, 1, models.TicketStatusNew)
+	repo := &testutil.MockTicketRepo{
+		GetTicketSenderReceiverFunc: func(ctx context.Context, ticketID uint64) (uint64, uint64, error) {
+			return 1, 2, nil
+		},
+		GetByIDFunc: func(ctx context.Context, ticketID uint64) (*models.TicketWithRelations, error) {
+			return tk, nil
+		},
+		CreateResponseFunc: func(ctx context.Context, response *models.TicketResponse) (*models.TicketResponse, error) {
+			return response, nil
+		},
+		UpdateStatusFunc: func(ctx context.Context, ticketID uint64, status int32) error {
+			tk.Status = status
+			return nil
+		},
+	}
+	svc := service.NewTicketService(repo, "127.0.0.1:1")
+	out, err := svc.AddResponse(context.Background(), 8, 2, "reply", "", "Support")
+	if err != nil || out.Status != models.TicketStatusAnswered {
+		t.Fatalf("err=%v st=%d", err, out.Status)
+	}
 }
 
-func TestTicketService_CloseTicket(t *testing.T) {
-	ctx := context.Background()
-	repo := newMockTicketRepository()
-	service := NewTicketService(repo, "")
-
-	userID := uint64(1)
-	receiverID := uint64(2)
-	ticket, _ := service.CreateTicket(ctx, userID, "Test", "Content", "", &receiverID, nil)
-
-	t.Run("successful close", func(t *testing.T) {
-		closedTicket, err := service.CloseTicket(ctx, ticket.ID, userID)
-		if err != nil {
-			t.Fatalf("CloseTicket failed: %v", err)
-		}
-
-		if closedTicket.Status != models.TicketStatusClosed {
-			t.Errorf("Expected status %d, got %d", models.TicketStatusClosed, closedTicket.Status)
-		}
-	})
-
-	t.Run("close by non-sender fails", func(t *testing.T) {
-		ticket2, _ := service.CreateTicket(ctx, userID, "Test 2", "Content", "", &receiverID, nil)
-
-		err := service.CheckAuthorization(ctx, ticket2.ID, receiverID, "close")
-		if err == nil {
-			t.Error("Expected error when non-sender tries to close")
-		}
-	})
+func TestTicketService_CloseTicketOK(t *testing.T) {
+	tk := ticketFull(6, 9, models.TicketStatusNew)
+	repo := &testutil.MockTicketRepo{
+		GetTicketSenderReceiverFunc: func(ctx context.Context, ticketID uint64) (uint64, uint64, error) {
+			return 9, 0, nil
+		},
+		GetByIDFunc: func(ctx context.Context, ticketID uint64) (*models.TicketWithRelations, error) {
+			return tk, nil
+		},
+		UpdateStatusFunc: func(ctx context.Context, ticketID uint64, status int32) error {
+			tk.Status = status
+			return nil
+		},
+	}
+	svc := service.NewTicketService(repo, "127.0.0.1:1")
+	out, err := svc.CloseTicket(context.Background(), 6, 9)
+	if err != nil || out.Status != models.TicketStatusClosed {
+		t.Fatalf("err=%v status=%d", err, out.Status)
+	}
 }

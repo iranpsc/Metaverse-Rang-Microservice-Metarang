@@ -15,7 +15,7 @@ import (
 	"metargb/support-service/internal/handler"
 	"metargb/support-service/internal/models"
 	"metargb/support-service/internal/service"
-	"metargb/support-service/internal/testutil"
+	"metargb/support-service/tests/internal/testutil"
 )
 
 func TestReportHandler_CreateReport_InvalidSubject(t *testing.T) {

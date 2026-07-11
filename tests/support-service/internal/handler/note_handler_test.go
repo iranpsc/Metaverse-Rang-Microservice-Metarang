@@ -15,7 +15,7 @@ import (
 	"metargb/support-service/internal/handler"
 	"metargb/support-service/internal/models"
 	"metargb/support-service/internal/service"
-	"metargb/support-service/internal/testutil"
+	"metargb/support-service/tests/internal/testutil"
 )
 
 func TestNoteHandler_CreateNote_Validation(t *testing.T) {
@@ -40,6 +40,16 @@ func TestNoteHandler_CreateNote_Success(t *testing.T) {
 			n.ID = 9
 			n.UpdatedAt = time.Date(2024, 3, 15, 10, 0, 0, 0, time.UTC)
 			return &n, nil
+		},
+		GetByIDFunc: func(ctx context.Context, noteID uint64) (*models.Note, error) {
+			return &models.Note{
+				ID:          noteID,
+				UserID:      1,
+				Title:       "T",
+				Content:     "Body",
+				Attachments: []string{"http://x"},
+				UpdatedAt:   time.Date(2024, 3, 15, 10, 0, 0, 0, time.UTC),
+			}, nil
 		},
 	}
 	svc := service.NewNoteService(repo)
