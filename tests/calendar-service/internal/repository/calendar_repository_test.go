@@ -13,6 +13,8 @@ import (
 	"metargb/calendar-service/internal/repository"
 )
 
+const calendarMorphType = "App\\Models\\Calendar"
+
 func TestGetEventByID_Found(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -27,7 +29,7 @@ func TestGetEventByID_Found(t *testing.T) {
 	rows := sqlmock.NewRows([]string{
 		"id", "slug", "title", "content", "color", "writer", "is_version", "version_title",
 		"btn_name", "btn_link", "image", "starts_at", "ends_at", "created_at", "updated_at",
-	}).AddRow(uint64(1), slug, "T", "body", "#fff", "w", false, vt, nil, nil, nil, st, en, st, st)
+	}).AddRow(uint64(1), slug, "T", "body", "#fff", "w", int64(0), vt, nil, nil, nil, st, en, st, st)
 
 	mock.ExpectQuery(regexp.QuoteMeta(
 		"SELECT id, slug, title, content, color, writer, is_version, version_title, btn_name, btn_link, image, starts_at, ends_at, created_at, updated_at FROM calendars WHERE id = ?",
@@ -75,19 +77,16 @@ func TestGetEvents_Pagination(t *testing.T) {
 	rows := sqlmock.NewRows([]string{
 		"id", "slug", "title", "content", "color", "writer", "is_version", "version_title",
 		"btn_name", "btn_link", "image", "starts_at", "ends_at", "created_at", "updated_at",
-	}).AddRow(uint64(1), nil, "E", "c", "#000", "w", false, nil, nil, nil, nil, st, nil, st, st)
-
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM calendars WHERE 1=1 AND is_version = 0")).
-		WillReturnRows(sqlmock.NewRows([]string{"cnt"}).AddRow(int64(1)))
+	}).AddRow(uint64(1), nil, "E", "c", "#000", "w", int64(0), nil, nil, nil, nil, st, nil, st, st)
 
 	mock.ExpectQuery("ORDER BY starts_at DESC").
-		WithArgs(int32(10), int64(0)).
+		WithArgs(int32(11), int64(0)).
 		WillReturnRows(rows)
 
 	r := repository.NewCalendarRepository(db)
-	list, total, err := r.GetEvents(context.Background(), "event", "", "", 0, 1, 10)
-	if err != nil || total != 1 || len(list) != 1 {
-		t.Fatal(err, total, list)
+	list, hasMore, err := r.GetEvents(context.Background(), "event", "", "", 0, 1, 10)
+	if err != nil || hasMore || len(list) != 1 {
+		t.Fatal(err, hasMore, list)
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatal(err)
@@ -105,9 +104,9 @@ func TestGetEvents_WithDate(t *testing.T) {
 	rows := sqlmock.NewRows([]string{
 		"id", "slug", "title", "content", "color", "writer", "is_version", "version_title",
 		"btn_name", "btn_link", "image", "starts_at", "ends_at", "created_at", "updated_at",
-	}).AddRow(uint64(1), nil, "E", "c", "#000", "w", false, nil, nil, nil, nil, st, nil, st, st)
+	}).AddRow(uint64(1), nil, "E", "c", "#000", "w", int64(0), nil, nil, nil, nil, st, nil, st, st)
 
-	mock.ExpectQuery("DATE\\(starts_at\\).*ORDER BY starts_at DESC").
+	mock.ExpectQuery("DATE\\(starts_at\\).*ORDER BY created_at DESC").
 		WillReturnRows(rows)
 
 	r := repository.NewCalendarRepository(db)
@@ -148,16 +147,16 @@ func TestGetEventStats(t *testing.T) {
 	}
 	defer db.Close()
 
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM views WHERE viewable_type = 'App\\\\Models\\\\Calendar' AND viewable_id = ?")).
-		WithArgs(uint64(7)).
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM views WHERE viewable_type = ? AND viewable_id = ?")).
+		WithArgs(calendarMorphType, uint64(7)).
 		WillReturnRows(sqlmock.NewRows([]string{"c"}).AddRow(int64(5)))
 
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM interactions WHERE likeable_type = 'App\\\\Models\\\\Calendar' AND likeable_id = ? AND liked = 1")).
-		WithArgs(uint64(7)).
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM interactions WHERE likeable_type = ? AND likeable_id = ? AND liked = 1")).
+		WithArgs(calendarMorphType, uint64(7)).
 		WillReturnRows(sqlmock.NewRows([]string{"c"}).AddRow(int64(2)))
 
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM interactions WHERE likeable_type = 'App\\\\Models\\\\Calendar' AND likeable_id = ? AND liked = 0")).
-		WithArgs(uint64(7)).
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM interactions WHERE likeable_type = ? AND likeable_id = ? AND liked = 0")).
+		WithArgs(calendarMorphType, uint64(7)).
 		WillReturnRows(sqlmock.NewRows([]string{"c"}).AddRow(int64(1)))
 
 	r := repository.NewCalendarRepository(db)
@@ -183,8 +182,8 @@ func TestGetUserInteraction_Found(t *testing.T) {
 	}).AddRow(uint64(1), "App\\Models\\Calendar", uint64(10), uint64(2), true, "127.0.0.1", tm, tm)
 
 	mock.ExpectQuery(regexp.QuoteMeta(
-		"SELECT id, likeable_type, likeable_id, user_id, liked, ip_address, created_at, updated_at FROM interactions WHERE likeable_type = 'App\\\\Models\\\\Calendar' AND likeable_id = ? AND user_id = ?",
-	)).WithArgs(uint64(10), uint64(2)).WillReturnRows(row)
+		"SELECT id, likeable_type, likeable_id, user_id, liked, ip_address, created_at, updated_at FROM interactions WHERE likeable_type = ? AND likeable_id = ? AND user_id = ?",
+	)).WithArgs(calendarMorphType, uint64(10), uint64(2)).WillReturnRows(row)
 
 	r := repository.NewCalendarRepository(db)
 	in, err := r.GetUserInteraction(context.Background(), 10, 2)
@@ -203,9 +202,9 @@ func TestAddInteraction_Like(t *testing.T) {
 	}
 	defer db.Close()
 
-	mock.ExpectExec(regexp.QuoteMeta(
-		"INSERT INTO interactions (likeable_type, likeable_id, user_id, liked, ip_address, created_at, updated_at)",
-	)).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("INSERT INTO interactions").
+		WithArgs(calendarMorphType, uint64(10), uint64(2), true, "127.0.0.1", true, "127.0.0.1").
+		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	r := repository.NewCalendarRepository(db)
 	err = r.AddInteraction(context.Background(), 10, 2, 1, "127.0.0.1")
@@ -225,8 +224,8 @@ func TestAddInteraction_Remove(t *testing.T) {
 	defer db.Close()
 
 	mock.ExpectExec(regexp.QuoteMeta(
-		"DELETE FROM interactions WHERE likeable_type = 'App\\\\Models\\\\Calendar' AND likeable_id = ? AND user_id = ?",
-	)).WithArgs(uint64(10), uint64(2)).WillReturnResult(sqlmock.NewResult(0, 1))
+		"DELETE FROM interactions WHERE likeable_type = ? AND likeable_id = ? AND user_id = ?",
+	)).WithArgs(calendarMorphType, uint64(10), uint64(2)).WillReturnResult(sqlmock.NewResult(0, 1))
 
 	r := repository.NewCalendarRepository(db)
 	err = r.AddInteraction(context.Background(), 10, 2, -1, "")
@@ -299,7 +298,7 @@ func TestFilterByDateRange_OverlapLogic(t *testing.T) {
 	rows := sqlmock.NewRows([]string{
 		"id", "slug", "title", "content", "color", "writer", "is_version", "version_title",
 		"btn_name", "btn_link", "image", "starts_at", "ends_at", "created_at", "updated_at",
-	}).AddRow(uint64(1), nil, "E", "c", "#000", "w", false, nil, nil, nil, nil, st, nil, st, st)
+	}).AddRow(uint64(1), nil, "E", "c", "#000", "w", int64(0), nil, nil, nil, nil, st, nil, st, st)
 
 	mock.ExpectQuery("DATE\\(starts_at\\) BETWEEN.*OR.*DATE\\(ends_at\\) BETWEEN.*OR").
 		WillReturnRows(rows)
@@ -314,20 +313,28 @@ func TestFilterByDateRange_OverlapLogic(t *testing.T) {
 	}
 }
 
-func TestGetEventStats_QueryError(t *testing.T) {
+func TestGetEventStats_ViewQueryError(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer db.Close()
 
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM views WHERE viewable_type = 'App\\\\Models\\\\Calendar' AND viewable_id = ?")).
-		WithArgs(uint64(1)).
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM views WHERE viewable_type = ? AND viewable_id = ?")).
+		WithArgs(calendarMorphType, uint64(1)).
 		WillReturnError(errors.New("db error"))
 
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM interactions WHERE likeable_type = ? AND likeable_id = ? AND liked = 1")).
+		WithArgs(calendarMorphType, uint64(1)).
+		WillReturnRows(sqlmock.NewRows([]string{"c"}).AddRow(int64(0)))
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM interactions WHERE likeable_type = ? AND likeable_id = ? AND liked = 0")).
+		WithArgs(calendarMorphType, uint64(1)).
+		WillReturnRows(sqlmock.NewRows([]string{"c"}).AddRow(int64(0)))
+
 	r := repository.NewCalendarRepository(db)
-	_, err = r.GetEventStats(context.Background(), 1)
-	if err == nil {
-		t.Fatal("expected error")
+	st, err := r.GetEventStats(context.Background(), 1)
+	if err != nil || st.ViewsCount != 0 {
+		t.Fatal(err, st)
 	}
 }

@@ -3,6 +3,7 @@ module metargb/calendar-service/tests
 go 1.25.0
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	google.golang.org/grpc v1.79.3
 	metargb/calendar-service v0.0.0
 	metargb/shared v0.0.0
