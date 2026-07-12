@@ -349,11 +349,7 @@ type kycHandler struct {
 }
 
 func RegisterKYCHandler(grpcServer *grpc.Server, kycService service.KYCService, storageClient storagepb.FileStorageServiceClient, apiGatewayURL string) {
-	pb.RegisterKYCServiceServer(grpcServer, &kycHandler{
-		kycService:    kycService,
-		storageClient: storageClient,
-		apiGatewayURL: apiGatewayURL,
-	})
+	pb.RegisterKYCServiceServer(grpcServer, NewKYCHandler(kycService, storageClient, apiGatewayURL))
 }
 
 // mapServiceError maps bank account service errors to gRPC status codes

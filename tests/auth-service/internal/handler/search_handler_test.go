@@ -1,7 +1,8 @@
-package handler
+package handler_test
 
 import (
 	"context"
+	"metarang/auth-service/internal/handler"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -100,13 +101,13 @@ func TestSearchHandler_SearchUsers(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockService := new(MockSearchService)
-			handler := &searchHandler{searchService: mockService}
+			h := handler.NewSearchHandler(mockService)
 
-			if tt.request.SearchTerm != "" && tt.serviceError == nil {
+			if tt.request.SearchTerm != "" {
 				mockService.On("SearchUsers", ctx, tt.request.SearchTerm).Return(tt.serviceResults, tt.serviceError)
 			}
 
-			response, err := handler.SearchUsers(ctx, tt.request)
+			response, err := h.SearchUsers(ctx, tt.request)
 
 			if tt.wantError {
 				assert.Error(t, err)
@@ -192,13 +193,13 @@ func TestSearchHandler_SearchFeatures(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockService := new(MockSearchService)
-			handler := &searchHandler{searchService: mockService}
+			h := handler.NewSearchHandler(mockService)
 
 			if tt.request.SearchTerm != "" && tt.serviceError == nil {
 				mockService.On("SearchFeatures", ctx, tt.request.SearchTerm).Return(tt.serviceResults, tt.serviceError)
 			}
 
-			response, err := handler.SearchFeatures(ctx, tt.request)
+			response, err := h.SearchFeatures(ctx, tt.request)
 
 			if tt.wantError {
 				assert.Error(t, err)
@@ -259,13 +260,13 @@ func TestSearchHandler_SearchIsicCodes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockService := new(MockSearchService)
-			handler := &searchHandler{searchService: mockService}
+			h := handler.NewSearchHandler(mockService)
 
 			if tt.request.SearchTerm != "" && tt.serviceError == nil {
 				mockService.On("SearchIsicCodes", ctx, tt.request.SearchTerm).Return(tt.serviceResults, tt.serviceError)
 			}
 
-			response, err := handler.SearchIsicCodes(ctx, tt.request)
+			response, err := h.SearchIsicCodes(ctx, tt.request)
 
 			if tt.wantError {
 				assert.Error(t, err)

@@ -28,12 +28,7 @@ type authHandler struct {
 }
 
 func RegisterAuthHandler(grpcServer *grpc.Server, authService service.AuthService, tokenRepo repository.TokenRepository, profilePhotoHandler *ProfilePhotoHandler, locale string) {
-	pb.RegisterAuthServiceServer(grpcServer, &authHandler{
-		authService:         authService,
-		tokenRepo:           tokenRepo,
-		profilePhotoHandler: profilePhotoHandler,
-		locale:              lang.NormalizeLocale(locale),
-	})
+	pb.RegisterAuthServiceServer(grpcServer, NewAuthHandler(authService, tokenRepo, profilePhotoHandler, locale))
 }
 
 func (h *authHandler) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {

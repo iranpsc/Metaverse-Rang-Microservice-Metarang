@@ -1,9 +1,10 @@
-package handler
+package handler_test
 
 import (
 	"context"
 	"database/sql"
 	"errors"
+	"metarang/auth-service/internal/handler"
 	"testing"
 
 	"google.golang.org/grpc/codes"
@@ -94,15 +95,13 @@ func TestKYCHandler_ListBankAccounts(t *testing.T) {
 			}, nil
 		}
 
-		handler := &kycHandler{
-			kycService: mockService,
-		}
+		h := handler.NewKYCHandler(mockService, nil, "")
 
 		req := &pb.ListBankAccountsRequest{
 			UserId: 1,
 		}
 
-		resp, err := handler.ListBankAccounts(ctx, req)
+		resp, err := h.ListBankAccounts(ctx, req)
 		if err != nil {
 			t.Fatalf("ListBankAccounts failed: %v", err)
 		}
@@ -124,15 +123,13 @@ func TestKYCHandler_ListBankAccounts(t *testing.T) {
 			return []*models.BankAccount{}, nil
 		}
 
-		handler := &kycHandler{
-			kycService: mockService,
-		}
+		h := handler.NewKYCHandler(mockService, nil, "")
 
 		req := &pb.ListBankAccountsRequest{
 			UserId: 1,
 		}
 
-		resp, err := handler.ListBankAccounts(ctx, req)
+		resp, err := h.ListBankAccounts(ctx, req)
 		if err != nil {
 			t.Fatalf("ListBankAccounts failed: %v", err)
 		}
@@ -148,15 +145,13 @@ func TestKYCHandler_ListBankAccounts(t *testing.T) {
 			return nil, errors.New("database error")
 		}
 
-		handler := &kycHandler{
-			kycService: mockService,
-		}
+		h := handler.NewKYCHandler(mockService, nil, "")
 
 		req := &pb.ListBankAccountsRequest{
 			UserId: 1,
 		}
 
-		_, err := handler.ListBankAccounts(ctx, req)
+		_, err := h.ListBankAccounts(ctx, req)
 		if err == nil {
 			t.Fatal("expected error")
 		}
@@ -189,9 +184,7 @@ func TestKYCHandler_CreateBankAccount(t *testing.T) {
 			}, nil
 		}
 
-		handler := &kycHandler{
-			kycService: mockService,
-		}
+		h := handler.NewKYCHandler(mockService, nil, "")
 
 		req := &pb.CreateBankAccountRequest{
 			UserId:   1,
@@ -200,7 +193,7 @@ func TestKYCHandler_CreateBankAccount(t *testing.T) {
 			CardNum:  testCardNum,
 		}
 
-		resp, err := handler.CreateBankAccount(ctx, req)
+		resp, err := h.CreateBankAccount(ctx, req)
 		if err != nil {
 			t.Fatalf("CreateBankAccount failed: %v", err)
 		}
@@ -228,9 +221,7 @@ func TestKYCHandler_CreateBankAccount(t *testing.T) {
 			return nil, service.ErrUserNotVerified
 		}
 
-		handler := &kycHandler{
-			kycService: mockService,
-		}
+		h := handler.NewKYCHandler(mockService, nil, "")
 
 		req := &pb.CreateBankAccountRequest{
 			UserId:   1,
@@ -239,7 +230,7 @@ func TestKYCHandler_CreateBankAccount(t *testing.T) {
 			CardNum:  testCardNum,
 		}
 
-		_, err := handler.CreateBankAccount(ctx, req)
+		_, err := h.CreateBankAccount(ctx, req)
 		if err == nil {
 			t.Fatal("expected error")
 		}
@@ -259,9 +250,7 @@ func TestKYCHandler_CreateBankAccount(t *testing.T) {
 			return nil, service.ErrInvalidBankName
 		}
 
-		handler := &kycHandler{
-			kycService: mockService,
-		}
+		h := handler.NewKYCHandler(mockService, nil, "")
 
 		req := &pb.CreateBankAccountRequest{
 			UserId:   1,
@@ -270,7 +259,7 @@ func TestKYCHandler_CreateBankAccount(t *testing.T) {
 			CardNum:  testCardNum,
 		}
 
-		_, err := handler.CreateBankAccount(ctx, req)
+		_, err := h.CreateBankAccount(ctx, req)
 		if err == nil {
 			t.Fatal("expected error")
 		}
@@ -290,9 +279,7 @@ func TestKYCHandler_CreateBankAccount(t *testing.T) {
 			return nil, service.ErrShabaNumNotUnique
 		}
 
-		handler := &kycHandler{
-			kycService: mockService,
-		}
+		h := handler.NewKYCHandler(mockService, nil, "")
 
 		req := &pb.CreateBankAccountRequest{
 			UserId:   1,
@@ -301,7 +288,7 @@ func TestKYCHandler_CreateBankAccount(t *testing.T) {
 			CardNum:  testCardNum,
 		}
 
-		_, err := handler.CreateBankAccount(ctx, req)
+		_, err := h.CreateBankAccount(ctx, req)
 		if err == nil {
 			t.Fatal("expected error")
 		}
@@ -334,16 +321,14 @@ func TestKYCHandler_GetBankAccount(t *testing.T) {
 			}, nil
 		}
 
-		handler := &kycHandler{
-			kycService: mockService,
-		}
+		h := handler.NewKYCHandler(mockService, nil, "")
 
 		req := &pb.GetBankAccountRequest{
 			UserId:        1,
 			BankAccountId: 1,
 		}
 
-		resp, err := handler.GetBankAccount(ctx, req)
+		resp, err := h.GetBankAccount(ctx, req)
 		if err != nil {
 			t.Fatalf("GetBankAccount failed: %v", err)
 		}
@@ -365,16 +350,14 @@ func TestKYCHandler_GetBankAccount(t *testing.T) {
 			return nil, service.ErrBankAccountNotFound
 		}
 
-		handler := &kycHandler{
-			kycService: mockService,
-		}
+		h := handler.NewKYCHandler(mockService, nil, "")
 
 		req := &pb.GetBankAccountRequest{
 			UserId:        1,
 			BankAccountId: 999,
 		}
 
-		_, err := handler.GetBankAccount(ctx, req)
+		_, err := h.GetBankAccount(ctx, req)
 		if err == nil {
 			t.Fatal("expected error")
 		}
@@ -394,16 +377,14 @@ func TestKYCHandler_GetBankAccount(t *testing.T) {
 			return nil, service.ErrBankAccountNotOwned
 		}
 
-		handler := &kycHandler{
-			kycService: mockService,
-		}
+		h := handler.NewKYCHandler(mockService, nil, "")
 
 		req := &pb.GetBankAccountRequest{
 			UserId:        1,
 			BankAccountId: 1,
 		}
 
-		_, err := handler.GetBankAccount(ctx, req)
+		_, err := h.GetBankAccount(ctx, req)
 		if err == nil {
 			t.Fatal("expected error")
 		}
@@ -432,16 +413,14 @@ func TestKYCHandler_GetBankAccount(t *testing.T) {
 			}, nil
 		}
 
-		handler := &kycHandler{
-			kycService: mockService,
-		}
+		h := handler.NewKYCHandler(mockService, nil, "")
 
 		req := &pb.GetBankAccountRequest{
 			UserId:        1,
 			BankAccountId: 1,
 		}
 
-		resp, err := handler.GetBankAccount(ctx, req)
+		resp, err := h.GetBankAccount(ctx, req)
 		if err != nil {
 			t.Fatalf("GetBankAccount failed: %v", err)
 		}
@@ -470,9 +449,7 @@ func TestKYCHandler_UpdateBankAccount(t *testing.T) {
 			}, nil
 		}
 
-		handler := &kycHandler{
-			kycService: mockService,
-		}
+		h := handler.NewKYCHandler(mockService, nil, "")
 
 		req := &pb.UpdateBankAccountRequest{
 			UserId:        1,
@@ -482,7 +459,7 @@ func TestKYCHandler_UpdateBankAccount(t *testing.T) {
 			CardNum:       "6037997551234568",
 		}
 
-		resp, err := handler.UpdateBankAccount(ctx, req)
+		resp, err := h.UpdateBankAccount(ctx, req)
 		if err != nil {
 			t.Fatalf("UpdateBankAccount failed: %v", err)
 		}
@@ -504,9 +481,7 @@ func TestKYCHandler_UpdateBankAccount(t *testing.T) {
 			return nil, service.ErrBankAccountNotFound
 		}
 
-		handler := &kycHandler{
-			kycService: mockService,
-		}
+		h := handler.NewKYCHandler(mockService, nil, "")
 
 		req := &pb.UpdateBankAccountRequest{
 			UserId:        1,
@@ -516,7 +491,7 @@ func TestKYCHandler_UpdateBankAccount(t *testing.T) {
 			CardNum:       testCardNum,
 		}
 
-		_, err := handler.UpdateBankAccount(ctx, req)
+		_, err := h.UpdateBankAccount(ctx, req)
 		if err == nil {
 			t.Fatal("expected error")
 		}
@@ -536,9 +511,7 @@ func TestKYCHandler_UpdateBankAccount(t *testing.T) {
 			return nil, service.ErrBankAccountNotRejected
 		}
 
-		handler := &kycHandler{
-			kycService: mockService,
-		}
+		h := handler.NewKYCHandler(mockService, nil, "")
 
 		req := &pb.UpdateBankAccountRequest{
 			UserId:        1,
@@ -548,7 +521,7 @@ func TestKYCHandler_UpdateBankAccount(t *testing.T) {
 			CardNum:       testCardNum,
 		}
 
-		_, err := handler.UpdateBankAccount(ctx, req)
+		_, err := h.UpdateBankAccount(ctx, req)
 		if err == nil {
 			t.Fatal("expected error")
 		}
@@ -557,8 +530,8 @@ func TestKYCHandler_UpdateBankAccount(t *testing.T) {
 		if !ok {
 			t.Fatal("expected gRPC status error")
 		}
-		if st.Code() != codes.FailedPrecondition {
-			t.Errorf("expected FailedPrecondition error code, got %v", st.Code())
+		if st.Code() != codes.PermissionDenied {
+			t.Errorf("expected PermissionDenied error code, got %v", st.Code())
 		}
 	})
 }
@@ -572,16 +545,14 @@ func TestKYCHandler_DeleteBankAccount(t *testing.T) {
 			return nil
 		}
 
-		handler := &kycHandler{
-			kycService: mockService,
-		}
+		h := handler.NewKYCHandler(mockService, nil, "")
 
 		req := &pb.DeleteBankAccountRequest{
 			UserId:        1,
 			BankAccountId: 1,
 		}
 
-		_, err := handler.DeleteBankAccount(ctx, req)
+		_, err := h.DeleteBankAccount(ctx, req)
 		if err != nil {
 			t.Fatalf("DeleteBankAccount failed: %v", err)
 		}
@@ -593,16 +564,14 @@ func TestKYCHandler_DeleteBankAccount(t *testing.T) {
 			return service.ErrBankAccountNotFound
 		}
 
-		handler := &kycHandler{
-			kycService: mockService,
-		}
+		h := handler.NewKYCHandler(mockService, nil, "")
 
 		req := &pb.DeleteBankAccountRequest{
 			UserId:        1,
 			BankAccountId: 999,
 		}
 
-		_, err := handler.DeleteBankAccount(ctx, req)
+		_, err := h.DeleteBankAccount(ctx, req)
 		if err == nil {
 			t.Fatal("expected error")
 		}
@@ -622,16 +591,14 @@ func TestKYCHandler_DeleteBankAccount(t *testing.T) {
 			return service.ErrBankAccountNotOwned
 		}
 
-		handler := &kycHandler{
-			kycService: mockService,
-		}
+		h := handler.NewKYCHandler(mockService, nil, "")
 
 		req := &pb.DeleteBankAccountRequest{
 			UserId:        1,
 			BankAccountId: 1,
 		}
 
-		_, err := handler.DeleteBankAccount(ctx, req)
+		_, err := h.DeleteBankAccount(ctx, req)
 		if err == nil {
 			t.Fatal("expected error")
 		}

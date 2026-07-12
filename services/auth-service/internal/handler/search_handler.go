@@ -17,9 +17,7 @@ type searchHandler struct {
 }
 
 func RegisterSearchHandler(grpcServer *grpc.Server, searchService service.SearchService) {
-	pb.RegisterSearchServiceServer(grpcServer, &searchHandler{
-		searchService: searchService,
-	})
+	pb.RegisterSearchServiceServer(grpcServer, NewSearchHandler(searchService))
 }
 
 // SearchUsers handles user search requests

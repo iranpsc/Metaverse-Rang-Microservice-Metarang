@@ -1,7 +1,8 @@
-package repository
+package repository_test
 
 import (
 	"context"
+	"metarang/auth-service/internal/repository"
 	"testing"
 	"time"
 
@@ -35,7 +36,7 @@ func TestCacheRepository_SetState(t *testing.T) {
 	client := setupTestRedis(t)
 	defer client.Close()
 
-	repo := NewCacheRepository(client)
+	repo := repository.NewCacheRepository(client)
 	ctx := context.Background()
 
 	t.Run("successful set", func(t *testing.T) {
@@ -62,7 +63,7 @@ func TestCacheRepository_GetState(t *testing.T) {
 	client := setupTestRedis(t)
 	defer client.Close()
 
-	repo := NewCacheRepository(client)
+	repo := repository.NewCacheRepository(client)
 	ctx := context.Background()
 
 	t.Run("successful get and delete", func(t *testing.T) {
@@ -106,7 +107,7 @@ func TestCacheRepository_RedirectTo(t *testing.T) {
 	client := setupTestRedis(t)
 	defer client.Close()
 
-	repo := NewCacheRepository(client)
+	repo := repository.NewCacheRepository(client)
 	ctx := context.Background()
 
 	t.Run("set and get redirect_to", func(t *testing.T) {
@@ -150,7 +151,7 @@ func TestCacheRepository_BackURL(t *testing.T) {
 	client := setupTestRedis(t)
 	defer client.Close()
 
-	repo := NewCacheRepository(client)
+	repo := repository.NewCacheRepository(client)
 	ctx := context.Background()
 
 	t.Run("set and get back_url", func(t *testing.T) {
@@ -194,7 +195,7 @@ func TestCacheRepository_TTL(t *testing.T) {
 	client := setupTestRedis(t)
 	defer client.Close()
 
-	repo := NewCacheRepository(client)
+	repo := repository.NewCacheRepository(client)
 	ctx := context.Background()
 
 	t.Run("verify TTL is set", func(t *testing.T) {

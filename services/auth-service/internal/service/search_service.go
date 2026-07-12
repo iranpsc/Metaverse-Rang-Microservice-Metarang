@@ -134,7 +134,7 @@ func (s *searchService) SearchFeatures(ctx context.Context, searchTerm string) (
 		}
 
 		// Map karbari to Persian title (getApplicationTitle equivalent)
-		result.Karbari = mapKarbariToTitle(repoResult.Karbari)
+		result.Karbari = MapKarbariToTitle(repoResult.Karbari)
 
 		// Convert coordinates
 		result.Coordinates = make([]*FeatureCoordinate, 0, len(repoResult.Coordinates))
@@ -152,9 +152,9 @@ func (s *searchService) SearchFeatures(ctx context.Context, searchTerm string) (
 	return results, nil
 }
 
-// mapKarbariToTitle maps karbari code to Persian title
+// MapKarbariToTitle maps karbari code to Persian title
 // This implements Laravel's getApplicationTitle() method
-func mapKarbariToTitle(karbari string) string {
+func MapKarbariToTitle(karbari string) string {
 	// Map single-letter codes to Persian titles
 	switch strings.ToLower(karbari) {
 	case "m":

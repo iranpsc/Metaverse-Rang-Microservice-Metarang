@@ -1,8 +1,9 @@
-package repository
+package repository_test
 
 import (
 	"context"
 	"database/sql"
+	"metarang/auth-service/internal/repository"
 	"testing"
 
 	"metarang/auth-service/internal/models"
@@ -33,7 +34,7 @@ func TestProfileLimitationRepository_Create(t *testing.T) {
 	db := setupProfileLimitationTestDB(t)
 	defer db.Close()
 
-	repo := NewProfileLimitationRepository(db)
+	repo := repository.NewProfileLimitationRepository(db)
 	ctx := context.Background()
 
 	limitation := &models.ProfileLimitation{
@@ -55,7 +56,7 @@ func TestProfileLimitationRepository_FindByID(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
 
-	repo := NewProfileLimitationRepository(db)
+	repo := repository.NewProfileLimitationRepository(db)
 	ctx := context.Background()
 
 	// Create a limitation
@@ -81,7 +82,7 @@ func TestProfileLimitationRepository_FindByID_NotFound(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
 
-	repo := NewProfileLimitationRepository(db)
+	repo := repository.NewProfileLimitationRepository(db)
 	ctx := context.Background()
 
 	found, err := repo.FindByID(ctx, 99999)
@@ -93,7 +94,7 @@ func TestProfileLimitationRepository_FindByLimiterAndLimited(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
 
-	repo := NewProfileLimitationRepository(db)
+	repo := repository.NewProfileLimitationRepository(db)
 	ctx := context.Background()
 
 	// Create a limitation
@@ -116,7 +117,7 @@ func TestProfileLimitationRepository_FindBetweenUsers(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
 
-	repo := NewProfileLimitationRepository(db)
+	repo := repository.NewProfileLimitationRepository(db)
 	ctx := context.Background()
 
 	// Create a limitation (user 1 limiting user 2)
@@ -144,7 +145,7 @@ func TestProfileLimitationRepository_Update(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
 
-	repo := NewProfileLimitationRepository(db)
+	repo := repository.NewProfileLimitationRepository(db)
 	ctx := context.Background()
 
 	// Create a limitation
@@ -178,7 +179,7 @@ func TestProfileLimitationRepository_Delete(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
 
-	repo := NewProfileLimitationRepository(db)
+	repo := repository.NewProfileLimitationRepository(db)
 	ctx := context.Background()
 
 	// Create a limitation
@@ -204,7 +205,7 @@ func TestProfileLimitationRepository_ExistsForLimiterAndLimited(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
 
-	repo := NewProfileLimitationRepository(db)
+	repo := repository.NewProfileLimitationRepository(db)
 	ctx := context.Background()
 
 	// Initially doesn't exist
@@ -236,7 +237,7 @@ func TestProfileLimitationRepository_OptionsJSON(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
 
-	repo := NewProfileLimitationRepository(db)
+	repo := repository.NewProfileLimitationRepository(db)
 	ctx := context.Background()
 
 	// Create with custom options

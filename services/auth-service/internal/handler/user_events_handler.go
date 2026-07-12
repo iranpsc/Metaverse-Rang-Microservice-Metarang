@@ -25,18 +25,15 @@ type userEventsHandler struct {
 func RegisterUserEventsHandler(grpcServer *grpc.Server, userEventsService service.UserEventsService, userRepo interface {
 	FindByID(ctx context.Context, id uint64) (*models.User, error)
 }) {
-	pb.RegisterUserEventsServiceServer(grpcServer, &userEventsHandler{
-		service:  userEventsService,
-		userRepo: userRepo,
-	})
+	pb.RegisterUserEventsServiceServer(grpcServer, NewUserEventsHandler(userEventsService, userRepo))
 }
 
 // NewUserEventsHandler creates a new user events handler
-func NewUserEventsHandler(service service.UserEventsService, userRepo interface {
+func NewUserEventsHandler(userEventsService service.UserEventsService, userRepo interface {
 	FindByID(ctx context.Context, id uint64) (*models.User, error)
-}) *userEventsHandler {
+}) pb.UserEventsServiceServer {
 	return &userEventsHandler{
-		service:  service,
+		service:  userEventsService,
 		userRepo: userRepo,
 	}
 }

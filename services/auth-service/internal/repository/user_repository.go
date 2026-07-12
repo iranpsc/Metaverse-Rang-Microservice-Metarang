@@ -431,11 +431,12 @@ func (r *userRepository) ListUsers(ctx context.Context, search string, orderBy s
 		user := &models.User{}
 		ur := &UserWithRelations{User: user}
 
+		var email sql.NullString
 		var kycFname, kycLname sql.NullString
 		var profilePhotoURL sql.NullString
 
 		err := rows.Scan(
-			&user.ID, &user.Name, &user.Email, &user.Phone, &user.Password, &user.Code,
+			&user.ID, &user.Name, &email, &user.Phone, &user.Password, &user.Code,
 			&user.ReferrerID, &user.Score, &user.IP, &user.LastSeen,
 			&user.EmailVerifiedAt, &user.PhoneVerifiedAt, &user.AccessToken,
 			&user.RefreshToken, &user.TokenType, &user.ExpiresIn,
@@ -445,6 +446,10 @@ func (r *userRepository) ListUsers(ctx context.Context, search string, orderBy s
 		)
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to scan user: %w", err)
+		}
+
+		if email.Valid {
+			user.Email = email.String
 		}
 
 		// Set KYC name if available

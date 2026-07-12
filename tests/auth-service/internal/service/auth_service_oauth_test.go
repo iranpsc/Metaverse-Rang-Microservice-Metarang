@@ -1,9 +1,10 @@
-package service
+package service_test
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"metarang/auth-service/internal/service"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -18,13 +19,15 @@ func TestRegister(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("successful registration URL generation", func(t *testing.T) {
-		userRepo := newFakeUserRepository(nil)
+		userRepo := newFakeUserRepository(map[uint64]*models.User{
+			1: {ID: 1, Code: "REF123"},
+		})
 		tokenRepo := newFakeTokenRepository()
 		cacheRepo := newFakeCacheRepository()
 		accountRepo := newFakeAccountSecurityRepository()
 		activityRepo := newFakeActivityRepository()
 
-		svc := NewAuthService(
+		svc := service.NewAuthService(
 			userRepo, tokenRepo, cacheRepo, accountRepo, activityRepo,
 			nil, nil, nil,
 			"https://oauth.example.com",
@@ -46,13 +49,13 @@ func TestRegister(t *testing.T) {
 		if !strings.Contains(url, "client_id=test-client-id") {
 			t.Errorf("Expected URL to contain client_id, got %q", url)
 		}
-		if !strings.Contains(url, "redirect_uri=http://localhost:8000/api/auth/redirect") {
+		if !strings.Contains(url, "redirect_uri=http%3A%2F%2Flocalhost%3A8000%2Fapi%2Fauth%2Fredirect") {
 			t.Errorf("Expected URL to contain correct redirect_uri, got %q", url)
 		}
 		if !strings.Contains(url, "referral=REF123") {
 			t.Errorf("Expected URL to contain referral code, got %q", url)
 		}
-		if !strings.Contains(url, "back_url=https://example.com/back") {
+		if !strings.Contains(url, "back_url=https%3A%2F%2Fexample.com%2Fback") {
 			t.Errorf("Expected URL to contain back_url, got %q", url)
 		}
 	})
@@ -64,7 +67,7 @@ func TestRegister(t *testing.T) {
 		accountRepo := newFakeAccountSecurityRepository()
 		activityRepo := newFakeActivityRepository()
 
-		svc := NewAuthService(
+		svc := service.NewAuthService(
 			userRepo, tokenRepo, cacheRepo, accountRepo, activityRepo,
 			nil, nil, nil,
 			"https://oauth.example.com",
@@ -96,7 +99,7 @@ func TestRedirect(t *testing.T) {
 		accountRepo := newFakeAccountSecurityRepository()
 		activityRepo := newFakeActivityRepository()
 
-		svc := NewAuthService(
+		svc := service.NewAuthService(
 			userRepo, tokenRepo, cacheRepo, accountRepo, activityRepo,
 			nil, nil, nil,
 			"https://oauth.example.com",
@@ -158,7 +161,7 @@ func TestRedirect(t *testing.T) {
 		accountRepo := newFakeAccountSecurityRepository()
 		activityRepo := newFakeActivityRepository()
 
-		svc := NewAuthService(
+		svc := service.NewAuthService(
 			userRepo, tokenRepo, cacheRepo, accountRepo, activityRepo,
 			nil, nil, nil,
 			"https://oauth.example.com",
@@ -253,7 +256,7 @@ func TestCallback(t *testing.T) {
 		cacheRepo.SetState(ctx, state, 5*time.Minute)
 		cacheRepo.SetRedirectTo(ctx, state, "https://example.com/dashboard", 5*time.Minute)
 
-		svc := NewAuthService(
+		svc := service.NewAuthService(
 			userRepo, tokenRepo, cacheRepo, accountRepo, activityRepo,
 			observerService, nil, nil,
 			oauthServer.URL,
@@ -304,7 +307,7 @@ func TestCallback(t *testing.T) {
 		accountRepo := newFakeAccountSecurityRepository()
 		activityRepo := newFakeActivityRepository()
 
-		svc := NewAuthService(
+		svc := service.NewAuthService(
 			userRepo, tokenRepo, cacheRepo, accountRepo, activityRepo,
 			nil, nil, nil,
 			oauthServer.URL,
@@ -356,7 +359,7 @@ func TestCallback(t *testing.T) {
 		cacheRepo.SetState(ctx, state, 5*time.Minute)
 		cacheRepo.SetBackURL(ctx, state, "https://example.com/home", 5*time.Minute)
 
-		svc := NewAuthService(
+		svc := service.NewAuthService(
 			userRepo, tokenRepo, cacheRepo, accountRepo, activityRepo,
 			observerService, nil, nil,
 			oauthServer.URL,
@@ -419,7 +422,7 @@ func TestCallback(t *testing.T) {
 		cacheRepo.SetRedirectTo(ctx, state, "https://example.com/dashboard", 5*time.Minute)
 		cacheRepo.SetBackURL(ctx, state, "https://example.com/home", 5*time.Minute)
 
-		svc := NewAuthService(
+		svc := service.NewAuthService(
 			userRepo, tokenRepo, cacheRepo, accountRepo, activityRepo,
 			observerService, nil, nil,
 			oauthServer.URL,
@@ -482,7 +485,7 @@ func TestGetMe(t *testing.T) {
 		accountRepo := newFakeAccountSecurityRepository()
 		activityRepo := newFakeActivityRepository()
 
-		svc := NewAuthService(
+		svc := service.NewAuthService(
 			userRepo, tokenRepo, cacheRepo, accountRepo, activityRepo,
 			nil, nil, nil,
 			"", "", "", "", "",
@@ -518,7 +521,7 @@ func TestGetMe(t *testing.T) {
 		accountRepo := newFakeAccountSecurityRepository()
 		activityRepo := newFakeActivityRepository()
 
-		svc := NewAuthService(
+		svc := service.NewAuthService(
 			userRepo, tokenRepo, cacheRepo, accountRepo, activityRepo,
 			nil, nil, nil,
 			"", "", "", "", "",
@@ -553,7 +556,7 @@ func TestLogout(t *testing.T) {
 		activityRepo := newFakeActivityRepository()
 		observerService := newFakeObserverService()
 
-		svc := NewAuthService(
+		svc := service.NewAuthService(
 			userRepo, tokenRepo, cacheRepo, accountRepo, activityRepo,
 			observerService, nil, nil,
 			"", "", "", "", "",
@@ -578,7 +581,7 @@ func TestLogout(t *testing.T) {
 		accountRepo := newFakeAccountSecurityRepository()
 		activityRepo := newFakeActivityRepository()
 
-		svc := NewAuthService(
+		svc := service.NewAuthService(
 			userRepo, tokenRepo, cacheRepo, accountRepo, activityRepo,
 			nil, nil, nil,
 			"", "", "", "", "",
@@ -611,7 +614,7 @@ func TestValidateToken(t *testing.T) {
 		accountRepo := newFakeAccountSecurityRepository()
 		activityRepo := newFakeActivityRepository()
 
-		svc := NewAuthService(
+		svc := service.NewAuthService(
 			userRepo, tokenRepo, cacheRepo, accountRepo, activityRepo,
 			nil, nil, nil,
 			"", "", "", "", "",
@@ -640,7 +643,7 @@ func TestValidateToken(t *testing.T) {
 		accountRepo := newFakeAccountSecurityRepository()
 		activityRepo := newFakeActivityRepository()
 
-		svc := NewAuthService(
+		svc := service.NewAuthService(
 			userRepo, tokenRepo, cacheRepo, accountRepo, activityRepo,
 			nil, nil, nil,
 			"", "", "", "", "",
@@ -738,6 +741,22 @@ func (f *fakeCacheRepository) TryAcquireAccountSecurityVerificationSlot(_ contex
 	return true, nil
 }
 
+func (f *fakeCacheRepository) SetWeb3LinkNonce(context.Context, uint64, string, string, time.Duration) error {
+	return nil
+}
+
+func (f *fakeCacheRepository) PullWeb3LinkNonce(context.Context, uint64, string) (string, error) {
+	return "", nil
+}
+
+func (f *fakeCacheRepository) SetWeb3SecurityNonce(context.Context, uint64, string, string, time.Duration) error {
+	return nil
+}
+
+func (f *fakeCacheRepository) PullWeb3SecurityNonce(context.Context, uint64, string) (string, error) {
+	return "", nil
+}
+
 var _ repository.CacheRepository = (*fakeCacheRepository)(nil)
 
 type fakeTokenRepository struct {
@@ -817,7 +836,7 @@ func (f *fakeObserverService) CalculateScore(ctx context.Context, user *models.U
 	return nil
 }
 
-var _ ObserverService = (*fakeObserverService)(nil)
+var _ service.ObserverService = (*fakeObserverService)(nil)
 
 // Extended fake user repository for OAuth tests
 type extendedFakeUserRepository struct {

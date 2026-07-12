@@ -1,8 +1,9 @@
-package repository
+package repository_test
 
 import (
 	"context"
 	"database/sql"
+	"metarang/auth-service/internal/repository"
 	"testing"
 
 	"metarang/auth-service/internal/models"
@@ -18,7 +19,7 @@ func TestSettingsRepository_FindByUserID(t *testing.T) {
 	db := setupSettingsTestDB(t)
 	defer db.Close()
 
-	repo := NewSettingsRepository(db)
+	repo := repository.NewSettingsRepository(db)
 	ctx := context.Background()
 
 	t.Run("returns default settings when not found", func(t *testing.T) {
@@ -105,7 +106,7 @@ func TestSettingsRepository_Update(t *testing.T) {
 	db := setupSettingsTestDB(t)
 	defer db.Close()
 
-	repo := NewSettingsRepository(db)
+	repo := repository.NewSettingsRepository(db)
 	ctx := context.Background()
 
 	// Create settings first

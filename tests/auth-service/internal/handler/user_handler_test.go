@@ -1,8 +1,9 @@
-package handler
+package handler_test
 
 import (
 	"context"
 	"errors"
+	"metarang/auth-service/internal/handler"
 	"testing"
 
 	"google.golang.org/grpc/codes"
@@ -82,15 +83,13 @@ func TestUserHandler_ListUsers(t *testing.T) {
 			}, 1, 20, nil
 		}
 
-		handler := &userHandler{
-			userService: mockService,
-		}
+		h := handler.NewUserHandler(mockService, nil, nil)
 
 		req := &pb.ListUsersRequest{
 			Page: 1,
 		}
 
-		resp, err := handler.ListUsers(ctx, req)
+		resp, err := h.ListUsers(ctx, req)
 		if err != nil {
 			t.Fatalf("ListUsers failed: %v", err)
 		}
@@ -117,16 +116,14 @@ func TestUserHandler_ListUsers(t *testing.T) {
 			return []*service.UserListItem{}, 0, 20, nil
 		}
 
-		handler := &userHandler{
-			userService: mockService,
-		}
+		h := handler.NewUserHandler(mockService, nil, nil)
 
 		req := &pb.ListUsersRequest{
 			Search: "test",
 			Page:   1,
 		}
 
-		_, err := handler.ListUsers(ctx, req)
+		_, err := h.ListUsers(ctx, req)
 		if err != nil {
 			t.Fatalf("ListUsers failed: %v", err)
 		}
@@ -138,15 +135,13 @@ func TestUserHandler_ListUsers(t *testing.T) {
 			return nil, 0, 0, errors.New("service error")
 		}
 
-		handler := &userHandler{
-			userService: mockService,
-		}
+		h := handler.NewUserHandler(mockService, nil, nil)
 
 		req := &pb.ListUsersRequest{
 			Page: 1,
 		}
 
-		_, err := handler.ListUsers(ctx, req)
+		_, err := h.ListUsers(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -179,15 +174,13 @@ func TestUserHandler_GetUserLevels(t *testing.T) {
 			}, nil
 		}
 
-		handler := &userHandler{
-			userService: mockService,
-		}
+		h := handler.NewUserHandler(mockService, nil, nil)
 
 		req := &pb.GetUserLevelsRequest{
 			UserId: 1,
 		}
 
-		resp, err := handler.GetUserLevels(ctx, req)
+		resp, err := h.GetUserLevels(ctx, req)
 		if err != nil {
 			t.Fatalf("GetUserLevels failed: %v", err)
 		}
@@ -219,15 +212,13 @@ func TestUserHandler_GetUserLevels(t *testing.T) {
 			return nil, errors.New("user not found")
 		}
 
-		handler := &userHandler{
-			userService: mockService,
-		}
+		h := handler.NewUserHandler(mockService, nil, nil)
 
 		req := &pb.GetUserLevelsRequest{
 			UserId: 999,
 		}
 
-		_, err := handler.GetUserLevels(ctx, req)
+		_, err := h.GetUserLevels(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -261,16 +252,14 @@ func TestUserHandler_GetUserProfile(t *testing.T) {
 			}, nil
 		}
 
-		handler := &userHandler{
-			userService: mockService,
-		}
+		h := handler.NewUserHandler(mockService, nil, nil)
 
 		req := &pb.GetUserProfileRequest{
 			UserId:       1,
 			ViewerUserId: 2,
 		}
 
-		resp, err := handler.GetUserProfile(ctx, req)
+		resp, err := h.GetUserProfile(ctx, req)
 		if err != nil {
 			t.Fatalf("GetUserProfile failed: %v", err)
 		}
@@ -298,15 +287,13 @@ func TestUserHandler_GetUserProfile(t *testing.T) {
 			return nil, errors.New("user not found")
 		}
 
-		handler := &userHandler{
-			userService: mockService,
-		}
+		h := handler.NewUserHandler(mockService, nil, nil)
 
 		req := &pb.GetUserProfileRequest{
 			UserId: 999,
 		}
 
-		_, err := handler.GetUserProfile(ctx, req)
+		_, err := h.GetUserProfile(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -334,15 +321,13 @@ func TestUserHandler_GetUserFeaturesCount(t *testing.T) {
 			}, nil
 		}
 
-		handler := &userHandler{
-			userService: mockService,
-		}
+		h := handler.NewUserHandler(mockService, nil, nil)
 
 		req := &pb.GetUserFeaturesCountRequest{
 			UserId: 1,
 		}
 
-		resp, err := handler.GetUserFeaturesCount(ctx, req)
+		resp, err := h.GetUserFeaturesCount(ctx, req)
 		if err != nil {
 			t.Fatalf("GetUserFeaturesCount failed: %v", err)
 		}
@@ -370,15 +355,13 @@ func TestUserHandler_GetUserFeaturesCount(t *testing.T) {
 			return nil, errors.New("user not found")
 		}
 
-		handler := &userHandler{
-			userService: mockService,
-		}
+		h := handler.NewUserHandler(mockService, nil, nil)
 
 		req := &pb.GetUserFeaturesCountRequest{
 			UserId: 999,
 		}
 
-		_, err := handler.GetUserFeaturesCount(ctx, req)
+		_, err := h.GetUserFeaturesCount(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}

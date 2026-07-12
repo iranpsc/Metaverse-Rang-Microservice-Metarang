@@ -1,8 +1,9 @@
-package handler
+package handler_test
 
 import (
 	"context"
 	"errors"
+	"metarang/auth-service/internal/handler"
 	"testing"
 	"time"
 
@@ -25,17 +26,14 @@ func TestAuthHandler_Register(t *testing.T) {
 		}
 
 		tokenRepo := &mockTokenRepository{}
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.RegisterRequest{
 			BackUrl:  "https://example.com/back",
 			Referral: "REF123",
 		}
 
-		resp, err := handler.Register(ctx, req)
+		resp, err := h.Register(ctx, req)
 		if err != nil {
 			t.Fatalf("Register failed: %v", err)
 		}
@@ -52,17 +50,14 @@ func TestAuthHandler_Register(t *testing.T) {
 		}
 
 		tokenRepo := &mockTokenRepository{}
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.RegisterRequest{
 			BackUrl:  "https://example.com/back",
 			Referral: "REF123",
 		}
 
-		_, err := handler.Register(ctx, req)
+		_, err := h.Register(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -87,17 +82,14 @@ func TestAuthHandler_Redirect(t *testing.T) {
 		}
 
 		tokenRepo := &mockTokenRepository{}
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.RedirectRequest{
 			RedirectTo: "https://example.com/dashboard",
 			BackUrl:    "https://example.com/home",
 		}
 
-		resp, err := handler.Redirect(ctx, req)
+		resp, err := h.Redirect(ctx, req)
 		if err != nil {
 			t.Fatalf("Redirect failed: %v", err)
 		}
@@ -114,16 +106,13 @@ func TestAuthHandler_Redirect(t *testing.T) {
 		}
 
 		tokenRepo := &mockTokenRepository{}
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.RedirectRequest{
 			RedirectTo: "https://example.com/dashboard",
 		}
 
-		resp, err := handler.Redirect(ctx, req)
+		resp, err := h.Redirect(ctx, req)
 		if err != nil {
 			t.Fatalf("Redirect failed: %v", err)
 		}
@@ -139,7 +128,7 @@ func TestAuthHandler_Callback(t *testing.T) {
 
 	t.Run("successful callback", func(t *testing.T) {
 		mockAuthService := &mockAuthService{}
-		mockAuthService.callbackFunc = func(ctx context.Context, state, code string) (*service.CallbackResult, error) {
+		mockAuthService.callbackFunc = func(ctx context.Context, state, code, ip string) (*service.CallbackResult, error) {
 			return &service.CallbackResult{
 				Token:       "test_token_123",
 				ExpiresAt:   60,
@@ -148,17 +137,14 @@ func TestAuthHandler_Callback(t *testing.T) {
 		}
 
 		tokenRepo := &mockTokenRepository{}
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.CallbackRequest{
 			State: "test_state",
 			Code:  "test_code",
 		}
 
-		resp, err := handler.Callback(ctx, req)
+		resp, err := h.Callback(ctx, req)
 		if err != nil {
 			t.Fatalf("Callback failed: %v", err)
 		}
@@ -176,22 +162,19 @@ func TestAuthHandler_Callback(t *testing.T) {
 
 	t.Run("callback with invalid state", func(t *testing.T) {
 		mockAuthService := &mockAuthService{}
-		mockAuthService.callbackFunc = func(ctx context.Context, state, code string) (*service.CallbackResult, error) {
+		mockAuthService.callbackFunc = func(ctx context.Context, state, code, ip string) (*service.CallbackResult, error) {
 			return nil, errors.New("invalid state value: state not found or already consumed")
 		}
 
 		tokenRepo := &mockTokenRepository{}
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.CallbackRequest{
 			State: "invalid_state",
 			Code:  "test_code",
 		}
 
-		_, err := handler.Callback(ctx, req)
+		_, err := h.Callback(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -223,16 +206,13 @@ func TestAuthHandler_GetMe(t *testing.T) {
 		}
 
 		tokenRepo := &mockTokenRepository{}
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.GetMeRequest{
 			Token: "valid_token",
 		}
 
-		resp, err := handler.GetMe(ctx, req)
+		resp, err := h.GetMe(ctx, req)
 		if err != nil {
 			t.Fatalf("GetMe failed: %v", err)
 		}
@@ -252,16 +232,13 @@ func TestAuthHandler_GetMe(t *testing.T) {
 		}
 
 		tokenRepo := &mockTokenRepository{}
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.GetMeRequest{
 			Token: "invalid_token",
 		}
 
-		_, err := handler.GetMe(ctx, req)
+		_, err := h.GetMe(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -290,16 +267,13 @@ func TestAuthHandler_Logout(t *testing.T) {
 			return &models.User{ID: 1}, nil
 		}
 
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.LogoutRequest{
 			Token: "valid_token",
 		}
 
-		_, err := handler.Logout(ctx, req)
+		_, err := h.Logout(ctx, req)
 		if err != nil {
 			t.Fatalf("Logout failed: %v", err)
 		}
@@ -312,16 +286,13 @@ func TestAuthHandler_Logout(t *testing.T) {
 			return nil, errors.New("invalid token")
 		}
 
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.LogoutRequest{
 			Token: "invalid_token",
 		}
 
-		_, err := handler.Logout(ctx, req)
+		_, err := h.Logout(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -346,16 +317,13 @@ func TestAuthHandler_ValidateToken(t *testing.T) {
 		}
 
 		tokenRepo := &mockTokenRepository{}
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.ValidateTokenRequest{
 			Token: "valid_token",
 		}
 
-		resp, err := handler.ValidateToken(ctx, req)
+		resp, err := h.ValidateToken(ctx, req)
 		if err != nil {
 			t.Fatalf("ValidateToken failed: %v", err)
 		}
@@ -375,16 +343,13 @@ func TestAuthHandler_ValidateToken(t *testing.T) {
 		}
 
 		tokenRepo := &mockTokenRepository{}
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.ValidateTokenRequest{
 			Token: "invalid_token",
 		}
 
-		resp, err := handler.ValidateToken(ctx, req)
+		resp, err := h.ValidateToken(ctx, req)
 		if err != nil {
 			t.Fatalf("ValidateToken should not return error for invalid token: %v", err)
 		}
@@ -405,10 +370,7 @@ func TestAuthHandler_RequestAccountSecurity(t *testing.T) {
 		}
 
 		tokenRepo := &mockTokenRepository{}
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.RequestAccountSecurityRequest{
 			UserId:      1,
@@ -416,7 +378,7 @@ func TestAuthHandler_RequestAccountSecurity(t *testing.T) {
 			Phone:       "09123456789",
 		}
 
-		_, err := handler.RequestAccountSecurity(ctx, req)
+		_, err := h.RequestAccountSecurity(ctx, req)
 		if err != nil {
 			t.Fatalf("RequestAccountSecurity failed: %v", err)
 		}
@@ -429,10 +391,7 @@ func TestAuthHandler_RequestAccountSecurity(t *testing.T) {
 		}
 
 		tokenRepo := &mockTokenRepository{}
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.RequestAccountSecurityRequest{
 			UserId:      1,
@@ -440,7 +399,7 @@ func TestAuthHandler_RequestAccountSecurity(t *testing.T) {
 			Phone:       "09123456789",
 		}
 
-		_, err := handler.RequestAccountSecurity(ctx, req)
+		_, err := h.RequestAccountSecurity(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -461,10 +420,7 @@ func TestAuthHandler_RequestAccountSecurity(t *testing.T) {
 		}
 
 		tokenRepo := &mockTokenRepository{}
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.RequestAccountSecurityRequest{
 			UserId:      1,
@@ -472,7 +428,7 @@ func TestAuthHandler_RequestAccountSecurity(t *testing.T) {
 			Phone:       "",
 		}
 
-		_, err := handler.RequestAccountSecurity(ctx, req)
+		_, err := h.RequestAccountSecurity(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -493,10 +449,7 @@ func TestAuthHandler_RequestAccountSecurity(t *testing.T) {
 		}
 
 		tokenRepo := &mockTokenRepository{}
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.RequestAccountSecurityRequest{
 			UserId:      1,
@@ -504,7 +457,7 @@ func TestAuthHandler_RequestAccountSecurity(t *testing.T) {
 			Phone:       "123456",
 		}
 
-		_, err := handler.RequestAccountSecurity(ctx, req)
+		_, err := h.RequestAccountSecurity(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -525,10 +478,7 @@ func TestAuthHandler_RequestAccountSecurity(t *testing.T) {
 		}
 
 		tokenRepo := &mockTokenRepository{}
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.RequestAccountSecurityRequest{
 			UserId:      1,
@@ -536,7 +486,7 @@ func TestAuthHandler_RequestAccountSecurity(t *testing.T) {
 			Phone:       "09123456789",
 		}
 
-		_, err := handler.RequestAccountSecurity(ctx, req)
+		_, err := h.RequestAccountSecurity(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -557,10 +507,7 @@ func TestAuthHandler_RequestAccountSecurity(t *testing.T) {
 		}
 
 		tokenRepo := &mockTokenRepository{}
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.RequestAccountSecurityRequest{
 			UserId:      999,
@@ -568,7 +515,7 @@ func TestAuthHandler_RequestAccountSecurity(t *testing.T) {
 			Phone:       "09123456789",
 		}
 
-		_, err := handler.RequestAccountSecurity(ctx, req)
+		_, err := h.RequestAccountSecurity(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -593,10 +540,7 @@ func TestAuthHandler_VerifyAccountSecurity(t *testing.T) {
 		}
 
 		tokenRepo := &mockTokenRepository{}
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.VerifyAccountSecurityRequest{
 			UserId:    1,
@@ -605,7 +549,7 @@ func TestAuthHandler_VerifyAccountSecurity(t *testing.T) {
 			UserAgent: "Mozilla/5.0",
 		}
 
-		_, err := handler.VerifyAccountSecurity(ctx, req)
+		_, err := h.VerifyAccountSecurity(ctx, req)
 		if err != nil {
 			t.Fatalf("VerifyAccountSecurity failed: %v", err)
 		}
@@ -618,10 +562,7 @@ func TestAuthHandler_VerifyAccountSecurity(t *testing.T) {
 		}
 
 		tokenRepo := &mockTokenRepository{}
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.VerifyAccountSecurityRequest{
 			UserId:    1,
@@ -630,7 +571,7 @@ func TestAuthHandler_VerifyAccountSecurity(t *testing.T) {
 			UserAgent: "",
 		}
 
-		_, err := handler.VerifyAccountSecurity(ctx, req)
+		_, err := h.VerifyAccountSecurity(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -651,10 +592,7 @@ func TestAuthHandler_VerifyAccountSecurity(t *testing.T) {
 		}
 
 		tokenRepo := &mockTokenRepository{}
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.VerifyAccountSecurityRequest{
 			UserId:    1,
@@ -663,7 +601,7 @@ func TestAuthHandler_VerifyAccountSecurity(t *testing.T) {
 			UserAgent: "",
 		}
 
-		_, err := handler.VerifyAccountSecurity(ctx, req)
+		_, err := h.VerifyAccountSecurity(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -684,10 +622,7 @@ func TestAuthHandler_VerifyAccountSecurity(t *testing.T) {
 		}
 
 		tokenRepo := &mockTokenRepository{}
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.VerifyAccountSecurityRequest{
 			UserId:    1,
@@ -696,7 +631,7 @@ func TestAuthHandler_VerifyAccountSecurity(t *testing.T) {
 			UserAgent: "",
 		}
 
-		_, err := handler.VerifyAccountSecurity(ctx, req)
+		_, err := h.VerifyAccountSecurity(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -717,10 +652,7 @@ func TestAuthHandler_VerifyAccountSecurity(t *testing.T) {
 		}
 
 		tokenRepo := &mockTokenRepository{}
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.VerifyAccountSecurityRequest{
 			UserId:    1,
@@ -729,7 +661,7 @@ func TestAuthHandler_VerifyAccountSecurity(t *testing.T) {
 			UserAgent: "",
 		}
 
-		_, err := handler.VerifyAccountSecurity(ctx, req)
+		_, err := h.VerifyAccountSecurity(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -750,10 +682,7 @@ func TestAuthHandler_VerifyAccountSecurity(t *testing.T) {
 		}
 
 		tokenRepo := &mockTokenRepository{}
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.VerifyAccountSecurityRequest{
 			UserId:    999,
@@ -762,7 +691,7 @@ func TestAuthHandler_VerifyAccountSecurity(t *testing.T) {
 			UserAgent: "",
 		}
 
-		_, err := handler.VerifyAccountSecurity(ctx, req)
+		_, err := h.VerifyAccountSecurity(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -783,10 +712,7 @@ func TestAuthHandler_VerifyAccountSecurity(t *testing.T) {
 		}
 
 		tokenRepo := &mockTokenRepository{}
-		handler := &authHandler{
-			authService: mockAuthService,
-			tokenRepo:   tokenRepo,
-		}
+		h := handler.NewAuthHandler(mockAuthService, tokenRepo, nil, "")
 
 		req := &pb.VerifyAccountSecurityRequest{
 			UserId:    1,
@@ -795,7 +721,7 @@ func TestAuthHandler_VerifyAccountSecurity(t *testing.T) {
 			UserAgent: "",
 		}
 
-		_, err := handler.VerifyAccountSecurity(ctx, req)
+		_, err := h.VerifyAccountSecurity(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -815,7 +741,7 @@ func TestAuthHandler_VerifyAccountSecurity(t *testing.T) {
 type mockAuthService struct {
 	registerFunc               func(context.Context, string, string) (string, error)
 	redirectFunc               func(context.Context, string, string) (string, string, error)
-	callbackFunc               func(context.Context, string, string) (*service.CallbackResult, error)
+	callbackFunc               func(context.Context, string, string, string) (*service.CallbackResult, error)
 	getMeFunc                  func(context.Context, string) (*service.UserDetails, error)
 	logoutFunc                 func(context.Context, uint64, string, string) error
 	validateTokenFunc          func(context.Context, string) (*models.User, error)
@@ -837,9 +763,9 @@ func (m *mockAuthService) Redirect(ctx context.Context, redirectTo, backURL stri
 	return "", "", nil
 }
 
-func (m *mockAuthService) Callback(ctx context.Context, state, code string) (*service.CallbackResult, error) {
+func (m *mockAuthService) Callback(ctx context.Context, state, code, ip string) (*service.CallbackResult, error) {
 	if m.callbackFunc != nil {
-		return m.callbackFunc(ctx, state, code)
+		return m.callbackFunc(ctx, state, code, ip)
 	}
 	return nil, nil
 }

@@ -22,9 +22,7 @@ type profileLimitationHandler struct {
 }
 
 func RegisterProfileLimitationHandler(grpcServer *grpc.Server, limitationService service.ProfileLimitationService) {
-	pb.RegisterProfileLimitationServiceServer(grpcServer, &profileLimitationHandler{
-		limitationService: limitationService,
-	})
+	pb.RegisterProfileLimitationServiceServer(grpcServer, NewProfileLimitationHandler(limitationService))
 }
 
 func (h *profileLimitationHandler) CreateProfileLimitation(ctx context.Context, req *pb.CreateProfileLimitationRequest) (*pb.ProfileLimitationResponse, error) {
@@ -52,7 +50,7 @@ func (h *profileLimitationHandler) CreateProfileLimitation(ctx context.Context, 
 		req.Note,
 	)
 	if err != nil {
-		return nil, mapProfileLimitationError(err, locale)
+		return nil, MapProfileLimitationError(err, locale)
 	}
 
 	return &pb.ProfileLimitationResponse{
@@ -85,7 +83,7 @@ func (h *profileLimitationHandler) UpdateProfileLimitation(ctx context.Context, 
 		req.Note,
 	)
 	if err != nil {
-		return nil, mapProfileLimitationError(err, locale)
+		return nil, MapProfileLimitationError(err, locale)
 	}
 
 	return &pb.ProfileLimitationResponse{
@@ -95,7 +93,7 @@ func (h *profileLimitationHandler) UpdateProfileLimitation(ctx context.Context, 
 
 func (h *profileLimitationHandler) DeleteProfileLimitation(ctx context.Context, req *pb.DeleteProfileLimitationRequest) (*emptypb.Empty, error) {
 	if err := h.limitationService.Delete(ctx, req.LimitationId, req.LimiterUserId); err != nil {
-		return nil, mapProfileLimitationError(err, getProjectLocale())
+		return nil, MapProfileLimitationError(err, getProjectLocale())
 	}
 
 	return &emptypb.Empty{}, nil
@@ -104,7 +102,7 @@ func (h *profileLimitationHandler) DeleteProfileLimitation(ctx context.Context, 
 func (h *profileLimitationHandler) GetProfileLimitation(ctx context.Context, req *pb.GetProfileLimitationRequest) (*pb.ProfileLimitationResponse, error) {
 	limitation, err := h.limitationService.GetByID(ctx, req.LimitationId)
 	if err != nil {
-		return nil, mapProfileLimitationError(err, getProjectLocale())
+		return nil, MapProfileLimitationError(err, getProjectLocale())
 	}
 
 	// Note: We need caller user ID to determine if note should be visible
@@ -114,8 +112,8 @@ func (h *profileLimitationHandler) GetProfileLimitation(ctx context.Context, req
 	}, nil
 }
 
-// mapProfileLimitationError maps service errors to gRPC status codes
-func mapProfileLimitationError(err error, locale string) error {
+// MapProfileLimitationError maps service errors to gRPC status codes
+func MapProfileLimitationError(err error, locale string) error {
 	if err == nil {
 		return nil
 	}

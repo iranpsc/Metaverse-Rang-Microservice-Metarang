@@ -1,9 +1,10 @@
-package handler
+package handler_test
 
 import (
 	"context"
 	"database/sql"
 	"errors"
+	"metarang/auth-service/internal/handler"
 	"testing"
 
 	"google.golang.org/grpc/codes"
@@ -81,9 +82,7 @@ func TestProfileLimitationHandler_CreateProfileLimitation(t *testing.T) {
 			}, nil
 		}
 
-		handler := &profileLimitationHandler{
-			limitationService: mockService,
-		}
+		h := handler.NewProfileLimitationHandler(mockService)
 
 		req := &pb.CreateProfileLimitationRequest{
 			LimiterUserId: 1,
@@ -99,7 +98,7 @@ func TestProfileLimitationHandler_CreateProfileLimitation(t *testing.T) {
 			Note: "Test note",
 		}
 
-		resp, err := handler.CreateProfileLimitation(ctx, req)
+		resp, err := h.CreateProfileLimitation(ctx, req)
 		if err != nil {
 			t.Fatalf("CreateProfileLimitation failed: %v", err)
 		}
@@ -121,9 +120,7 @@ func TestProfileLimitationHandler_CreateProfileLimitation(t *testing.T) {
 			return nil, service.ErrProfileLimitationAlreadyExists
 		}
 
-		handler := &profileLimitationHandler{
-			limitationService: mockService,
-		}
+		h := handler.NewProfileLimitationHandler(mockService)
 
 		req := &pb.CreateProfileLimitationRequest{
 			LimiterUserId: 1,
@@ -138,7 +135,7 @@ func TestProfileLimitationHandler_CreateProfileLimitation(t *testing.T) {
 			},
 		}
 
-		_, err := handler.CreateProfileLimitation(ctx, req)
+		_, err := h.CreateProfileLimitation(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -147,8 +144,8 @@ func TestProfileLimitationHandler_CreateProfileLimitation(t *testing.T) {
 		if !ok {
 			t.Fatal("Expected gRPC status error")
 		}
-		if st.Code() != codes.FailedPrecondition {
-			t.Errorf("Expected FailedPrecondition, got %v", st.Code())
+		if st.Code() != codes.PermissionDenied {
+			t.Errorf("Expected PermissionDenied, got %v", st.Code())
 		}
 	})
 }
@@ -168,9 +165,7 @@ func TestProfileLimitationHandler_UpdateProfileLimitation(t *testing.T) {
 			}, nil
 		}
 
-		handler := &profileLimitationHandler{
-			limitationService: mockService,
-		}
+		h := handler.NewProfileLimitationHandler(mockService)
 
 		req := &pb.UpdateProfileLimitationRequest{
 			LimitationId:  1,
@@ -186,7 +181,7 @@ func TestProfileLimitationHandler_UpdateProfileLimitation(t *testing.T) {
 			Note: "Updated note",
 		}
 
-		resp, err := handler.UpdateProfileLimitation(ctx, req)
+		resp, err := h.UpdateProfileLimitation(ctx, req)
 		if err != nil {
 			t.Fatalf("UpdateProfileLimitation failed: %v", err)
 		}
@@ -205,9 +200,7 @@ func TestProfileLimitationHandler_UpdateProfileLimitation(t *testing.T) {
 			return nil, service.ErrUnauthorized
 		}
 
-		handler := &profileLimitationHandler{
-			limitationService: mockService,
-		}
+		h := handler.NewProfileLimitationHandler(mockService)
 
 		req := &pb.UpdateProfileLimitationRequest{
 			LimitationId:  1,
@@ -222,7 +215,7 @@ func TestProfileLimitationHandler_UpdateProfileLimitation(t *testing.T) {
 			},
 		}
 
-		_, err := handler.UpdateProfileLimitation(ctx, req)
+		_, err := h.UpdateProfileLimitation(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -246,16 +239,14 @@ func TestProfileLimitationHandler_DeleteProfileLimitation(t *testing.T) {
 			return nil
 		}
 
-		handler := &profileLimitationHandler{
-			limitationService: mockService,
-		}
+		h := handler.NewProfileLimitationHandler(mockService)
 
 		req := &pb.DeleteProfileLimitationRequest{
 			LimitationId:  1,
 			LimiterUserId: 1,
 		}
 
-		_, err := handler.DeleteProfileLimitation(ctx, req)
+		_, err := h.DeleteProfileLimitation(ctx, req)
 		if err != nil {
 			t.Fatalf("DeleteProfileLimitation failed: %v", err)
 		}
@@ -267,16 +258,14 @@ func TestProfileLimitationHandler_DeleteProfileLimitation(t *testing.T) {
 			return service.ErrUnauthorized
 		}
 
-		handler := &profileLimitationHandler{
-			limitationService: mockService,
-		}
+		h := handler.NewProfileLimitationHandler(mockService)
 
 		req := &pb.DeleteProfileLimitationRequest{
 			LimitationId:  1,
 			LimiterUserId: 2, // Not the owner
 		}
 
-		_, err := handler.DeleteProfileLimitation(ctx, req)
+		_, err := h.DeleteProfileLimitation(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -306,15 +295,13 @@ func TestProfileLimitationHandler_GetProfileLimitation(t *testing.T) {
 			}, nil
 		}
 
-		handler := &profileLimitationHandler{
-			limitationService: mockService,
-		}
+		h := handler.NewProfileLimitationHandler(mockService)
 
 		req := &pb.GetProfileLimitationRequest{
 			LimitationId: 1,
 		}
 
-		resp, err := handler.GetProfileLimitation(ctx, req)
+		resp, err := h.GetProfileLimitation(ctx, req)
 		if err != nil {
 			t.Fatalf("GetProfileLimitation failed: %v", err)
 		}
@@ -333,15 +320,13 @@ func TestProfileLimitationHandler_GetProfileLimitation(t *testing.T) {
 			return nil, service.ErrProfileLimitationNotFound
 		}
 
-		handler := &profileLimitationHandler{
-			limitationService: mockService,
-		}
+		h := handler.NewProfileLimitationHandler(mockService)
 
 		req := &pb.GetProfileLimitationRequest{
 			LimitationId: 99999,
 		}
 
-		_, err := handler.GetProfileLimitation(ctx, req)
+		_, err := h.GetProfileLimitation(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -371,7 +356,7 @@ func TestMapProfileLimitationError(t *testing.T) {
 		{
 			name:         "already exists",
 			err:          service.ErrProfileLimitationAlreadyExists,
-			expectedCode: codes.FailedPrecondition,
+			expectedCode: codes.PermissionDenied,
 		},
 		{
 			name:         "invalid options",
@@ -402,7 +387,7 @@ func TestMapProfileLimitationError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := mapProfileLimitationError(tt.err)
+			err := handler.MapProfileLimitationError(tt.err, "en")
 			st, ok := status.FromError(err)
 			if !ok {
 				t.Fatal("Expected gRPC status error")

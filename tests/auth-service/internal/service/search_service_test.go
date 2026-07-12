@@ -1,7 +1,8 @@
-package service
+package service_test
 
 import (
 	"context"
+	"metarang/auth-service/internal/service"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -128,12 +129,12 @@ func TestSearchService_SearchUsers(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := new(MockSearchRepository)
-			if tt.searchTerm != "" && tt.repoError == nil {
+			if tt.searchTerm != "" {
 				mockRepo.On("SearchUsers", ctx, tt.searchTerm).Return(tt.repoResults, tt.repoError)
 			}
 
-			service := NewSearchService(mockRepo)
-			results, err := service.SearchUsers(ctx, tt.searchTerm)
+			svc := service.NewSearchService(mockRepo)
+			results, err := svc.SearchUsers(ctx, tt.searchTerm)
 
 			if tt.wantError {
 				assert.Error(t, err)
@@ -212,12 +213,12 @@ func TestSearchService_SearchFeatures(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := new(MockSearchRepository)
-			if tt.searchTerm != "" && tt.repoError == nil {
+			if tt.searchTerm != "" {
 				mockRepo.On("SearchFeatures", ctx, tt.searchTerm).Return(tt.repoResults, tt.repoError)
 			}
 
-			service := NewSearchService(mockRepo)
-			results, err := service.SearchFeatures(ctx, tt.searchTerm)
+			svc := service.NewSearchService(mockRepo)
+			results, err := svc.SearchFeatures(ctx, tt.searchTerm)
 
 			if tt.wantError {
 				assert.Error(t, err)
@@ -276,12 +277,12 @@ func TestSearchService_SearchIsicCodes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := new(MockSearchRepository)
-			if tt.searchTerm != "" && tt.repoError == nil {
+			if tt.searchTerm != "" {
 				mockRepo.On("SearchIsicCodes", ctx, tt.searchTerm).Return(tt.repoResults, tt.repoError)
 			}
 
-			service := NewSearchService(mockRepo)
-			results, err := service.SearchIsicCodes(ctx, tt.searchTerm)
+			svc := service.NewSearchService(mockRepo)
+			results, err := svc.SearchIsicCodes(ctx, tt.searchTerm)
 
 			if tt.wantError {
 				assert.Error(t, err)
@@ -323,7 +324,7 @@ func TestMapKarbariToTitle(t *testing.T) {
 			// Access the private function through a test helper
 			// Since it's private, we'll test it indirectly through SearchFeatures
 			// Or we can make it public for testing
-			result := mapKarbariToTitle(tt.karbari)
+			result := service.MapKarbariToTitle(tt.karbari)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

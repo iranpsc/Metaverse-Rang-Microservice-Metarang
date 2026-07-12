@@ -23,11 +23,7 @@ type userHandler struct {
 }
 
 func RegisterUserHandler(grpcServer *grpc.Server, userService service.UserService, profileLimitationService service.ProfileLimitationService, helperService service.HelperService) {
-	pb.RegisterUserServiceServer(grpcServer, &userHandler{
-		userService:              userService,
-		profileLimitationService: profileLimitationService,
-		helperService:            helperService,
-	})
+	pb.RegisterUserServiceServer(grpcServer, NewUserHandler(userService, profileLimitationService, helperService))
 }
 
 func (h *userHandler) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.User, error) {

@@ -1,8 +1,9 @@
-package repository
+package repository_test
 
 import (
 	"context"
 	"database/sql"
+	"metarang/auth-service/internal/repository"
 	"testing"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -12,7 +13,7 @@ import (
 
 func TestSearchRepository_SearchUsers(t *testing.T) {
 	db := setupTestDB(t)
-	repo := NewSearchRepository(db)
+	repo := repository.NewSearchRepository(db)
 	ctx := context.Background()
 
 	// Clean up test data
@@ -36,13 +37,13 @@ func TestSearchRepository_SearchUsers(t *testing.T) {
 		name       string
 		searchTerm string
 		wantCount  int
-		checkFunc  func(t *testing.T, results []*SearchUserResult)
+		checkFunc  func(t *testing.T, results []*repository.SearchUserResult)
 	}{
 		{
 			name:       "search by name",
 			searchTerm: "john",
 			wantCount:  1,
-			checkFunc: func(t *testing.T, results []*SearchUserResult) {
+			checkFunc: func(t *testing.T, results []*repository.SearchUserResult) {
 				assert.Len(t, results, 1)
 				assert.Equal(t, user1ID, results[0].User.ID)
 				assert.Equal(t, "john", results[0].User.Name)
@@ -52,7 +53,7 @@ func TestSearchRepository_SearchUsers(t *testing.T) {
 			name:       "search by name without KYC",
 			searchTerm: "jane",
 			wantCount:  1,
-			checkFunc: func(t *testing.T, results []*SearchUserResult) {
+			checkFunc: func(t *testing.T, results []*repository.SearchUserResult) {
 				assert.Len(t, results, 1)
 				assert.Equal(t, user2ID, results[0].User.ID)
 				assert.Nil(t, results[0].KYC)
@@ -62,7 +63,7 @@ func TestSearchRepository_SearchUsers(t *testing.T) {
 			name:       "search by code",
 			searchTerm: "USR001",
 			wantCount:  1,
-			checkFunc: func(t *testing.T, results []*SearchUserResult) {
+			checkFunc: func(t *testing.T, results []*repository.SearchUserResult) {
 				assert.Len(t, results, 1)
 				assert.Equal(t, "USR001", results[0].User.Code)
 			},
@@ -71,7 +72,7 @@ func TestSearchRepository_SearchUsers(t *testing.T) {
 			name:       "search by KYC first name",
 			searchTerm: "John",
 			wantCount:  1,
-			checkFunc: func(t *testing.T, results []*SearchUserResult) {
+			checkFunc: func(t *testing.T, results []*repository.SearchUserResult) {
 				assert.Len(t, results, 1)
 				assert.NotNil(t, results[0].KYC)
 				assert.Equal(t, "John", results[0].KYC.Fname)
@@ -81,7 +82,7 @@ func TestSearchRepository_SearchUsers(t *testing.T) {
 			name:       "search by KYC last name",
 			searchTerm: "Smith",
 			wantCount:  1,
-			checkFunc: func(t *testing.T, results []*SearchUserResult) {
+			checkFunc: func(t *testing.T, results []*repository.SearchUserResult) {
 				assert.Len(t, results, 1)
 				assert.NotNil(t, results[0].KYC)
 				assert.Equal(t, "Smith", results[0].KYC.Lname)
@@ -91,7 +92,7 @@ func TestSearchRepository_SearchUsers(t *testing.T) {
 			name:       "search with multiple terms",
 			searchTerm: "jane doe",
 			wantCount:  1,
-			checkFunc: func(t *testing.T, results []*SearchUserResult) {
+			checkFunc: func(t *testing.T, results []*repository.SearchUserResult) {
 				assert.Len(t, results, 1)
 				assert.Equal(t, user2ID, results[0].User.ID)
 			},
@@ -139,7 +140,7 @@ func TestSearchRepository_SearchFeatures(t *testing.T) {
 	}
 
 	db := setupTestDB(t)
-	repo := NewSearchRepository(db)
+	repo := repository.NewSearchRepository(db)
 	ctx := context.Background()
 
 	// Clean up test data
@@ -157,7 +158,7 @@ func TestSearchRepository_SearchFeatures(t *testing.T) {
 
 func TestSearchRepository_SearchIsicCodes(t *testing.T) {
 	db := setupTestDB(t)
-	repo := NewSearchRepository(db)
+	repo := repository.NewSearchRepository(db)
 	ctx := context.Background()
 
 	// Clean up test data
@@ -221,10 +222,15 @@ func setupTestDB(t *testing.T) *sql.DB {
 	// Adjust connection string as needed
 	dsn := "root:@tcp(localhost:3306)/metarang_db?parseTime=true"
 	db, err := sql.Open("mysql", dsn)
-	require.NoError(t, err)
+	if err != nil {
+		t.Skipf("database not available: %v", err)
+	}
 
 	err = db.Ping()
-	require.NoError(t, err)
+	if err != nil {
+		_ = db.Close()
+		t.Skipf("database not available: %v", err)
+	}
 
 	return db
 }

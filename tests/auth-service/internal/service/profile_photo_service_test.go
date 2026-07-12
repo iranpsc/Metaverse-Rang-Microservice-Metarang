@@ -1,9 +1,10 @@
-package service
+package service_test
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"metarang/auth-service/internal/service"
 	"testing"
 	"time"
 
@@ -106,7 +107,7 @@ func TestProfilePhotoService_ListProfilePhotos(t *testing.T) {
 	ctx := context.Background()
 	repo := newFakeProfilePhotoRepository()
 	storageClient := newFakeStorageClient()
-	service := NewProfilePhotoService(repo, storageClient, "http://localhost:8080")
+	svc := service.NewProfilePhotoService(repo, storageClient, "http://localhost:8080")
 
 	t.Run("successful list", func(t *testing.T) {
 		userID := uint64(1)
@@ -114,7 +115,7 @@ func TestProfilePhotoService_ListProfilePhotos(t *testing.T) {
 		_, _ = repo.Create(ctx, userID, "https://example.com/photo1.jpg")
 		_, _ = repo.Create(ctx, userID, "https://example.com/photo2.jpg")
 
-		photos, err := service.ListProfilePhotos(ctx, userID)
+		photos, err := svc.ListProfilePhotos(ctx, userID)
 		if err != nil {
 			t.Fatalf("ListProfilePhotos failed: %v", err)
 		}
@@ -126,7 +127,7 @@ func TestProfilePhotoService_ListProfilePhotos(t *testing.T) {
 
 	t.Run("empty list for user with no photos", func(t *testing.T) {
 		userID := uint64(999)
-		photos, err := service.ListProfilePhotos(ctx, userID)
+		photos, err := svc.ListProfilePhotos(ctx, userID)
 		if err != nil {
 			t.Fatalf("ListProfilePhotos failed: %v", err)
 		}
@@ -141,7 +142,7 @@ func TestProfilePhotoService_UploadProfilePhoto(t *testing.T) {
 	ctx := context.Background()
 	repo := newFakeProfilePhotoRepository()
 	storageClient := newFakeStorageClient()
-	service := NewProfilePhotoService(repo, storageClient, "http://localhost:8080")
+	svc := service.NewProfilePhotoService(repo, storageClient, "http://localhost:8080")
 
 	t.Run("successful upload", func(t *testing.T) {
 		userID := uint64(1)
@@ -149,7 +150,7 @@ func TestProfilePhotoService_UploadProfilePhoto(t *testing.T) {
 		filename := "test.jpg"
 		contentType := "image/jpeg"
 
-		photo, err := service.UploadProfilePhoto(ctx, userID, imageData, filename, contentType)
+		photo, err := svc.UploadProfilePhoto(ctx, userID, imageData, filename, contentType)
 		if err != nil {
 			t.Fatalf("UploadProfilePhoto failed: %v", err)
 		}
@@ -171,9 +172,9 @@ func TestProfilePhotoService_UploadProfilePhoto(t *testing.T) {
 		filename := "test.jpg"
 		contentType := "image/jpeg"
 
-		_, err := service.UploadProfilePhoto(ctx, userID, imageData, filename, contentType)
-		if err != ErrImageRequired {
-			t.Errorf("Expected ErrImageRequired, got %v", err)
+		_, err := svc.UploadProfilePhoto(ctx, userID, imageData, filename, contentType)
+		if err != service.ErrImageRequired {
+			t.Errorf("Expected service.ErrImageRequired, got %v", err)
 		}
 	})
 
@@ -183,9 +184,9 @@ func TestProfilePhotoService_UploadProfilePhoto(t *testing.T) {
 		filename := "test.jpg"
 		contentType := "image/jpeg"
 
-		_, err := service.UploadProfilePhoto(ctx, userID, imageData, filename, contentType)
-		if err != ErrInvalidImage {
-			t.Errorf("Expected ErrInvalidImage, got %v", err)
+		_, err := svc.UploadProfilePhoto(ctx, userID, imageData, filename, contentType)
+		if err != service.ErrInvalidImage {
+			t.Errorf("Expected service.ErrInvalidImage, got %v", err)
 		}
 	})
 
@@ -195,9 +196,9 @@ func TestProfilePhotoService_UploadProfilePhoto(t *testing.T) {
 		filename := "test.gif"
 		contentType := "image/gif"
 
-		_, err := service.UploadProfilePhoto(ctx, userID, imageData, filename, contentType)
-		if err != ErrInvalidImage {
-			t.Errorf("Expected ErrInvalidImage, got %v", err)
+		_, err := svc.UploadProfilePhoto(ctx, userID, imageData, filename, contentType)
+		if err != service.ErrInvalidImage {
+			t.Errorf("Expected service.ErrInvalidImage, got %v", err)
 		}
 	})
 
@@ -207,9 +208,9 @@ func TestProfilePhotoService_UploadProfilePhoto(t *testing.T) {
 		filename := "test.gif"
 		contentType := "image/jpeg"
 
-		_, err := service.UploadProfilePhoto(ctx, userID, imageData, filename, contentType)
-		if err != ErrInvalidImage {
-			t.Errorf("Expected ErrInvalidImage, got %v", err)
+		_, err := svc.UploadProfilePhoto(ctx, userID, imageData, filename, contentType)
+		if err != service.ErrInvalidImage {
+			t.Errorf("Expected service.ErrInvalidImage, got %v", err)
 		}
 	})
 
@@ -219,7 +220,7 @@ func TestProfilePhotoService_UploadProfilePhoto(t *testing.T) {
 		filename := "test.png"
 		contentType := "image/png"
 
-		photo, err := service.UploadProfilePhoto(ctx, userID, imageData, filename, contentType)
+		photo, err := svc.UploadProfilePhoto(ctx, userID, imageData, filename, contentType)
 		if err != nil {
 			t.Fatalf("UploadProfilePhoto failed: %v", err)
 		}
@@ -234,13 +235,13 @@ func TestProfilePhotoService_GetProfilePhoto(t *testing.T) {
 	ctx := context.Background()
 	repo := newFakeProfilePhotoRepository()
 	storageClient := newFakeStorageClient()
-	service := NewProfilePhotoService(repo, storageClient, "http://localhost:8080")
+	svc := service.NewProfilePhotoService(repo, storageClient, "http://localhost:8080")
 
 	t.Run("successful get", func(t *testing.T) {
 		userID := uint64(1)
 		photo, _ := repo.Create(ctx, userID, "https://example.com/photo.jpg")
 
-		result, err := service.GetProfilePhoto(ctx, photo.ID)
+		result, err := svc.GetProfilePhoto(ctx, photo.ID)
 		if err != nil {
 			t.Fatalf("GetProfilePhoto failed: %v", err)
 		}
@@ -254,9 +255,9 @@ func TestProfilePhotoService_GetProfilePhoto(t *testing.T) {
 	})
 
 	t.Run("photo not found", func(t *testing.T) {
-		_, err := service.GetProfilePhoto(ctx, 999)
-		if err != ErrProfilePhotoNotFound {
-			t.Errorf("Expected ErrProfilePhotoNotFound, got %v", err)
+		_, err := svc.GetProfilePhoto(ctx, 999)
+		if err != service.ErrProfilePhotoNotFound {
+			t.Errorf("Expected service.ErrProfilePhotoNotFound, got %v", err)
 		}
 	})
 
@@ -265,9 +266,9 @@ func TestProfilePhotoService_GetProfilePhoto(t *testing.T) {
 			return nil, nil
 		}
 
-		_, err := service.GetProfilePhoto(ctx, 1)
-		if err != ErrProfilePhotoNotFound {
-			t.Errorf("Expected ErrProfilePhotoNotFound, got %v", err)
+		_, err := svc.GetProfilePhoto(ctx, 1)
+		if err != service.ErrProfilePhotoNotFound {
+			t.Errorf("Expected service.ErrProfilePhotoNotFound, got %v", err)
 		}
 	})
 }
@@ -276,13 +277,13 @@ func TestProfilePhotoService_DeleteProfilePhoto(t *testing.T) {
 	ctx := context.Background()
 	repo := newFakeProfilePhotoRepository()
 	storageClient := newFakeStorageClient()
-	service := NewProfilePhotoService(repo, storageClient, "http://localhost:8080")
+	svc := service.NewProfilePhotoService(repo, storageClient, "http://localhost:8080")
 
 	t.Run("successful delete", func(t *testing.T) {
 		userID := uint64(1)
 		photo, _ := repo.Create(ctx, userID, "https://example.com/photo.jpg")
 
-		err := service.DeleteProfilePhoto(ctx, userID, photo.ID)
+		err := svc.DeleteProfilePhoto(ctx, userID, photo.ID)
 		if err != nil {
 			t.Fatalf("DeleteProfilePhoto failed: %v", err)
 		}
@@ -299,9 +300,9 @@ func TestProfilePhotoService_DeleteProfilePhoto(t *testing.T) {
 		userID2 := uint64(2)
 		photo, _ := repo.Create(ctx, userID1, "https://example.com/photo.jpg")
 
-		err := service.DeleteProfilePhoto(ctx, userID2, photo.ID)
-		if err != ErrUnauthorized {
-			t.Errorf("Expected ErrUnauthorized, got %v", err)
+		err := svc.DeleteProfilePhoto(ctx, userID2, photo.ID)
+		if err != service.ErrPhotoUnauthorized {
+			t.Errorf("Expected service.ErrPhotoUnauthorized, got %v", err)
 		}
 	})
 
@@ -311,9 +312,9 @@ func TestProfilePhotoService_DeleteProfilePhoto(t *testing.T) {
 			return false, nil
 		}
 
-		err := service.DeleteProfilePhoto(ctx, userID, 999)
-		if err != ErrUnauthorized {
-			t.Errorf("Expected ErrUnauthorized, got %v", err)
+		err := svc.DeleteProfilePhoto(ctx, userID, 999)
+		if err != service.ErrPhotoUnauthorized {
+			t.Errorf("Expected service.ErrPhotoUnauthorized, got %v", err)
 		}
 	})
 }

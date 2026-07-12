@@ -1,8 +1,9 @@
-package service
+package service_test
 
 import (
 	"context"
 	"errors"
+	"metarang/auth-service/internal/service"
 	"testing"
 
 	"metarang/auth-service/internal/models"
@@ -66,11 +67,11 @@ func (m *mockSettingsRepository) Create(ctx context.Context, settings *models.Se
 
 func TestSettingsService_GetSettings(t *testing.T) {
 	mockRepo := &mockSettingsRepository{}
-	service := NewSettingsService(mockRepo)
+	svc := service.NewSettingsService(mockRepo)
 	ctx := context.Background()
 
 	t.Run("returns settings successfully", func(t *testing.T) {
-		settings, err := service.GetSettings(ctx, 1)
+		settings, err := svc.GetSettings(ctx, 1)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -86,7 +87,7 @@ func TestSettingsService_GetSettings(t *testing.T) {
 		mockRepo.findByUserIDFunc = func(context.Context, uint64) (*models.Settings, error) {
 			return nil, errors.New("database error")
 		}
-		_, err := service.GetSettings(ctx, 1)
+		_, err := svc.GetSettings(ctx, 1)
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
@@ -95,14 +96,14 @@ func TestSettingsService_GetSettings(t *testing.T) {
 
 func TestSettingsService_UpdateSettings(t *testing.T) {
 	mockRepo := &mockSettingsRepository{}
-	service := NewSettingsService(mockRepo)
+	svc := service.NewSettingsService(mockRepo)
 	ctx := context.Background()
 
 	t.Run("updates checkout cadence successfully", func(t *testing.T) {
 		checkoutDays := uint32(10)
 		automaticLogout := int32(30)
 
-		err := service.UpdateSettings(ctx, 1, &checkoutDays, &automaticLogout, nil, nil)
+		err := svc.UpdateSettings(ctx, 1, &checkoutDays, &automaticLogout, nil, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -112,9 +113,9 @@ func TestSettingsService_UpdateSettings(t *testing.T) {
 		checkoutDays := uint32(2) // Invalid: must be >= 3
 		automaticLogout := int32(30)
 
-		err := service.UpdateSettings(ctx, 1, &checkoutDays, &automaticLogout, nil, nil)
-		if err != ErrInvalidCheckoutDays {
-			t.Errorf("expected ErrInvalidCheckoutDays, got %v", err)
+		err := svc.UpdateSettings(ctx, 1, &checkoutDays, &automaticLogout, nil, nil)
+		if err != service.ErrInvalidCheckoutDays {
+			t.Errorf("expected service.ErrInvalidCheckoutDays, got %v", err)
 		}
 	})
 
@@ -122,9 +123,9 @@ func TestSettingsService_UpdateSettings(t *testing.T) {
 		checkoutDays := uint32(10)
 		automaticLogout := int32(0) // Invalid: must be >= 1
 
-		err := service.UpdateSettings(ctx, 1, &checkoutDays, &automaticLogout, nil, nil)
-		if err != ErrInvalidAutomaticLogout {
-			t.Errorf("expected ErrInvalidAutomaticLogout, got %v", err)
+		err := svc.UpdateSettings(ctx, 1, &checkoutDays, &automaticLogout, nil, nil)
+		if err != service.ErrInvalidAutomaticLogout {
+			t.Errorf("expected service.ErrInvalidAutomaticLogout, got %v", err)
 		}
 	})
 
@@ -132,9 +133,9 @@ func TestSettingsService_UpdateSettings(t *testing.T) {
 		checkoutDays := uint32(10)
 		automaticLogout := int32(60) // Invalid: must be <= 55
 
-		err := service.UpdateSettings(ctx, 1, &checkoutDays, &automaticLogout, nil, nil)
-		if err != ErrInvalidAutomaticLogout {
-			t.Errorf("expected ErrInvalidAutomaticLogout, got %v", err)
+		err := svc.UpdateSettings(ctx, 1, &checkoutDays, &automaticLogout, nil, nil)
+		if err != service.ErrInvalidAutomaticLogout {
+			t.Errorf("expected service.ErrInvalidAutomaticLogout, got %v", err)
 		}
 	})
 
@@ -142,9 +143,9 @@ func TestSettingsService_UpdateSettings(t *testing.T) {
 		checkoutDays := uint32(1001) // Invalid: must be <= 1000
 		automaticLogout := int32(30)
 
-		err := service.UpdateSettings(ctx, 1, &checkoutDays, &automaticLogout, nil, nil)
-		if err != ErrInvalidCheckoutDays {
-			t.Errorf("expected ErrInvalidCheckoutDays, got %v", err)
+		err := svc.UpdateSettings(ctx, 1, &checkoutDays, &automaticLogout, nil, nil)
+		if err != service.ErrInvalidCheckoutDays {
+			t.Errorf("expected service.ErrInvalidCheckoutDays, got %v", err)
 		}
 	})
 
@@ -152,7 +153,7 @@ func TestSettingsService_UpdateSettings(t *testing.T) {
 		setting := "status"
 		status := false
 
-		err := service.UpdateSettings(ctx, 1, nil, nil, &setting, &status)
+		err := svc.UpdateSettings(ctx, 1, nil, nil, &setting, &status)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -162,27 +163,27 @@ func TestSettingsService_UpdateSettings(t *testing.T) {
 		setting := "invalid"
 		status := false
 
-		err := service.UpdateSettings(ctx, 1, nil, nil, &setting, &status)
-		if err != ErrInvalidProfileSetting {
-			t.Errorf("expected ErrInvalidProfileSetting, got %v", err)
+		err := svc.UpdateSettings(ctx, 1, nil, nil, &setting, &status)
+		if err != service.ErrInvalidProfileSetting {
+			t.Errorf("expected service.ErrInvalidProfileSetting, got %v", err)
 		}
 	})
 
 	t.Run("requires both checkout fields", func(t *testing.T) {
 		checkoutDays := uint32(10)
 
-		err := service.UpdateSettings(ctx, 1, &checkoutDays, nil, nil, nil)
-		if err != ErrMissingRequiredFields {
-			t.Errorf("expected ErrMissingRequiredFields, got %v", err)
+		err := svc.UpdateSettings(ctx, 1, &checkoutDays, nil, nil, nil)
+		if err != service.ErrMissingRequiredFields {
+			t.Errorf("expected service.ErrMissingRequiredFields, got %v", err)
 		}
 	})
 
 	t.Run("requires both profile exposure fields", func(t *testing.T) {
 		setting := "status"
 
-		err := service.UpdateSettings(ctx, 1, nil, nil, &setting, nil)
-		if err != ErrMissingRequiredFields {
-			t.Errorf("expected ErrMissingRequiredFields, got %v", err)
+		err := svc.UpdateSettings(ctx, 1, nil, nil, &setting, nil)
+		if err != service.ErrMissingRequiredFields {
+			t.Errorf("expected service.ErrMissingRequiredFields, got %v", err)
 		}
 	})
 
@@ -209,7 +210,7 @@ func TestSettingsService_UpdateSettings(t *testing.T) {
 		checkoutDays := uint32(10)
 		automaticLogout := int32(30)
 
-		err := service.UpdateSettings(ctx, 1, &checkoutDays, &automaticLogout, nil, nil)
+		err := svc.UpdateSettings(ctx, 1, &checkoutDays, &automaticLogout, nil, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -221,11 +222,11 @@ func TestSettingsService_UpdateSettings(t *testing.T) {
 
 func TestSettingsService_GetGeneralSettings(t *testing.T) {
 	mockRepo := &mockSettingsRepository{}
-	service := NewSettingsService(mockRepo)
+	svc := service.NewSettingsService(mockRepo)
 	ctx := context.Background()
 
 	t.Run("returns notification settings", func(t *testing.T) {
-		notifications, err := service.GetGeneralSettings(ctx, 1)
+		notifications, err := svc.GetGeneralSettings(ctx, 1)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -240,7 +241,7 @@ func TestSettingsService_GetGeneralSettings(t *testing.T) {
 
 func TestSettingsService_UpdateGeneralSettings(t *testing.T) {
 	mockRepo := &mockSettingsRepository{}
-	service := NewSettingsService(mockRepo)
+	svc := service.NewSettingsService(mockRepo)
 	ctx := context.Background()
 
 	t.Run("updates general settings successfully", func(t *testing.T) {
@@ -257,7 +258,7 @@ func TestSettingsService_UpdateGeneralSettings(t *testing.T) {
 			"trades_email":             true,
 		}
 
-		updated, err := service.UpdateGeneralSettings(ctx, 1, 1, notifications)
+		updated, err := svc.UpdateGeneralSettings(ctx, 1, 1, notifications)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -275,7 +276,7 @@ func TestSettingsService_UpdateGeneralSettings(t *testing.T) {
 		}
 
 		notifications := models.DefaultNotificationSettings()
-		_, err := service.UpdateGeneralSettings(ctx, 1, 1, notifications)
+		_, err := svc.UpdateGeneralSettings(ctx, 1, 1, notifications)
 		if err == nil {
 			t.Fatal("expected error for ownership check")
 		}
@@ -290,9 +291,9 @@ func TestSettingsService_UpdateGeneralSettings(t *testing.T) {
 		}
 
 		notifications := models.DefaultNotificationSettings()
-		_, err := service.UpdateGeneralSettings(ctx, 1, 1, notifications)
-		if err != ErrSettingsNotFound {
-			t.Errorf("expected ErrSettingsNotFound, got %v", err)
+		_, err := svc.UpdateGeneralSettings(ctx, 1, 1, notifications)
+		if err != service.ErrSettingsNotFound {
+			t.Errorf("expected service.ErrSettingsNotFound, got %v", err)
 		}
 	})
 
@@ -302,7 +303,7 @@ func TestSettingsService_UpdateGeneralSettings(t *testing.T) {
 			// Missing other channels
 		}
 
-		_, err := service.UpdateGeneralSettings(ctx, 1, 1, notifications)
+		_, err := svc.UpdateGeneralSettings(ctx, 1, 1, notifications)
 		if err == nil {
 			t.Fatal("expected error for missing channels")
 		}
@@ -311,11 +312,11 @@ func TestSettingsService_UpdateGeneralSettings(t *testing.T) {
 
 func TestSettingsService_GetPrivacySettings(t *testing.T) {
 	mockRepo := &mockSettingsRepository{}
-	service := NewSettingsService(mockRepo)
+	svc := service.NewSettingsService(mockRepo)
 	ctx := context.Background()
 
 	t.Run("returns privacy settings", func(t *testing.T) {
-		privacy, err := service.GetPrivacySettings(ctx, 1)
+		privacy, err := svc.GetPrivacySettings(ctx, 1)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -330,27 +331,27 @@ func TestSettingsService_GetPrivacySettings(t *testing.T) {
 
 func TestSettingsService_UpdatePrivacySettings(t *testing.T) {
 	mockRepo := &mockSettingsRepository{}
-	service := NewSettingsService(mockRepo)
+	svc := service.NewSettingsService(mockRepo)
 	ctx := context.Background()
 
 	t.Run("updates privacy setting successfully", func(t *testing.T) {
-		err := service.UpdatePrivacySettings(ctx, 1, "phone", 1)
+		err := svc.UpdatePrivacySettings(ctx, 1, "phone", 1)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
 
 	t.Run("validates privacy key", func(t *testing.T) {
-		err := service.UpdatePrivacySettings(ctx, 1, "invalid_key", 1)
-		if err != ErrInvalidPrivacyKey {
-			t.Errorf("expected ErrInvalidPrivacyKey, got %v", err)
+		err := svc.UpdatePrivacySettings(ctx, 1, "invalid_key", 1)
+		if err != service.ErrInvalidPrivacyKey {
+			t.Errorf("expected service.ErrInvalidPrivacyKey, got %v", err)
 		}
 	})
 
 	t.Run("validates privacy value", func(t *testing.T) {
-		err := service.UpdatePrivacySettings(ctx, 1, "phone", 2)
-		if err != ErrInvalidPrivacyValue {
-			t.Errorf("expected ErrInvalidPrivacyValue, got %v", err)
+		err := svc.UpdatePrivacySettings(ctx, 1, "phone", 2)
+		if err != service.ErrInvalidPrivacyValue {
+			t.Errorf("expected service.ErrInvalidPrivacyValue, got %v", err)
 		}
 	})
 
@@ -368,7 +369,7 @@ func TestSettingsService_UpdatePrivacySettings(t *testing.T) {
 			return nil
 		}
 
-		err := service.UpdatePrivacySettings(ctx, 1, "phone", 1)
+		err := svc.UpdatePrivacySettings(ctx, 1, "phone", 1)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

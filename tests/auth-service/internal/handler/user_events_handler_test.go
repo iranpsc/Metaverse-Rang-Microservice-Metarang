@@ -1,9 +1,10 @@
-package handler
+package handler_test
 
 import (
 	"context"
 	"database/sql"
 	"errors"
+	"metarang/auth-service/internal/handler"
 	"testing"
 	"time"
 
@@ -95,17 +96,14 @@ func TestUserEventsHandler_ListUserEvents(t *testing.T) {
 		}
 
 		mockUserRepo := &mockUserRepo{}
-		handler := &userEventsHandler{
-			service:  mockService,
-			userRepo: mockUserRepo,
-		}
+		h := handler.NewUserEventsHandler(mockService, mockUserRepo)
 
 		req := &pb.ListUserEventsRequest{
 			UserId: 1,
 			Page:   1,
 		}
 
-		resp, err := handler.ListUserEvents(ctx, req)
+		resp, err := h.ListUserEvents(ctx, req)
 		if err != nil {
 			t.Fatalf("ListUserEvents failed: %v", err)
 		}
@@ -125,17 +123,14 @@ func TestUserEventsHandler_ListUserEvents(t *testing.T) {
 		}
 
 		mockUserRepo := &mockUserRepo{}
-		handler := &userEventsHandler{
-			service:  mockService,
-			userRepo: mockUserRepo,
-		}
+		h := handler.NewUserEventsHandler(mockService, mockUserRepo)
 
 		req := &pb.ListUserEventsRequest{
 			UserId: 1,
 			Page:   1,
 		}
 
-		_, err := handler.ListUserEvents(ctx, req)
+		_, err := h.ListUserEvents(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -181,17 +176,14 @@ func TestUserEventsHandler_GetUserEvent(t *testing.T) {
 		}
 
 		mockUserRepo := &mockUserRepo{}
-		handler := &userEventsHandler{
-			service:  mockService,
-			userRepo: mockUserRepo,
-		}
+		h := handler.NewUserEventsHandler(mockService, mockUserRepo)
 
 		req := &pb.GetUserEventRequest{
 			UserId:  1,
 			EventId: 1,
 		}
 
-		resp, err := handler.GetUserEvent(ctx, req)
+		resp, err := h.GetUserEvent(ctx, req)
 		if err != nil {
 			t.Fatalf("GetUserEvent failed: %v", err)
 		}
@@ -214,17 +206,14 @@ func TestUserEventsHandler_GetUserEvent(t *testing.T) {
 		}
 
 		mockUserRepo := &mockUserRepo{}
-		handler := &userEventsHandler{
-			service:  mockService,
-			userRepo: mockUserRepo,
-		}
+		h := handler.NewUserEventsHandler(mockService, mockUserRepo)
 
 		req := &pb.GetUserEventRequest{
 			UserId:  1,
 			EventId: 999,
 		}
 
-		_, err := handler.GetUserEvent(ctx, req)
+		_, err := h.GetUserEvent(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -263,10 +252,7 @@ func TestUserEventsHandler_ReportUserEvent(t *testing.T) {
 		}
 
 		mockUserRepo := &mockUserRepo{}
-		handler := &userEventsHandler{
-			service:  mockService,
-			userRepo: mockUserRepo,
-		}
+		h := handler.NewUserEventsHandler(mockService, mockUserRepo)
 
 		req := &pb.ReportUserEventRequest{
 			UserId:           1,
@@ -274,7 +260,7 @@ func TestUserEventsHandler_ReportUserEvent(t *testing.T) {
 			EventDescription: "Suspicious activity detected",
 		}
 
-		resp, err := handler.ReportUserEvent(ctx, req)
+		resp, err := h.ReportUserEvent(ctx, req)
 		if err != nil {
 			t.Fatalf("ReportUserEvent failed: %v", err)
 		}
@@ -290,10 +276,7 @@ func TestUserEventsHandler_ReportUserEvent(t *testing.T) {
 	t.Run("missing event_description", func(t *testing.T) {
 		mockService := &mockUserEventsService{}
 		mockUserRepo := &mockUserRepo{}
-		handler := &userEventsHandler{
-			service:  mockService,
-			userRepo: mockUserRepo,
-		}
+		h := handler.NewUserEventsHandler(mockService, mockUserRepo)
 
 		req := &pb.ReportUserEventRequest{
 			UserId:  1,
@@ -301,7 +284,7 @@ func TestUserEventsHandler_ReportUserEvent(t *testing.T) {
 			// EventDescription is empty
 		}
 
-		_, err := handler.ReportUserEvent(ctx, req)
+		_, err := h.ReportUserEvent(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -318,10 +301,7 @@ func TestUserEventsHandler_ReportUserEvent(t *testing.T) {
 	t.Run("event_description too long", func(t *testing.T) {
 		mockService := &mockUserEventsService{}
 		mockUserRepo := &mockUserRepo{}
-		handler := &userEventsHandler{
-			service:  mockService,
-			userRepo: mockUserRepo,
-		}
+		h := handler.NewUserEventsHandler(mockService, mockUserRepo)
 
 		longDescription := make([]byte, 501)
 		for i := range longDescription {
@@ -334,7 +314,7 @@ func TestUserEventsHandler_ReportUserEvent(t *testing.T) {
 			EventDescription: string(longDescription),
 		}
 
-		_, err := handler.ReportUserEvent(ctx, req)
+		_, err := h.ReportUserEvent(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -355,10 +335,7 @@ func TestUserEventsHandler_ReportUserEvent(t *testing.T) {
 		}
 
 		mockUserRepo := &mockUserRepo{}
-		handler := &userEventsHandler{
-			service:  mockService,
-			userRepo: mockUserRepo,
-		}
+		h := handler.NewUserEventsHandler(mockService, mockUserRepo)
 
 		req := &pb.ReportUserEventRequest{
 			UserId:           1,
@@ -366,7 +343,7 @@ func TestUserEventsHandler_ReportUserEvent(t *testing.T) {
 			EventDescription: "Suspicious activity",
 		}
 
-		_, err := handler.ReportUserEvent(ctx, req)
+		_, err := h.ReportUserEvent(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -387,10 +364,7 @@ func TestUserEventsHandler_ReportUserEvent(t *testing.T) {
 		}
 
 		mockUserRepo := &mockUserRepo{}
-		handler := &userEventsHandler{
-			service:  mockService,
-			userRepo: mockUserRepo,
-		}
+		h := handler.NewUserEventsHandler(mockService, mockUserRepo)
 
 		citizenCode := "INVALID"
 		req := &pb.ReportUserEventRequest{
@@ -400,7 +374,7 @@ func TestUserEventsHandler_ReportUserEvent(t *testing.T) {
 			EventDescription:  "Suspicious activity",
 		}
 
-		_, err := handler.ReportUserEvent(ctx, req)
+		_, err := h.ReportUserEvent(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -441,10 +415,7 @@ func TestUserEventsHandler_SendReportResponse(t *testing.T) {
 			}, nil
 		}
 
-		handler := &userEventsHandler{
-			service:  mockService,
-			userRepo: mockUserRepo,
-		}
+		h := handler.NewUserEventsHandler(mockService, mockUserRepo)
 
 		req := &pb.SendReportResponseRequest{
 			UserId:   1,
@@ -452,7 +423,7 @@ func TestUserEventsHandler_SendReportResponse(t *testing.T) {
 			Response: "We have reviewed your report and taken action.",
 		}
 
-		resp, err := handler.SendReportResponse(ctx, req)
+		resp, err := h.SendReportResponse(ctx, req)
 		if err != nil {
 			t.Fatalf("SendReportResponse failed: %v", err)
 		}
@@ -471,10 +442,7 @@ func TestUserEventsHandler_SendReportResponse(t *testing.T) {
 	t.Run("missing response", func(t *testing.T) {
 		mockService := &mockUserEventsService{}
 		mockUserRepo := &mockUserRepo{}
-		handler := &userEventsHandler{
-			service:  mockService,
-			userRepo: mockUserRepo,
-		}
+		h := handler.NewUserEventsHandler(mockService, mockUserRepo)
 
 		req := &pb.SendReportResponseRequest{
 			UserId:  1,
@@ -482,7 +450,7 @@ func TestUserEventsHandler_SendReportResponse(t *testing.T) {
 			// Response is empty
 		}
 
-		_, err := handler.SendReportResponse(ctx, req)
+		_, err := h.SendReportResponse(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -499,10 +467,7 @@ func TestUserEventsHandler_SendReportResponse(t *testing.T) {
 	t.Run("response too long", func(t *testing.T) {
 		mockService := &mockUserEventsService{}
 		mockUserRepo := &mockUserRepo{}
-		handler := &userEventsHandler{
-			service:  mockService,
-			userRepo: mockUserRepo,
-		}
+		h := handler.NewUserEventsHandler(mockService, mockUserRepo)
 
 		longResponse := make([]byte, 301)
 		for i := range longResponse {
@@ -515,7 +480,7 @@ func TestUserEventsHandler_SendReportResponse(t *testing.T) {
 			Response: string(longResponse),
 		}
 
-		_, err := handler.SendReportResponse(ctx, req)
+		_, err := h.SendReportResponse(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -540,10 +505,7 @@ func TestUserEventsHandler_SendReportResponse(t *testing.T) {
 			return &models.User{ID: id, Name: "Test User"}, nil
 		}
 
-		handler := &userEventsHandler{
-			service:  mockService,
-			userRepo: mockUserRepo,
-		}
+		h := handler.NewUserEventsHandler(mockService, mockUserRepo)
 
 		req := &pb.SendReportResponseRequest{
 			UserId:   1,
@@ -551,7 +513,7 @@ func TestUserEventsHandler_SendReportResponse(t *testing.T) {
 			Response: "Response text",
 		}
 
-		_, err := handler.SendReportResponse(ctx, req)
+		_, err := h.SendReportResponse(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -578,17 +540,14 @@ func TestUserEventsHandler_CloseEventReport(t *testing.T) {
 		}
 
 		mockUserRepo := &mockUserRepo{}
-		handler := &userEventsHandler{
-			service:  mockService,
-			userRepo: mockUserRepo,
-		}
+		h := handler.NewUserEventsHandler(mockService, mockUserRepo)
 
 		req := &pb.CloseEventReportRequest{
 			UserId:  1,
 			EventId: 1,
 		}
 
-		_, err := handler.CloseEventReport(ctx, req)
+		_, err := h.CloseEventReport(ctx, req)
 		if err != nil {
 			t.Fatalf("CloseEventReport failed: %v", err)
 		}
@@ -601,17 +560,14 @@ func TestUserEventsHandler_CloseEventReport(t *testing.T) {
 		}
 
 		mockUserRepo := &mockUserRepo{}
-		handler := &userEventsHandler{
-			service:  mockService,
-			userRepo: mockUserRepo,
-		}
+		h := handler.NewUserEventsHandler(mockService, mockUserRepo)
 
 		req := &pb.CloseEventReportRequest{
 			UserId:  1,
 			EventId: 999,
 		}
 
-		_, err := handler.CloseEventReport(ctx, req)
+		_, err := h.CloseEventReport(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -632,17 +588,14 @@ func TestUserEventsHandler_CloseEventReport(t *testing.T) {
 		}
 
 		mockUserRepo := &mockUserRepo{}
-		handler := &userEventsHandler{
-			service:  mockService,
-			userRepo: mockUserRepo,
-		}
+		h := handler.NewUserEventsHandler(mockService, mockUserRepo)
 
 		req := &pb.CloseEventReportRequest{
 			UserId:  1,
 			EventId: 1,
 		}
 
-		_, err := handler.CloseEventReport(ctx, req)
+		_, err := h.CloseEventReport(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}

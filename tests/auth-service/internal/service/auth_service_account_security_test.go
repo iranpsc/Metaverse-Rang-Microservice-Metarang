@@ -1,10 +1,11 @@
-package service
+package service_test
 
 import (
 	"context"
 	"database/sql"
 	"errors"
 	"fmt"
+	"metarang/auth-service/internal/service"
 	"testing"
 	"time"
 
@@ -32,7 +33,7 @@ func TestRequestAccountSecurityCreatesAndDispatchesOTP(t *testing.T) {
 	activityRepo := newFakeActivityRepository()
 	smsClient := &fakeSMSServiceClient{}
 
-	svc := NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
+	svc := service.NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
 
 	if err := svc.RequestAccountSecurity(ctx, 1, 15, " 09123456789 "); err != nil {
 		t.Fatalf("RequestAccountSecurity returned error: %v", err)
@@ -112,7 +113,7 @@ func TestRequestAccountSecurityUpdatesExistingRecord(t *testing.T) {
 	}
 	accountRepo.records[1] = existing
 
-	svc := NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
+	svc := service.NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
 
 	if err := svc.RequestAccountSecurity(ctx, 1, 20, ""); err != nil {
 		t.Fatalf("RequestAccountSecurity returned error: %v", err)
@@ -157,26 +158,26 @@ func TestRequestAccountSecurityValidations(t *testing.T) {
 	activityRepo := newFakeActivityRepository()
 	smsClient := &fakeSMSServiceClient{}
 
-	svc := NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
+	svc := service.NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
 
 	t.Run("invalid duration", func(t *testing.T) {
 		err := svc.RequestAccountSecurity(ctx, 1, 3, "09111111111")
-		if !errors.Is(err, ErrInvalidUnlockDuration) {
-			t.Fatalf("expected ErrInvalidUnlockDuration, got %v", err)
+		if !errors.Is(err, service.ErrInvalidUnlockDuration) {
+			t.Fatalf("expected service.ErrInvalidUnlockDuration, got %v", err)
 		}
 	})
 
 	t.Run("missing phone", func(t *testing.T) {
 		err := svc.RequestAccountSecurity(ctx, 1, 10, "")
-		if !errors.Is(err, ErrPhoneRequired) {
-			t.Fatalf("expected ErrPhoneRequired, got %v", err)
+		if !errors.Is(err, service.ErrPhoneRequired) {
+			t.Fatalf("expected service.ErrPhoneRequired, got %v", err)
 		}
 	})
 
 	t.Run("duplicate phone", func(t *testing.T) {
 		err := svc.RequestAccountSecurity(ctx, 1, 10, "09123456789")
-		if !errors.Is(err, ErrPhoneAlreadyTaken) {
-			t.Fatalf("expected ErrPhoneAlreadyTaken, got %v", err)
+		if !errors.Is(err, service.ErrPhoneAlreadyTaken) {
+			t.Fatalf("expected service.ErrPhoneAlreadyTaken, got %v", err)
 		}
 	})
 }
@@ -196,7 +197,7 @@ func TestRequestAccountSecurityNotificationError(t *testing.T) {
 	activityRepo := newFakeActivityRepository()
 	smsClient := &fakeSMSServiceClient{err: errors.New("dispatch failure")}
 
-	svc := NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
+	svc := service.NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
 
 	err := svc.RequestAccountSecurity(ctx, 1, 15, "09122223333")
 	if err == nil || err.Error() == "" {
@@ -240,7 +241,7 @@ func TestVerifyAccountSecuritySuccess(t *testing.T) {
 		Code:         string(hashed),
 	}
 
-	svc := NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
+	svc := service.NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
 
 	err = svc.VerifyAccountSecurity(ctx, 1, plainCode, " 127.0.0.1 ", " Mozilla/5.0 ")
 	if err != nil {
@@ -322,34 +323,34 @@ func TestVerifyAccountSecurityFailures(t *testing.T) {
 	}
 	accountRepo.otps[security.ID] = &models.Otp{ID: 7, UserID: 1, VerifiableID: security.ID, Code: string(hashed)}
 
-	svc := NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
+	svc := service.NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
 
 	t.Run("invalid code format - non-numeric", func(t *testing.T) {
 		err := svc.VerifyAccountSecurity(ctx, 1, "abc123", "", "")
-		if !errors.Is(err, ErrInvalidOTPCode) {
-			t.Fatalf("expected ErrInvalidOTPCode, got %v", err)
+		if !errors.Is(err, service.ErrInvalidOTPCode) {
+			t.Fatalf("expected service.ErrInvalidOTPCode, got %v", err)
 		}
 	})
 
 	t.Run("invalid code format - wrong length", func(t *testing.T) {
 		err := svc.VerifyAccountSecurity(ctx, 1, "12345", "", "")
-		if !errors.Is(err, ErrInvalidOTPCode) {
-			t.Fatalf("expected ErrInvalidOTPCode, got %v", err)
+		if !errors.Is(err, service.ErrInvalidOTPCode) {
+			t.Fatalf("expected service.ErrInvalidOTPCode, got %v", err)
 		}
 	})
 
 	t.Run("invalid code - wrong digits", func(t *testing.T) {
 		err := svc.VerifyAccountSecurity(ctx, 1, "000000", "", "")
-		if !errors.Is(err, ErrInvalidOTPCode) {
-			t.Fatalf("expected ErrInvalidOTPCode, got %v", err)
+		if !errors.Is(err, service.ErrInvalidOTPCode) {
+			t.Fatalf("expected service.ErrInvalidOTPCode, got %v", err)
 		}
 	})
 
 	t.Run("missing security record", func(t *testing.T) {
 		accountRepo.records = map[uint64]*models.AccountSecurity{}
 		err := svc.VerifyAccountSecurity(ctx, 2, "111111", "", "")
-		if !errors.Is(err, ErrAccountSecurityNotFound) {
-			t.Fatalf("expected ErrAccountSecurityNotFound, got %v", err)
+		if !errors.Is(err, service.ErrAccountSecurityNotFound) {
+			t.Fatalf("expected service.ErrAccountSecurityNotFound, got %v", err)
 		}
 	})
 
@@ -364,8 +365,8 @@ func TestVerifyAccountSecurityFailures(t *testing.T) {
 		accountRepo.records[3] = alreadyUnlockedSecurity
 
 		err := svc.VerifyAccountSecurity(ctx, 3, "111111", "", "")
-		if !errors.Is(err, ErrAccountSecurityAlreadyUnlocked) {
-			t.Fatalf("expected ErrAccountSecurityAlreadyUnlocked, got %v", err)
+		if !errors.Is(err, service.ErrAccountSecurityAlreadyUnlocked) {
+			t.Fatalf("expected service.ErrAccountSecurityAlreadyUnlocked, got %v", err)
 		}
 	})
 
@@ -380,8 +381,8 @@ func TestVerifyAccountSecurityFailures(t *testing.T) {
 		// No OTP in accountRepo.otps
 
 		err := svc.VerifyAccountSecurity(ctx, 2, "123456", "", "")
-		if !errors.Is(err, ErrAccountSecurityNotFound) {
-			t.Fatalf("expected ErrAccountSecurityNotFound when OTP missing, got %v", err)
+		if !errors.Is(err, service.ErrAccountSecurityNotFound) {
+			t.Fatalf("expected service.ErrAccountSecurityNotFound when OTP missing, got %v", err)
 		}
 	})
 
@@ -395,8 +396,8 @@ func TestVerifyAccountSecurityFailures(t *testing.T) {
 		accountRepo.records[999] = security
 
 		err := svc.VerifyAccountSecurity(ctx, 999, "123456", "", "")
-		if !errors.Is(err, ErrUserNotFound) {
-			t.Fatalf("expected ErrUserNotFound, got %v", err)
+		if !errors.Is(err, service.ErrUserNotFound) {
+			t.Fatalf("expected service.ErrUserNotFound, got %v", err)
 		}
 	})
 }
@@ -418,7 +419,7 @@ func TestRequestAccountSecurityPhoneHandling(t *testing.T) {
 		activityRepo := newFakeActivityRepository()
 		smsClient := &fakeSMSServiceClient{}
 
-		svc := NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
+		svc := service.NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
 
 		err := svc.RequestAccountSecurity(ctx, 1, 15, "")
 		if err != nil {
@@ -447,7 +448,7 @@ func TestRequestAccountSecurityPhoneHandling(t *testing.T) {
 		activityRepo := newFakeActivityRepository()
 		smsClient := &fakeSMSServiceClient{}
 
-		svc := NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
+		svc := service.NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
 
 		err := svc.RequestAccountSecurity(ctx, 1, 15, "  09123456789  ")
 		if err != nil {
@@ -473,7 +474,7 @@ func TestRequestAccountSecurityPhoneHandling(t *testing.T) {
 		activityRepo := newFakeActivityRepository()
 		smsClient := &fakeSMSServiceClient{}
 
-		svc := NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
+		svc := service.NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
 
 		testCases := []struct {
 			name  string
@@ -489,8 +490,8 @@ func TestRequestAccountSecurityPhoneHandling(t *testing.T) {
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				err := svc.RequestAccountSecurity(ctx, 1, 15, tc.phone)
-				if !errors.Is(err, ErrInvalidPhoneFormat) {
-					t.Fatalf("expected ErrInvalidPhoneFormat for %q, got %v", tc.phone, err)
+				if !errors.Is(err, service.ErrInvalidPhoneFormat) {
+					t.Fatalf("expected service.ErrInvalidPhoneFormat for %q, got %v", tc.phone, err)
 				}
 			})
 		}
@@ -510,7 +511,7 @@ func TestRequestAccountSecurityPhoneHandling(t *testing.T) {
 		activityRepo := newFakeActivityRepository()
 		smsClient := &fakeSMSServiceClient{}
 
-		svc := NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
+		svc := service.NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
 
 		t.Run("minimum duration (5 minutes)", func(t *testing.T) {
 			err := svc.RequestAccountSecurity(ctx, 1, 5, "")
@@ -534,15 +535,15 @@ func TestRequestAccountSecurityPhoneHandling(t *testing.T) {
 
 		t.Run("below minimum (4 minutes)", func(t *testing.T) {
 			err := svc.RequestAccountSecurity(ctx, 1, 4, "")
-			if !errors.Is(err, ErrInvalidUnlockDuration) {
-				t.Fatalf("expected ErrInvalidUnlockDuration for 4 minutes, got %v", err)
+			if !errors.Is(err, service.ErrInvalidUnlockDuration) {
+				t.Fatalf("expected service.ErrInvalidUnlockDuration for 4 minutes, got %v", err)
 			}
 		})
 
 		t.Run("above maximum (61 minutes)", func(t *testing.T) {
 			err := svc.RequestAccountSecurity(ctx, 1, 61, "")
-			if !errors.Is(err, ErrInvalidUnlockDuration) {
-				t.Fatalf("expected ErrInvalidUnlockDuration for 61 minutes, got %v", err)
+			if !errors.Is(err, service.ErrInvalidUnlockDuration) {
+				t.Fatalf("expected service.ErrInvalidUnlockDuration for 61 minutes, got %v", err)
 			}
 		})
 	})
@@ -559,8 +560,8 @@ func TestIsProductionEnv(t *testing.T) {
 	}
 
 	for env, want := range tests {
-		if got := IsProductionEnv(env); got != want {
-			t.Errorf("IsProductionEnv(%q) = %v, want %v", env, got, want)
+		if got := service.IsProductionEnv(env); got != want {
+			t.Errorf("service.IsProductionEnv(%q) = %v, want %v", env, got, want)
 		}
 	}
 }
@@ -583,7 +584,7 @@ func TestRequestAccountSecurityVerificationRateLimit(t *testing.T) {
 	smsClient := &fakeSMSServiceClient{}
 
 	t.Run("disabled outside production", func(t *testing.T) {
-		svc := NewAuthService(userRepo, nil, cacheRepo, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
+		svc := service.NewAuthService(userRepo, nil, cacheRepo, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
 
 		if err := svc.RequestAccountSecurity(ctx, 1, 15, ""); err != nil {
 			t.Fatalf("first request failed: %v", err)
@@ -594,14 +595,14 @@ func TestRequestAccountSecurityVerificationRateLimit(t *testing.T) {
 	})
 
 	t.Run("enabled in production", func(t *testing.T) {
-		svc := NewAuthService(userRepo, nil, cacheRepo, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", true)
+		svc := service.NewAuthService(userRepo, nil, cacheRepo, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", true)
 
 		if err := svc.RequestAccountSecurity(ctx, 1, 15, ""); err != nil {
 			t.Fatalf("first request failed: %v", err)
 		}
 		err := svc.RequestAccountSecurity(ctx, 1, 15, "")
-		if !errors.Is(err, ErrVerificationRequestRateLimited) {
-			t.Fatalf("expected ErrVerificationRequestRateLimited, got %v", err)
+		if !errors.Is(err, service.ErrVerificationRequestRateLimited) {
+			t.Fatalf("expected service.ErrVerificationRequestRateLimited, got %v", err)
 		}
 	})
 }
@@ -642,7 +643,7 @@ func TestVerifyAccountSecurityEventLogging(t *testing.T) {
 		Code:         string(hashed),
 	}
 
-	svc := NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
+	svc := service.NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
 
 	err = svc.VerifyAccountSecurity(ctx, 1, plainCode, "192.168.1.100", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
 	if err != nil {
@@ -707,7 +708,7 @@ func TestVerifyAccountSecurityUnlockWindow(t *testing.T) {
 		Code:         string(hashed),
 	}
 
-	svc := NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
+	svc := service.NewAuthService(userRepo, nil, nil, accountRepo, activityRepo, nil, nil, smsClient, "", "", "", "", "", false)
 
 	beforeTime := time.Now().Unix()
 	err = svc.VerifyAccountSecurity(ctx, 1, plainCode, "", "")
@@ -768,8 +769,13 @@ func (f *fakeUserRepository) UpdateLastSeen(_ context.Context, userID uint64) er
 	return nil
 }
 
-func (f *fakeUserRepository) FindByCode(context.Context, string) (*models.User, error) {
-	panic("unexpected call to FindByCode")
+func (f *fakeUserRepository) FindByCode(_ context.Context, code string) (*models.User, error) {
+	for _, user := range f.users {
+		if user.Code == code {
+			return user, nil
+		}
+	}
+	return nil, nil
 }
 
 func (f *fakeUserRepository) GetSettings(context.Context, uint64) (*models.Settings, error) {
@@ -808,6 +814,14 @@ func (f *fakeUserRepository) MarkPhoneAsVerified(_ context.Context, userID uint6
 	return fmt.Errorf("user %d not found", userID)
 }
 
+func (f *fakeUserRepository) ExistsByWalletAddress(context.Context, string, uint64) (bool, error) {
+	panic("unexpected call to ExistsByWalletAddress")
+}
+
+func (f *fakeUserRepository) LinkWalletAddress(context.Context, uint64, string) (repository.LinkWalletResult, error) {
+	panic("unexpected call to LinkWalletAddress")
+}
+
 func (f *fakeUserRepository) IsPhoneTaken(_ context.Context, phone string, excludeUserID uint64) (bool, error) {
 	for id, user := range f.users {
 		if id == excludeUserID {
@@ -837,7 +851,7 @@ func (f *fakeUserRepository) GetFollowingCount(context.Context, uint64) (int32, 
 }
 
 func (f *fakeUserRepository) GetLatestProfilePhotoURL(context.Context, uint64) (string, error) {
-	panic("unexpected call to GetLatestProfilePhotoURL")
+	return "", nil
 }
 
 func (f *fakeUserRepository) GetAllProfilePhotoURLs(context.Context, uint64) ([]string, error) {

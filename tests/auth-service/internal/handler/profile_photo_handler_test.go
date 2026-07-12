@@ -1,25 +1,29 @@
-package handler
+package handler_test
 
 import (
 	"context"
 	"errors"
+	"metarang/auth-service/internal/handler"
 	"strings"
 	"testing"
 
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"metarang/auth-service/internal/models"
 	"metarang/auth-service/internal/service"
 	pb "metarang/shared/pb/auth"
+	storagepb "metarang/shared/pb/storage"
 )
 
 // mockProfilePhotoService is a mock implementation for testing
 type mockProfilePhotoService struct {
-	listPhotosFunc  func(ctx context.Context, userID uint64) ([]*models.Image, error)
-	uploadPhotoFunc func(ctx context.Context, userID uint64, imageData []byte, filename, contentType string) (*models.Image, error)
-	getPhotoFunc    func(ctx context.Context, id uint64) (*models.Image, error)
-	deletePhotoFunc func(ctx context.Context, userID uint64, id uint64) error
+	listPhotosFunc   func(ctx context.Context, userID uint64) ([]*models.Image, error)
+	uploadPhotoFunc  func(ctx context.Context, userID uint64, imageData []byte, filename, contentType string) (*models.Image, error)
+	createRecordFunc func(ctx context.Context, userID uint64, url string) (*models.Image, error)
+	getPhotoFunc     func(ctx context.Context, id uint64) (*models.Image, error)
+	deletePhotoFunc  func(ctx context.Context, userID uint64, id uint64) error
 }
 
 func (m *mockProfilePhotoService) ListProfilePhotos(ctx context.Context, userID uint64) ([]*models.Image, error) {
@@ -41,6 +45,27 @@ func (m *mockProfilePhotoService) GetProfilePhoto(ctx context.Context, id uint64
 		return m.getPhotoFunc(ctx, id)
 	}
 	return nil, nil
+}
+
+func (m *mockProfilePhotoService) CreateProfilePhotoRecord(ctx context.Context, userID uint64, url string) (*models.Image, error) {
+	if m.createRecordFunc != nil {
+		return m.createRecordFunc(ctx, userID, url)
+	}
+	return &models.Image{ImageableID: userID, URL: url}, nil
+}
+
+type mockStorageClient struct {
+	storagepb.FileStorageServiceClient
+}
+
+func (m *mockStorageClient) ChunkUpload(context.Context, *storagepb.ChunkUploadRequest, ...grpc.CallOption) (*storagepb.ChunkUploadResponse, error) {
+	return &storagepb.ChunkUploadResponse{
+		Success:       true,
+		IsFinished:    true,
+		FileUrl:       "/uploads/profile",
+		FilePath:      "test.jpg",
+		FinalFilename: "test.jpg",
+	}, nil
 }
 
 func (m *mockProfilePhotoService) DeleteProfilePhoto(ctx context.Context, userID uint64, id uint64) error {
@@ -66,13 +91,13 @@ func TestProfilePhotoHandler_ListProfilePhotos(t *testing.T) {
 
 		// API gateway URL for prepending
 		apiGatewayURL := "https://api.example.com"
-		handler := &ProfilePhotoHandler{
+		h := &handler.ProfilePhotoHandler{
 			ProfilePhotoService: mockService,
 			ApiGatewayURL:       apiGatewayURL,
 		}
 
 		req := &pb.ListProfilePhotosRequest{UserId: 1}
-		resp, err := handler.ListProfilePhotos(ctx, req)
+		resp, err := h.ListProfilePhotos(ctx, req)
 		if err != nil {
 			t.Fatalf("ListProfilePhotos failed: %v", err)
 		}
@@ -134,13 +159,13 @@ func TestProfilePhotoHandler_ListProfilePhotos(t *testing.T) {
 
 		// Gateway URL with trailing slash should be handled correctly
 		apiGatewayURL := "https://api.example.com/"
-		handler := &ProfilePhotoHandler{
+		h := &handler.ProfilePhotoHandler{
 			ProfilePhotoService: mockService,
 			ApiGatewayURL:       apiGatewayURL,
 		}
 
 		req := &pb.ListProfilePhotosRequest{UserId: 1}
-		resp, err := handler.ListProfilePhotos(ctx, req)
+		resp, err := h.ListProfilePhotos(ctx, req)
 		if err != nil {
 			t.Fatalf("ListProfilePhotos failed: %v", err)
 		}
@@ -164,13 +189,13 @@ func TestProfilePhotoHandler_ListProfilePhotos(t *testing.T) {
 		}
 
 		// Empty gateway URL should return original URL
-		handler := &ProfilePhotoHandler{
+		h := &handler.ProfilePhotoHandler{
 			ProfilePhotoService: mockService,
 			ApiGatewayURL:       "",
 		}
 
 		req := &pb.ListProfilePhotosRequest{UserId: 1}
-		resp, err := handler.ListProfilePhotos(ctx, req)
+		resp, err := h.ListProfilePhotos(ctx, req)
 		if err != nil {
 			t.Fatalf("ListProfilePhotos failed: %v", err)
 		}
@@ -192,13 +217,13 @@ func TestProfilePhotoHandler_ListProfilePhotos(t *testing.T) {
 			return []*models.Image{}, nil
 		}
 
-		handler := &ProfilePhotoHandler{
+		h := &handler.ProfilePhotoHandler{
 			ProfilePhotoService: mockService,
 			ApiGatewayURL:       "https://api.example.com",
 		}
 
 		req := &pb.ListProfilePhotosRequest{UserId: 1}
-		resp, err := handler.ListProfilePhotos(ctx, req)
+		resp, err := h.ListProfilePhotos(ctx, req)
 		if err != nil {
 			t.Fatalf("ListProfilePhotos failed: %v", err)
 		}
@@ -213,10 +238,10 @@ func TestProfilePhotoHandler_ListProfilePhotos(t *testing.T) {
 
 	t.Run("missing user_id", func(t *testing.T) {
 		mockService := &mockProfilePhotoService{}
-		handler := &ProfilePhotoHandler{ProfilePhotoService: mockService}
+		h := &handler.ProfilePhotoHandler{ProfilePhotoService: mockService}
 
 		req := &pb.ListProfilePhotosRequest{UserId: 0}
-		_, err := handler.ListProfilePhotos(ctx, req)
+		_, err := h.ListProfilePhotos(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error for missing user_id")
 		}
@@ -233,10 +258,10 @@ func TestProfilePhotoHandler_ListProfilePhotos(t *testing.T) {
 			return nil, errors.New("database error")
 		}
 
-		handler := &ProfilePhotoHandler{ProfilePhotoService: mockService}
+		h := &handler.ProfilePhotoHandler{ProfilePhotoService: mockService}
 
 		req := &pb.ListProfilePhotosRequest{UserId: 1}
-		_, err := handler.ListProfilePhotos(ctx, req)
+		_, err := h.ListProfilePhotos(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -261,10 +286,14 @@ func TestProfilePhotoHandler_UploadProfilePhoto(t *testing.T) {
 				URL: "/uploads/profile/test.jpg", // Relative URL from storage-service
 			}, nil
 		}
+		mockService.createRecordFunc = func(context.Context, uint64, string) (*models.Image, error) {
+			return &models.Image{ID: 1, URL: "/uploads/profile/test.jpg"}, nil
+		}
 
 		apiGatewayURL := "https://api.example.com"
-		handler := &ProfilePhotoHandler{
+		h := &handler.ProfilePhotoHandler{
 			ProfilePhotoService: mockService,
+			StorageClient:       &mockStorageClient{},
 			ApiGatewayURL:       apiGatewayURL,
 		}
 
@@ -275,7 +304,7 @@ func TestProfilePhotoHandler_UploadProfilePhoto(t *testing.T) {
 			ContentType: "image/jpeg",
 		}
 
-		resp, err := handler.UploadProfilePhoto(ctx, req)
+		resp, err := h.UploadProfilePhoto(ctx, req)
 		if err != nil {
 			t.Fatalf("UploadProfilePhoto failed: %v", err)
 		}
@@ -302,7 +331,7 @@ func TestProfilePhotoHandler_UploadProfilePhoto(t *testing.T) {
 
 	t.Run("missing user_id", func(t *testing.T) {
 		mockService := &mockProfilePhotoService{}
-		handler := &ProfilePhotoHandler{ProfilePhotoService: mockService}
+		h := &handler.ProfilePhotoHandler{ProfilePhotoService: mockService}
 
 		req := &pb.UploadProfilePhotoRequest{
 			ImageData:   []byte{1, 2, 3},
@@ -310,7 +339,7 @@ func TestProfilePhotoHandler_UploadProfilePhoto(t *testing.T) {
 			ContentType: "image/jpeg",
 		}
 
-		_, err := handler.UploadProfilePhoto(ctx, req)
+		_, err := h.UploadProfilePhoto(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error for missing user_id")
 		}
@@ -323,7 +352,7 @@ func TestProfilePhotoHandler_UploadProfilePhoto(t *testing.T) {
 
 	t.Run("missing image_data", func(t *testing.T) {
 		mockService := &mockProfilePhotoService{}
-		handler := &ProfilePhotoHandler{ProfilePhotoService: mockService}
+		h := &handler.ProfilePhotoHandler{ProfilePhotoService: mockService}
 
 		req := &pb.UploadProfilePhotoRequest{
 			UserId:      1,
@@ -331,7 +360,7 @@ func TestProfilePhotoHandler_UploadProfilePhoto(t *testing.T) {
 			ContentType: "image/jpeg",
 		}
 
-		_, err := handler.UploadProfilePhoto(ctx, req)
+		_, err := h.UploadProfilePhoto(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error for missing image_data")
 		}
@@ -344,11 +373,14 @@ func TestProfilePhotoHandler_UploadProfilePhoto(t *testing.T) {
 
 	t.Run("invalid image error", func(t *testing.T) {
 		mockService := &mockProfilePhotoService{}
-		mockService.uploadPhotoFunc = func(ctx context.Context, userID uint64, imageData []byte, filename, contentType string) (*models.Image, error) {
+		mockService.createRecordFunc = func(ctx context.Context, userID uint64, url string) (*models.Image, error) {
 			return nil, service.ErrInvalidImage
 		}
 
-		handler := &ProfilePhotoHandler{ProfilePhotoService: mockService}
+		h := &handler.ProfilePhotoHandler{
+			ProfilePhotoService: mockService,
+			StorageClient:       &mockStorageClient{},
+		}
 
 		req := &pb.UploadProfilePhotoRequest{
 			UserId:      1,
@@ -357,14 +389,14 @@ func TestProfilePhotoHandler_UploadProfilePhoto(t *testing.T) {
 			ContentType: "image/jpeg",
 		}
 
-		_, err := handler.UploadProfilePhoto(ctx, req)
+		_, err := h.UploadProfilePhoto(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
 
 		st, ok := status.FromError(err)
-		if !ok || st.Code() != codes.InvalidArgument {
-			t.Errorf("Expected InvalidArgument, got %v", err)
+		if !ok || st.Code() != codes.Internal {
+			t.Errorf("Expected Internal, got %v", err)
 		}
 	})
 }
@@ -382,13 +414,13 @@ func TestProfilePhotoHandler_GetProfilePhoto(t *testing.T) {
 		}
 
 		apiGatewayURL := "https://api.example.com"
-		handler := &ProfilePhotoHandler{
+		h := &handler.ProfilePhotoHandler{
 			ProfilePhotoService: mockService,
 			ApiGatewayURL:       apiGatewayURL,
 		}
 
 		req := &pb.GetProfilePhotoRequest{ProfilePhotoId: 1}
-		resp, err := handler.GetProfilePhoto(ctx, req)
+		resp, err := h.GetProfilePhoto(ctx, req)
 		if err != nil {
 			t.Fatalf("GetProfilePhoto failed: %v", err)
 		}
@@ -412,10 +444,10 @@ func TestProfilePhotoHandler_GetProfilePhoto(t *testing.T) {
 
 	t.Run("missing profile_photo_id", func(t *testing.T) {
 		mockService := &mockProfilePhotoService{}
-		handler := &ProfilePhotoHandler{ProfilePhotoService: mockService}
+		h := &handler.ProfilePhotoHandler{ProfilePhotoService: mockService}
 
 		req := &pb.GetProfilePhotoRequest{ProfilePhotoId: 0}
-		_, err := handler.GetProfilePhoto(ctx, req)
+		_, err := h.GetProfilePhoto(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error for missing profile_photo_id")
 		}
@@ -432,10 +464,10 @@ func TestProfilePhotoHandler_GetProfilePhoto(t *testing.T) {
 			return nil, service.ErrProfilePhotoNotFound
 		}
 
-		handler := &ProfilePhotoHandler{ProfilePhotoService: mockService}
+		h := &handler.ProfilePhotoHandler{ProfilePhotoService: mockService}
 
 		req := &pb.GetProfilePhotoRequest{ProfilePhotoId: 999}
-		_, err := handler.GetProfilePhoto(ctx, req)
+		_, err := h.GetProfilePhoto(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -456,14 +488,14 @@ func TestProfilePhotoHandler_DeleteProfilePhoto(t *testing.T) {
 			return nil
 		}
 
-		handler := &ProfilePhotoHandler{ProfilePhotoService: mockService}
+		h := &handler.ProfilePhotoHandler{ProfilePhotoService: mockService}
 
 		req := &pb.DeleteProfilePhotoRequest{
 			UserId:         1,
 			ProfilePhotoId: 1,
 		}
 
-		_, err := handler.DeleteProfilePhoto(ctx, req)
+		_, err := h.DeleteProfilePhoto(ctx, req)
 		if err != nil {
 			t.Fatalf("DeleteProfilePhoto failed: %v", err)
 		}
@@ -471,13 +503,13 @@ func TestProfilePhotoHandler_DeleteProfilePhoto(t *testing.T) {
 
 	t.Run("missing user_id", func(t *testing.T) {
 		mockService := &mockProfilePhotoService{}
-		handler := &ProfilePhotoHandler{ProfilePhotoService: mockService}
+		h := &handler.ProfilePhotoHandler{ProfilePhotoService: mockService}
 
 		req := &pb.DeleteProfilePhotoRequest{
 			ProfilePhotoId: 1,
 		}
 
-		_, err := handler.DeleteProfilePhoto(ctx, req)
+		_, err := h.DeleteProfilePhoto(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error for missing user_id")
 		}
@@ -494,14 +526,14 @@ func TestProfilePhotoHandler_DeleteProfilePhoto(t *testing.T) {
 			return service.ErrUnauthorized
 		}
 
-		handler := &ProfilePhotoHandler{ProfilePhotoService: mockService}
+		h := &handler.ProfilePhotoHandler{ProfilePhotoService: mockService}
 
 		req := &pb.DeleteProfilePhotoRequest{
 			UserId:         1,
 			ProfilePhotoId: 999,
 		}
 
-		_, err := handler.DeleteProfilePhoto(ctx, req)
+		_, err := h.DeleteProfilePhoto(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -518,14 +550,14 @@ func TestProfilePhotoHandler_DeleteProfilePhoto(t *testing.T) {
 			return service.ErrProfilePhotoNotFound
 		}
 
-		handler := &ProfilePhotoHandler{ProfilePhotoService: mockService}
+		h := &handler.ProfilePhotoHandler{ProfilePhotoService: mockService}
 
 		req := &pb.DeleteProfilePhotoRequest{
 			UserId:         1,
 			ProfilePhotoId: 999,
 		}
 
-		_, err := handler.DeleteProfilePhoto(ctx, req)
+		_, err := h.DeleteProfilePhoto(ctx, req)
 		if err == nil {
 			t.Fatal("Expected error")
 		}
@@ -606,11 +638,11 @@ func TestPrependGatewayURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := &ProfilePhotoHandler{
+			h := &handler.ProfilePhotoHandler{
 				ApiGatewayURL: tt.gatewayURL,
 			}
 
-			result := handler.PrependGatewayURL(tt.inputURL)
+			result := h.PrependGatewayURL(tt.inputURL)
 			if result != tt.expectedURL {
 				t.Errorf("%s: expected %s, got %s", tt.description, tt.expectedURL, result)
 			}
