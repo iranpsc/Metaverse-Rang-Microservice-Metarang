@@ -9,8 +9,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"metargb/commercial-service/internal/service"
-	pb "metargb/shared/pb/commercial"
+	"metarang/commercial-service/internal/service"
+	pb "metarang/shared/pb/commercial"
 )
 
 type WalletHandler struct {

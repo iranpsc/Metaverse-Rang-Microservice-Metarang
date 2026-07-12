@@ -1,6 +1,6 @@
 -- MariaDB dump 10.19  Distrib 10.4.28-MariaDB, for osx10.10 (x86_64)
 --
--- Host: localhost    Database: metargb_db_original
+-- Host: localhost    Database: metarang_db_original
 -- ------------------------------------------------------
 -- Server version	10.4.28-MariaDB
 
@@ -2378,7 +2378,7 @@ CREATE TABLE `websockets_statistics_entries` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping routines for database 'metargb_db_original'
+-- Dumping routines for database 'metarang_db_original'
 --
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

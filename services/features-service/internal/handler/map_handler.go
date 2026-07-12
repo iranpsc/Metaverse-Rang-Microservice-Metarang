@@ -3,8 +3,8 @@ package handler
 import (
 	"context"
 
-	"metargb/features-service/internal/service"
-	pb "metargb/shared/pb/features"
+	"metarang/features-service/internal/service"
+	pb "metarang/shared/pb/features"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

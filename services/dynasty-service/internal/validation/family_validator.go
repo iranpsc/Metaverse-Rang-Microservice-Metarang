@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"metargb/dynasty-service/internal/repository"
+	"metarang/dynasty-service/internal/repository"
 )
 
 type FamilyValidator struct {

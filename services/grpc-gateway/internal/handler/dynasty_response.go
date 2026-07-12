@@ -3,8 +3,8 @@ package handler
 import (
 	"strings"
 
-	commonpb "metargb/shared/pb/common"
-	dynastypb "metargb/shared/pb/dynasty"
+	commonpb "metarang/shared/pb/common"
+	dynastypb "metarang/shared/pb/dynasty"
 )
 
 // buildDynastyHTTPResponse formats a dynasty gRPC response to match Laravel DynastyResource JSON.

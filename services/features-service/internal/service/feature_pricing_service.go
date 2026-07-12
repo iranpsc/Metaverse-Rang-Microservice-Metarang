@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"time"
 
-	"metargb/features-service/internal/constants"
-	"metargb/features-service/internal/repository"
-	"metargb/shared/pkg/logger"
+	"metarang/features-service/internal/constants"
+	"metarang/features-service/internal/repository"
+	"metarang/shared/pkg/logger"
 )
 
 // FeaturePricingService handles feature pricing updates

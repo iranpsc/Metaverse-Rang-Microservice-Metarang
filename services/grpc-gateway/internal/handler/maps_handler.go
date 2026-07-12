@@ -8,7 +8,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	featurespb "metargb/shared/pb/features"
+	featurespb "metarang/shared/pb/features"
 )
 
 type MapsHandler struct {

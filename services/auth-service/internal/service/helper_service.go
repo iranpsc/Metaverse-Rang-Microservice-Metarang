@@ -10,9 +10,9 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 
-	commercialpb "metargb/shared/pb/commercial"
-	featurespb "metargb/shared/pb/features"
-	levelspb "metargb/shared/pb/levels"
+	commercialpb "metarang/shared/pb/commercial"
+	featurespb "metarang/shared/pb/features"
+	levelspb "metarang/shared/pb/levels"
 )
 
 // HelperService provides helper methods that integrate with other microservices

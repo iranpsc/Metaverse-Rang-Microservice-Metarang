@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"metargb/levels-service/internal/mocks"
-	"metargb/levels-service/internal/service"
-	pb "metargb/shared/pb/levels"
+	"metarang/levels-service/internal/mocks"
+	"metarang/levels-service/internal/service"
+	pb "metarang/shared/pb/levels"
 )
 
 func TestLevelServiceGetUserLevelNoLevel(t *testing.T) {

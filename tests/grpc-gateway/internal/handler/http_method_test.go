@@ -2,7 +2,7 @@ package handler_test
 
 import (
 	"io"
-	"metargb/grpc-gateway/internal/handler"
+	"metarang/grpc-gateway/internal/handler"
 	"net/http"
 	"net/http/httptest"
 	"strings"

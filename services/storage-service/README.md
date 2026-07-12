@@ -31,7 +31,7 @@ Run with Docker Compose (includes Kong API Gateway):
 
 ```bash
 # Start all services
-cd metargb-microservices
+cd metarang-microservices
 docker-compose up -d storage-service kong
 
 # Test through Kong (correct way)
@@ -153,16 +153,16 @@ GRPC_PORT=50059
 # Database
 DB_HOST=localhost
 DB_PORT=3306
-DB_DATABASE=metargb_db
+DB_DATABASE=metarang_db
 DB_USER=root
 DB_PASSWORD=
 
 # FTP (Production)
-FTP_HOST=ftp.metargb.com
+FTP_HOST=ftp.metarang.com
 FTP_PORT=21
-FTP_USER=metargb_uploads
+FTP_USER=metarang_uploads
 FTP_PASSWORD=ftp_password
-FTP_BASE_URL=https://cdn.metargb.com/uploads
+FTP_BASE_URL=https://cdn.metarang.com/uploads
 
 # Chunk Upload
 TEMP_DIR=/tmp/storage-chunks
@@ -218,7 +218,7 @@ upload/
 ### Build
 
 ```bash
-docker build -t metargb/storage-service:latest .
+docker build -t metarang/storage-service:latest .
 ```
 
 ### Run with Docker Compose
@@ -235,7 +235,7 @@ storage-service:
     HTTP_PORT: 8059
     GRPC_PORT: 50059
     DB_HOST: mysql
-    FTP_HOST: ftp.metargb.com
+    FTP_HOST: ftp.metarang.com
     TEMP_DIR: /tmp/storage-chunks
 ```
 
@@ -260,7 +260,7 @@ storage-service:
 
 ```bash
 # Clone repository
-cd metargb-microservices/services/storage-service
+cd metarang-microservices/services/storage-service
 
 # Install dependencies
 go mod download
@@ -378,9 +378,9 @@ curl http://localhost:8001/plugins | jq '.data[] | select(.name=="cors")'
 
 ## 📄 License
 
-Part of MetaRGB platform.
+Part of metarang platform.
 
 ---
 
-**Remember:** In production, clients should access `http://api.metargb.com/api/upload`, which routes through Kong to the storage service. Direct service access is only for development/testing!
+**Remember:** In production, clients should access `http://api.metarang.com/api/upload`, which routes through Kong to the storage service. Direct service access is only for development/testing!
 

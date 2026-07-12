@@ -6,9 +6,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"metargb/social-service/internal/models"
-	"metargb/social-service/internal/service"
-	"metargb/social-service/internal/testutil"
+	"metarang/social-service/internal/models"
+	"metarang/social-service/internal/service"
+	"metarang/social-service/internal/testutil"
 )
 
 func TestChallengeService_GetTimings(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"metargb/financial-service/internal/repository"
+	"metarang/financial-service/internal/repository"
 )
 
 type OrderPolicy interface {

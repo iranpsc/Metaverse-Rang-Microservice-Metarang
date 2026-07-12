@@ -7,13 +7,14 @@
 package auth
 
 import (
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
+
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
 )
 
 const (
@@ -8668,7 +8669,7 @@ const file_auth_proto_rawDesc = "" +
 	"\rSearchService\x12B\n" +
 	"\vSearchUsers\x12\x18.auth.SearchUsersRequest\x1a\x19.auth.SearchUsersResponse\x12K\n" +
 	"\x0eSearchFeatures\x12\x1b.auth.SearchFeaturesRequest\x1a\x1c.auth.SearchFeaturesResponse\x12N\n" +
-	"\x0fSearchIsicCodes\x12\x1c.auth.SearchIsicCodesRequest\x1a\x1d.auth.SearchIsicCodesResponseB\x18Z\x16metargb/shared/pb/authb\x06proto3"
+	"\x0fSearchIsicCodes\x12\x1c.auth.SearchIsicCodesRequest\x1a\x1d.auth.SearchIsicCodesResponseB\x18Z\x16metarang/shared/pb/authb\x06proto3"
 
 var (
 	file_auth_proto_rawDescOnce sync.Once

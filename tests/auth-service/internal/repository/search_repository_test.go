@@ -219,7 +219,7 @@ func TestSearchRepository_SearchIsicCodes(t *testing.T) {
 func setupTestDB(t *testing.T) *sql.DB {
 	// Use the same DB setup as other tests
 	// Adjust connection string as needed
-	dsn := "root:@tcp(localhost:3306)/metargb_db?parseTime=true"
+	dsn := "root:@tcp(localhost:3306)/metarang_db?parseTime=true"
 	db, err := sql.Open("mysql", dsn)
 	require.NoError(t, err)
 

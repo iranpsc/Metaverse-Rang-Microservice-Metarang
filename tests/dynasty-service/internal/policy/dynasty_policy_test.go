@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"metargb/dynasty-service/internal/policy"
-	"metargb/dynasty-service/internal/repository"
+	"metarang/dynasty-service/internal/policy"
+	"metarang/dynasty-service/internal/repository"
 )
 
 func TestDynastyPolicy_CanCreateDynasty(t *testing.T) {
@@ -130,4 +130,3 @@ func TestDynastyPolicy_CanUpdateDynastyFeature(t *testing.T) {
 
 	require.NoError(t, mock.ExpectationsWereMet())
 }
-

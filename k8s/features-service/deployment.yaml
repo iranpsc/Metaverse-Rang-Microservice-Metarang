@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: features-service
-  namespace: metargb
+  namespace: metarang
   labels:
     app: features-service
     version: v1
@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
       - name: features-service
-        image: metargb/features-service:latest
+        image: metarang/features-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 50051
@@ -38,27 +38,27 @@ spec:
         - name: DB_HOST
           valueFrom:
             configMapKeyRef:
-              name: metargb-config
+              name: metarang-config
               key: db.host
         - name: DB_PORT
           valueFrom:
             configMapKeyRef:
-              name: metargb-config
+              name: metarang-config
               key: db.port
         - name: DB_USER
           valueFrom:
             secretKeyRef:
-              name: metargb-secrets
+              name: metarang-secrets
               key: db.user
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: metargb-secrets
+              name: metarang-secrets
               key: db.password
         - name: DB_DATABASE
           valueFrom:
             configMapKeyRef:
-              name: metargb-config
+              name: metarang-config
               key: db.database
         - name: PORT
           value: "50051"
@@ -73,12 +73,12 @@ spec:
         - name: REDIS_ADDR
           valueFrom:
             configMapKeyRef:
-              name: metargb-config
+              name: metarang-config
               key: redis.host
         - name: REDIS_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: metargb-secrets
+              name: metarang-secrets
               key: redis.password
               optional: true
         - name: BROADCAST_CHANNEL
@@ -90,30 +90,30 @@ spec:
         - name: THREE_D_META_URL
           valueFrom:
             configMapKeyRef:
-              name: metargb-config
+              name: metarang-config
               key: threed.meta.url
               optional: true
         - name: SENTRY_DSN
           valueFrom:
             secretKeyRef:
-              name: metargb-secrets
+              name: metarang-secrets
               key: sentry.dsn
               optional: true
         - name: SENTRY_ENVIRONMENT
           valueFrom:
             configMapKeyRef:
-              name: metargb-config
+              name: metarang-config
               key: sentry.environment
         - name: SENTRY_RELEASE
           valueFrom:
             configMapKeyRef:
-              name: metargb-config
+              name: metarang-config
               key: sentry.release
               optional: true
         - name: SENTRY_TRACES_SAMPLE_RATE
           valueFrom:
             configMapKeyRef:
-              name: metargb-config
+              name: metarang-config
               key: sentry.traces_sample_rate
         resources:
           requests:
@@ -142,7 +142,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: features-service
-  namespace: metargb
+  namespace: metarang
   labels:
     app: features-service
 spec:
@@ -163,7 +163,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: features-service-hpa
-  namespace: metargb
+  namespace: metarang
 spec:
   scaleTargetRef:
     apiVersion: apps/v1

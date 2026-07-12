@@ -7,13 +7,13 @@ import (
 
 // MarketplaceMetrics holds Prometheus metrics for marketplace operations
 type MarketplaceMetrics struct {
-	BuyRequestsTotal      *prometheus.CounterVec
-	SellRequestsTotal     prometheus.Counter
-	TradesTotal           *prometheus.CounterVec
-	TradeValuePSC         prometheus.Histogram
-	TradeValueIRR         prometheus.Histogram
-	LockedAssetsPSC       prometheus.Gauge
-	LockedAssetsIRR       prometheus.Gauge
+	BuyRequestsTotal  *prometheus.CounterVec
+	SellRequestsTotal prometheus.Counter
+	TradesTotal       *prometheus.CounterVec
+	TradeValuePSC     prometheus.Histogram
+	TradeValueIRR     prometheus.Histogram
+	LockedAssetsPSC   prometheus.Gauge
+	LockedAssetsIRR   prometheus.Gauge
 }
 
 // NewMarketplaceMetrics creates a new marketplace metrics instance
@@ -21,7 +21,7 @@ func NewMarketplaceMetrics() *MarketplaceMetrics {
 	return &MarketplaceMetrics{
 		BuyRequestsTotal: promauto.NewCounterVec(
 			prometheus.CounterOpts{
-				Namespace: "metargb",
+				Namespace: "metarang",
 				Subsystem: "features",
 				Name:      "buy_requests_total",
 				Help:      "Total number of buy requests",
@@ -30,7 +30,7 @@ func NewMarketplaceMetrics() *MarketplaceMetrics {
 		),
 		SellRequestsTotal: promauto.NewCounter(
 			prometheus.CounterOpts{
-				Namespace: "metargb",
+				Namespace: "metarang",
 				Subsystem: "features",
 				Name:      "sell_requests_total",
 				Help:      "Total number of sell requests",
@@ -38,7 +38,7 @@ func NewMarketplaceMetrics() *MarketplaceMetrics {
 		),
 		TradesTotal: promauto.NewCounterVec(
 			prometheus.CounterOpts{
-				Namespace: "metargb",
+				Namespace: "metarang",
 				Subsystem: "features",
 				Name:      "trades_total",
 				Help:      "Total number of trades",
@@ -47,7 +47,7 @@ func NewMarketplaceMetrics() *MarketplaceMetrics {
 		),
 		TradeValuePSC: promauto.NewHistogram(
 			prometheus.HistogramOpts{
-				Namespace: "metargb",
+				Namespace: "metarang",
 				Subsystem: "features",
 				Name:      "trade_value_psc",
 				Help:      "Trade value in PSC",
@@ -56,7 +56,7 @@ func NewMarketplaceMetrics() *MarketplaceMetrics {
 		),
 		TradeValueIRR: promauto.NewHistogram(
 			prometheus.HistogramOpts{
-				Namespace: "metargb",
+				Namespace: "metarang",
 				Subsystem: "features",
 				Name:      "trade_value_irr",
 				Help:      "Trade value in IRR",
@@ -65,7 +65,7 @@ func NewMarketplaceMetrics() *MarketplaceMetrics {
 		),
 		LockedAssetsPSC: promauto.NewGauge(
 			prometheus.GaugeOpts{
-				Namespace: "metargb",
+				Namespace: "metarang",
 				Subsystem: "features",
 				Name:      "buy_request_locked_assets_psc",
 				Help:      "Total locked PSC assets in buy requests",
@@ -73,7 +73,7 @@ func NewMarketplaceMetrics() *MarketplaceMetrics {
 		),
 		LockedAssetsIRR: promauto.NewGauge(
 			prometheus.GaugeOpts{
-				Namespace: "metargb",
+				Namespace: "metarang",
 				Subsystem: "features",
 				Name:      "buy_request_locked_assets_irr",
 				Help:      "Total locked IRR assets in buy requests",
@@ -108,4 +108,3 @@ func (m *MarketplaceMetrics) UpdateLockedAssets(pscAmount, irrAmount float64) {
 	m.LockedAssetsPSC.Set(pscAmount)
 	m.LockedAssetsIRR.Set(irrAmount)
 }
-

@@ -10,10 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	calendarpb "metargb/shared/pb/calendar"
+	calendarpb "metarang/shared/pb/calendar"
 
-	"metargb/grpc-gateway/internal/handler"
-	"metargb/grpc-gateway/internal/testutil"
+	"metarang/grpc-gateway/internal/handler"
+	"metarang/grpc-gateway/internal/testutil"
 )
 
 func newCalendarHandler(t *testing.T, calendar *testutil.MockCalendarService) *handler.CalendarHandler {

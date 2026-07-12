@@ -2,32 +2,32 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: shared-config
-  namespace: metargb
+  namespace: metarang
 data:
   # Database configuration
-  mysql-host: "mysql.metargb.svc.cluster.local"
+  mysql-host: "mysql.metarang.svc.cluster.local"
   mysql-port: "3306"
-  mysql-database: "metargb_db"
-  mysql-user: "metargb"
+  mysql-database: "metarang_db"
+  mysql-user: "metarang"
   
   # Redis configuration
-  redis-host: "redis.metargb.svc.cluster.local"
+  redis-host: "redis.metarang.svc.cluster.local"
   redis-port: "6379"
   
   # OAuth configuration (update with actual values)
-  oauth-server-url: "https://sso.metargb.com"
-  oauth-client-id: "metargb-client-id"
+  oauth-server-url: "https://sso.metarang.com"
+  oauth-client-id: "metarang-client-id"
   
   # Application configuration
-  app-url: "https://api.metargb.com"
-  ftp-endpoint: "ftp://ftp.metargb.com"
+  app-url: "https://api.metarang.com"
+  ftp-endpoint: "ftp://ftp.metarang.com"
   
   # Kavenegar SMS
   kavenegar-api-key: ""
   
   # Parsian Payment
   parsian-merchant-id: ""
-  parsian-callback-url: "https://api.metargb.com/api/parsian/callback"
+  parsian-callback-url: "https://api.metarang.com/api/parsian/callback"
   
   # Logging
   log-level: "info"
@@ -41,7 +41,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: app-secrets
-  namespace: metargb
+  namespace: metarang
 type: Opaque
 stringData:
   # OAuth secrets

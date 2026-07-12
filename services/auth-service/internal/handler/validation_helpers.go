@@ -7,8 +7,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"metargb/auth-service/internal/service"
-	"metargb/shared/pkg/helpers"
+	"metarang/auth-service/internal/service"
+	"metarang/shared/pkg/helpers"
 )
 
 // mapServiceErrorToValidationFields maps service errors to field validation errors
@@ -148,4 +148,3 @@ func returnValidationError(fields map[string]string) error {
 	encodedError := helpers.EncodeValidationError(fields)
 	return status.Error(codes.InvalidArgument, encodedError)
 }
-

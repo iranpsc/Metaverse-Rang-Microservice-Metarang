@@ -9,9 +9,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"metargb/financial-service/internal/service"
-	pb "metargb/shared/pb/financial"
-	"metargb/shared/pkg/helpers"
+	"metarang/financial-service/internal/service"
+	pb "metarang/shared/pb/financial"
+	"metarang/shared/pkg/helpers"
 )
 
 type StoreHandler struct {

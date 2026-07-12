@@ -11,10 +11,10 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"metargb/auth-service/internal/lang"
-	"metargb/auth-service/internal/service"
-	pb "metargb/shared/pb/auth"
-	storagepb "metargb/shared/pb/storage"
+	"metarang/auth-service/internal/lang"
+	"metarang/auth-service/internal/service"
+	pb "metarang/shared/pb/auth"
+	storagepb "metarang/shared/pb/storage"
 )
 
 // ProfilePhotoHandler handles profile photo gRPC requests

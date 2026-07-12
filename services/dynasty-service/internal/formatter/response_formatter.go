@@ -3,8 +3,8 @@ package formatter
 import (
 	"fmt"
 
-	"metargb/dynasty-service/internal/models"
-	"metargb/shared/pkg/helpers"
+	"metarang/dynasty-service/internal/models"
+	"metarang/shared/pkg/helpers"
 )
 
 // DynastyResponse matches Laravel DynastyResource exactly

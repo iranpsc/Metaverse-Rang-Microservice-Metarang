@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"metargb/features-service/internal/handler"
+	"metarang/features-service/internal/handler"
 )
 
 func TestSetProjectLocale_Normalize(t *testing.T) {

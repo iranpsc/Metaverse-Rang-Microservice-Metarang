@@ -3,7 +3,7 @@ _format_version: "3.0"
 services:
   # Auth Service
   - name: auth-service
-    url: grpc://auth-service.metargb.svc.cluster.local:50051
+    url: grpc://auth-service.metarang.svc.cluster.local:50051
     protocol: grpc
     routes:
       - name: auth-register
@@ -85,7 +85,7 @@ services:
 
   # Commercial Service
   - name: commercial-service
-    url: grpc://commercial-service.metargb.svc.cluster.local:50052
+    url: grpc://commercial-service.metarang.svc.cluster.local:50052
     protocol: grpc
     routes:
       - name: user-wallet
@@ -180,7 +180,7 @@ plugins:
   # Request/Response logging
   - name: http-log
     config:
-      http_endpoint: http://logstash.metargb.svc.cluster.local:8080
+      http_endpoint: http://logstash.metarang.svc.cluster.local:8080
       method: POST
       timeout: 1000
       keepalive: 1000

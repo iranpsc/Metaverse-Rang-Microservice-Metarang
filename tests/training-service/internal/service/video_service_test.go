@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"metargb/training-service/internal/models"
-	"metargb/training-service/internal/repository"
+	"metarang/training-service/internal/models"
+	"metarang/training-service/internal/repository"
 )
 
 // Mock repositories

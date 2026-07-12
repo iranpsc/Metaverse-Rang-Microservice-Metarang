@@ -3,8 +3,8 @@ package testutil
 import (
 	"context"
 
-	"metargb/support-service/internal/models"
-	"metargb/support-service/internal/repository"
+	"metarang/support-service/internal/models"
+	"metarang/support-service/internal/repository"
 )
 
 // MockTicketRepo implements repository.TicketRepository for tests.

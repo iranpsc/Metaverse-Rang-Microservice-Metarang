@@ -419,5 +419,5 @@ cache_misses_total{cache="redis"}
 
 **Date**: December 2024  
 **Version**: 1.0  
-**Maintained by**: MetaRGB DevOps Team
+**Maintained by**: metarang DevOps Team
 

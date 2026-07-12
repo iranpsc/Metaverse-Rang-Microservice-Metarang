@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"metargb/dynasty-service/internal/repository"
+	"metarang/dynasty-service/internal/repository"
 )
 
 func TestPermissionService_UpdateChildPermission(t *testing.T) {

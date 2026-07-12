@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"metargb/shared/pkg/sentry"
-	"metargb/storage-service/internal/service"
+	"metarang/shared/pkg/sentry"
+	"metarang/storage-service/internal/service"
 )
 
 // HTTPHandler handles HTTP REST requests for chunk uploads

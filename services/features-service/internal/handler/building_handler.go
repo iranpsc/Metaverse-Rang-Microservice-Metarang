@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"metargb/features-service/internal/lang"
-	pb "metargb/shared/pb/features"
+	"metarang/features-service/internal/lang"
+	pb "metarang/shared/pb/features"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

@@ -1,6 +1,6 @@
 # Load Testing with k6
 
-Performance and load testing for MetaRGB microservices.
+Performance and load testing for metarang microservices.
 
 ## Overview
 
@@ -262,10 +262,10 @@ Tests automatically run in GitHub Actions:
 Services not running or wrong URL:
 ```bash
 # Verify services are up
-kubectl get pods -n metargb
+kubectl get pods -n metarang
 
 # Get correct URL
-export API_URL=$(kubectl get svc kong-proxy -n metargb -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+export API_URL=$(kubectl get svc kong-proxy -n metarang -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 k6 run --env API_URL=http://$API_URL auth_test.js
 ```
 
@@ -273,7 +273,7 @@ k6 run --env API_URL=http://$API_URL auth_test.js
 
 Check service logs:
 ```bash
-kubectl logs -l app=auth-service -n metargb --tail=100
+kubectl logs -l app=auth-service -n metarang --tail=100
 ```
 
 ### Timeouts
@@ -289,7 +289,7 @@ export const options = {
 
 Or scale services:
 ```bash
-kubectl scale deployment/auth-service --replicas=5 -n metargb
+kubectl scale deployment/auth-service --replicas=5 -n metarang
 ```
 
 ## Advanced Usage

@@ -1,4 +1,4 @@
-module github.com/metargb/metargb-microservices/tests/golden
+module github.com/metarang/metarang-microservices/tests/golden
 
 go 1.25.0
 

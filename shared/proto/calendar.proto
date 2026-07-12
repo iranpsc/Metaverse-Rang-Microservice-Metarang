@@ -4,7 +4,7 @@ package calendar;
 
 import "common.proto";
 
-option go_package = "metargb/shared/pb/calendar";
+option go_package = "metarang/shared/pb/calendar";
 
 // CalendarService handles calendar events and versions
 service CalendarService {

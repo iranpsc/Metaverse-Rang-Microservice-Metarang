@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"metargb/features-service/internal/repository"
+	"metarang/features-service/internal/repository"
 )
 
 func TestBboxBoundsFromPoints(t *testing.T) {

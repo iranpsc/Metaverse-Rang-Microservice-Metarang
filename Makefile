@@ -5,7 +5,7 @@ PROTO_DIR=shared/proto
 PROTO_OUT_DIR=shared/pb
 
 # Docker
-DOCKER_REGISTRY=metargb
+DOCKER_REGISTRY=metarang
 VERSION?=latest
 
 # Local uploads (storage-service writes here; link-uploads exposes it at project root)
@@ -79,7 +79,7 @@ help:
 	@echo ""
 	@echo "Database:"
 	@echo "  import-schema    - Import database schema only (schema.sql)"
-	@echo "  import-database  - Import database with data (metargb_db.sql)"
+	@echo "  import-database  - Import database with data (metarang_db.sql)"
 	@echo ""
 	@echo "Service-specific (set SERVICE=service-name):"
 	@echo "  build-service    - Build specific service"
@@ -301,6 +301,12 @@ build:
 	@echo "🔨 Building all services..."
 	$(DOCKER_COMPOSE) build
 	@echo "✅ Build complete"
+build-clean:
+	@echo "🔄 Cleaning up and rebuilding all services..."
+	$(DOCKER_COMPOSE) down -v
+	docker system prune -f
+	$(DOCKER_COMPOSE) build --no-cache
+	@echo "✅ Clean build complete"
 
 build-service:
 	@if [ -z "$(SERVICE)" ]; then \
@@ -331,47 +337,47 @@ import-schema:
 		echo "❌ scripts/schema.sql not found!"; \
 		exit 1; \
 	fi
-	docker exec -i metargb-mysql mysql -uroot -proot_password metargb_db < scripts/schema.sql
+	docker exec -i metarang-mysql mysql -uroot -proot_password metarang_db < scripts/schema.sql
 	@echo "✅ Schema imported successfully"
 	@echo ""
 	@echo "Verifying tables..."
 ifeq ($(OS),Windows_NT)
-	@docker exec metargb-mysql mysql -uroot -proot_password metargb_db -e "SELECT COUNT(*) as table_count FROM information_schema.tables WHERE table_schema='metargb_db';" 2>nul | findstr /v table_count || echo "Could not verify"
+	@docker exec metarang-mysql mysql -uroot -proot_password metarang_db -e "SELECT COUNT(*) as table_count FROM information_schema.tables WHERE table_schema='metarang_db';" 2>nul | findstr /v table_count || echo "Could not verify"
 else
-	@docker exec metargb-mysql mysql -uroot -proot_password metargb_db -e "SELECT COUNT(*) as table_count FROM information_schema.tables WHERE table_schema='metargb_db';" 2>/dev/null | grep -v table_count || echo "Could not verify"
+	@docker exec metarang-mysql mysql -uroot -proot_password metarang_db -e "SELECT COUNT(*) as table_count FROM information_schema.tables WHERE table_schema='metarang_db';" 2>/dev/null | grep -v table_count || echo "Could not verify"
 endif
 
 import-database:
-ifeq ($(wildcard scripts/metargb_db.sql),)
 ifeq ($(wildcard scripts/metarang_db.sql),)
-	@echo "❌ Database dump not found. Place metargb_db.sql or metarang_db.sql in scripts/"
+ifeq ($(wildcard scripts/metarang_db.sql),)
+	@echo "❌ Database dump not found. Place metarang_db.sql or metarang_db.sql in scripts/"
 	@exit 1
 else
 	$(eval DB_DUMP_FILE := scripts/metarang_db.sql)
 endif
 else
-	$(eval DB_DUMP_FILE := scripts/metargb_db.sql)
+	$(eval DB_DUMP_FILE := scripts/metarang_db.sql)
 endif
 	@echo "Importing database (schema + data) from $(DB_DUMP_FILE)..."
 	@echo "Dropping and recreating database..."
 ifeq ($(OS),Windows_NT)
-	@docker exec -i metargb-mysql mysql -uroot -proot_password -e "DROP DATABASE IF EXISTS metargb_db; CREATE DATABASE metargb_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+	@docker exec -i metarang-mysql mysql -uroot -proot_password -e "DROP DATABASE IF EXISTS metarang_db; CREATE DATABASE metarang_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 	@echo "Importing data..."
-	@powershell -NoProfile -Command "Get-Content -Raw '$(DB_DUMP_FILE)' | docker exec -i metargb-mysql mysql -uroot -proot_password metargb_db"
+	@powershell -NoProfile -Command "Get-Content -Raw '$(DB_DUMP_FILE)' | docker exec -i metarang-mysql mysql -uroot -proot_password metarang_db"
 else
-	@docker exec -i metargb-mysql mysql -uroot -proot_password -e "DROP DATABASE IF EXISTS metargb_db; CREATE DATABASE metargb_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null || true
+	@docker exec -i metarang-mysql mysql -uroot -proot_password -e "DROP DATABASE IF EXISTS metarang_db; CREATE DATABASE metarang_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null || true
 	@echo "Importing data..."
-	@docker exec -i metargb-mysql mysql -uroot -proot_password metargb_db < $(DB_DUMP_FILE)
+	@docker exec -i metarang-mysql mysql -uroot -proot_password metarang_db < $(DB_DUMP_FILE)
 endif
 	@echo "Database imported successfully"
 	@echo ""
 	@echo "Verifying import..."
 ifeq ($(OS),Windows_NT)
-	@docker exec metargb-mysql mysql -uroot -proot_password metargb_db -e "SELECT COUNT(*) as table_count FROM information_schema.tables WHERE table_schema='metargb_db';" 2>nul | findstr /v table_count || echo "Could not verify table count"
-	@docker exec metargb-mysql mysql -uroot -proot_password metargb_db -e "SELECT COUNT(*) as row_count FROM account_securities;" 2>nul | findstr /v row_count || echo "Could not verify data"
+	@docker exec metarang-mysql mysql -uroot -proot_password metarang_db -e "SELECT COUNT(*) as table_count FROM information_schema.tables WHERE table_schema='metarang_db';" 2>nul | findstr /v table_count || echo "Could not verify table count"
+	@docker exec metarang-mysql mysql -uroot -proot_password metarang_db -e "SELECT COUNT(*) as row_count FROM account_securities;" 2>nul | findstr /v row_count || echo "Could not verify data"
 else
-	@docker exec metargb-mysql mysql -uroot -proot_password metargb_db -e "SELECT COUNT(*) as table_count FROM information_schema.tables WHERE table_schema='metargb_db';" 2>/dev/null | grep -v table_count || echo "Could not verify table count"
-	@docker exec metargb-mysql mysql -uroot -proot_password metargb_db -e "SELECT COUNT(*) as row_count FROM account_securities;" 2>/dev/null | grep -v row_count || echo "Could not verify data"
+	@docker exec metarang-mysql mysql -uroot -proot_password metarang_db -e "SELECT COUNT(*) as table_count FROM information_schema.tables WHERE table_schema='metarang_db';" 2>/dev/null | grep -v table_count || echo "Could not verify table count"
+	@docker exec metarang-mysql mysql -uroot -proot_password metarang_db -e "SELECT COUNT(*) as row_count FROM account_securities;" 2>/dev/null | grep -v row_count || echo "Could not verify data"
 endif
 
 dev:
@@ -383,11 +389,11 @@ dev:
 ifeq ($(OS),Windows_NT)
 	@powershell -NoProfile -Command "Start-Sleep -Seconds 10"
 	@echo "Checking if schema needs to be imported..."
-	@powershell -NoProfile -Command "$$ErrorActionPreference='Continue'; $$tableCount = (docker exec metargb-mysql mysql -uroot -proot_password metargb_db -e \"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='metargb_db';\" 2>$$null | Select-Object -Last 1).Trim(); if ($$tableCount -eq '0') { Write-Host 'Importing schema...'; make import-schema } else { Write-Host (\"✅ Database already initialized ({0} tables)\" -f $$tableCount) }"
+	@powershell -NoProfile -Command "$$ErrorActionPreference='Continue'; $$tableCount = (docker exec metarang-mysql mysql -uroot -proot_password metarang_db -e \"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='metarang_db';\" 2>$$null | Select-Object -Last 1).Trim(); if ($$tableCount -eq '0') { Write-Host 'Importing schema...'; make import-schema } else { Write-Host (\"✅ Database already initialized ({0} tables)\" -f $$tableCount) }"
 else
 	@sleep 10
 	@echo "Checking if schema needs to be imported..."
-	@TABLE_COUNT=$$(docker exec metargb-mysql mysql -uroot -proot_password metargb_db -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='metargb_db';" 2>/dev/null | tail -1); \
+	@TABLE_COUNT=$$(docker exec metarang-mysql mysql -uroot -proot_password metarang_db -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='metarang_db';" 2>/dev/null | tail -1); \
 	if [ "$$TABLE_COUNT" = "0" ]; then \
 		echo "Importing schema..."; \
 		make import-schema; \

@@ -11,10 +11,10 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"metargb/grpc-gateway/internal/middleware"
-	pb "metargb/shared/pb/auth"
-	commonpb "metargb/shared/pb/common"
-	trainingpb "metargb/shared/pb/training"
+	"metarang/grpc-gateway/internal/middleware"
+	pb "metarang/shared/pb/auth"
+	commonpb "metarang/shared/pb/common"
+	trainingpb "metarang/shared/pb/training"
 )
 
 type TrainingHandler struct {

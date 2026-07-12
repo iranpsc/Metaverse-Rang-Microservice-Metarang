@@ -10,10 +10,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"metargb/grpc-gateway/internal/middleware"
-	pb "metargb/shared/pb/auth"
-	financialpb "metargb/shared/pb/financial"
-	"metargb/shared/pkg/helpers"
+	"metarang/grpc-gateway/internal/middleware"
+	pb "metarang/shared/pb/auth"
+	financialpb "metarang/shared/pb/financial"
+	"metarang/shared/pkg/helpers"
 )
 
 func appendAcceptLanguage(ctx context.Context, r *http.Request) context.Context {

@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"metargb/financial-service/internal/models"
-	"metargb/financial-service/internal/sadad"
-	commercialpb "metargb/shared/pb/commercial"
+	"metarang/financial-service/internal/models"
+	"metarang/financial-service/internal/sadad"
+	commercialpb "metarang/shared/pb/commercial"
 
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"

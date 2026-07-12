@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"metargb/levels-service/internal/client"
-	pb "metargb/shared/pb/levels"
+	"metarang/levels-service/internal/client"
+	pb "metarang/shared/pb/levels"
 )
 
 func parseNumericString(value string) (float64, error) {

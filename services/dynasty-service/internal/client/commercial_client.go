@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	pb "metarang/shared/pb/commercial"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	pb "metargb/shared/pb/commercial"
 )
 
 // CommercialClient wraps gRPC client for Commercial Service (wallet operations)
@@ -96,4 +97,3 @@ func (c *CommercialClient) GetWallet(ctx context.Context, userID uint64) (*pb.Wa
 
 	return resp, nil
 }
-

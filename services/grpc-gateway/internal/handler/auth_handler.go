@@ -15,10 +15,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"metargb/grpc-gateway/internal/middleware"
-	pb "metargb/shared/pb/auth"
-	levelspb "metargb/shared/pb/levels"
-	"metargb/shared/pkg/helpers"
+	"metarang/grpc-gateway/internal/middleware"
+	pb "metarang/shared/pb/auth"
+	levelspb "metarang/shared/pb/levels"
+	"metarang/shared/pkg/helpers"
 )
 
 type AuthHandler struct {

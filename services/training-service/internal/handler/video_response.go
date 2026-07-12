@@ -5,9 +5,9 @@ import (
 	"os"
 	"strings"
 
-	commonpb "metargb/shared/pb/common"
-	trainingpb "metargb/shared/pb/training"
-	"metargb/training-service/internal/service"
+	commonpb "metarang/shared/pb/common"
+	trainingpb "metarang/shared/pb/training"
+	"metarang/training-service/internal/service"
 )
 
 // buildVideoResponse builds a VideoResponse from video details.

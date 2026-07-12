@@ -9,11 +9,11 @@ import (
 
 	"google.golang.org/grpc"
 
-	"metargb/grpc-gateway/internal/middleware"
-	pb "metargb/shared/pb/auth"
-	calendarpb "metargb/shared/pb/calendar"
-	commonpb "metargb/shared/pb/common"
-	"metargb/shared/pkg/jalali"
+	"metarang/grpc-gateway/internal/middleware"
+	pb "metarang/shared/pb/auth"
+	calendarpb "metarang/shared/pb/calendar"
+	commonpb "metarang/shared/pb/common"
+	"metarang/shared/pkg/jalali"
 )
 
 type CalendarHandler struct {

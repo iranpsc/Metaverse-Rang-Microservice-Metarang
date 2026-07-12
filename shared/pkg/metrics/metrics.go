@@ -23,7 +23,7 @@ func NewMetrics(serviceName string) *Metrics {
 	return &Metrics{
 		RequestCounter: promauto.NewCounterVec(
 			prometheus.CounterOpts{
-				Namespace: "metargb",
+				Namespace: "metarang",
 				Subsystem: serviceName,
 				Name:      "requests_total",
 				Help:      "Total number of requests",
@@ -32,7 +32,7 @@ func NewMetrics(serviceName string) *Metrics {
 		),
 		RequestDuration: promauto.NewHistogramVec(
 			prometheus.HistogramOpts{
-				Namespace: "metargb",
+				Namespace: "metarang",
 				Subsystem: serviceName,
 				Name:      "request_duration_seconds",
 				Help:      "Request duration in seconds",
@@ -42,7 +42,7 @@ func NewMetrics(serviceName string) *Metrics {
 		),
 		RequestsInFlight: promauto.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Namespace: "metargb",
+				Namespace: "metarang",
 				Subsystem: serviceName,
 				Name:      "requests_in_flight",
 				Help:      "Number of requests currently being processed",
@@ -51,7 +51,7 @@ func NewMetrics(serviceName string) *Metrics {
 		),
 		DBConnPoolStats: promauto.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Namespace: "metargb",
+				Namespace: "metarang",
 				Subsystem: serviceName,
 				Name:      "db_connection_pool",
 				Help:      "Database connection pool statistics",
@@ -141,4 +141,3 @@ func (m *Metrics) RecordDBPoolStats(open, inUse, idle int, waitCount int64, wait
 	m.DBConnPoolStats.WithLabelValues("wait_count").Set(float64(waitCount))
 	m.DBConnPoolStats.WithLabelValues("wait_duration_ms").Set(float64(waitDuration.Milliseconds()))
 }
-

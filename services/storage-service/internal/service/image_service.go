@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"metargb/storage-service/internal/ftp"
-	"metargb/storage-service/internal/models"
-	"metargb/storage-service/internal/repository"
+	"metarang/storage-service/internal/ftp"
+	"metarang/storage-service/internal/models"
+	"metarang/storage-service/internal/repository"
 )
 
 type ImageService struct {

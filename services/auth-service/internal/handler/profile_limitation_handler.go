@@ -10,10 +10,10 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"metargb/auth-service/internal/lang"
-	"metargb/auth-service/internal/models"
-	"metargb/auth-service/internal/service"
-	pb "metargb/shared/pb/auth"
+	"metarang/auth-service/internal/lang"
+	"metarang/auth-service/internal/models"
+	"metarang/auth-service/internal/service"
+	pb "metarang/shared/pb/auth"
 )
 
 type profileLimitationHandler struct {

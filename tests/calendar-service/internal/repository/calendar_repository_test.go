@@ -10,7 +10,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 
-	"metargb/calendar-service/internal/repository"
+	"metarang/calendar-service/internal/repository"
 )
 
 const calendarMorphType = "App\\Models\\Calendar"

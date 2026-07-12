@@ -1,4 +1,4 @@
-module metargb/social-service
+module metarang/social-service
 
 go 1.25.0
 
@@ -8,7 +8,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	google.golang.org/grpc v1.79.3
 	google.golang.org/protobuf v1.36.11
-	metargb/shared v0.0.0
+	metarang/shared v0.0.0
 )
 
 require (
@@ -32,4 +32,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace metargb/shared => ../../shared
+replace metarang/shared => ../../shared

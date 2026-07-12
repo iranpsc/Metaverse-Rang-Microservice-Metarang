@@ -1,6 +1,6 @@
 package service
 
-import "metargb/financial-service/internal/sadad"
+import "metarang/financial-service/internal/sadad"
 
 // SadadClient interface for payment gateway operations.
 // Allows for easier testing with mocks.

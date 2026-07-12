@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"metargb/levels-service/internal/repository"
+	"metarang/levels-service/internal/repository"
 )
 
 func TestLevelService_GetAllLevels(t *testing.T) {

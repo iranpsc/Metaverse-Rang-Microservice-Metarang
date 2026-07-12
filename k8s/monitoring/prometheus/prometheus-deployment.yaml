@@ -60,7 +60,7 @@ data:
       scrape_interval: 15s
       evaluation_interval: 15s
       external_labels:
-        cluster: 'metargb-cluster'
+        cluster: 'metarang-cluster'
         environment: 'production'
     
     # Alertmanager configuration
@@ -132,13 +132,13 @@ data:
             action: replace
             target_label: kubernetes_pod_name
       
-      # MetaRGB Microservices - Auth Service
+      # metarang Microservices - Auth Service
       - job_name: 'auth-service'
         kubernetes_sd_configs:
           - role: pod
             namespaces:
               names:
-                - metargb
+                - metarang
         relabel_configs:
           - source_labels: [__meta_kubernetes_pod_label_app]
             action: keep
@@ -151,13 +151,13 @@ data:
             action: replace
             target_label: pod_name
       
-      # MetaRGB Microservices - Commercial Service
+      # metarang Microservices - Commercial Service
       - job_name: 'commercial-service'
         kubernetes_sd_configs:
           - role: pod
             namespaces:
               names:
-                - metargb
+                - metarang
         relabel_configs:
           - source_labels: [__meta_kubernetes_pod_label_app]
             action: keep
@@ -167,13 +167,13 @@ data:
             target_label: __address__
             replacement: ${1}:9090
       
-      # MetaRGB Microservices - Features Service
+      # metarang Microservices - Features Service
       - job_name: 'features-service'
         kubernetes_sd_configs:
           - role: pod
             namespaces:
               names:
-                - metargb
+                - metarang
         relabel_configs:
           - source_labels: [__meta_kubernetes_pod_label_app]
             action: keep
@@ -183,13 +183,13 @@ data:
             target_label: __address__
             replacement: ${1}:9090
       
-      # MetaRGB Microservices - Levels Service
+      # metarang Microservices - Levels Service
       - job_name: 'levels-service'
         kubernetes_sd_configs:
           - role: pod
             namespaces:
               names:
-                - metargb
+                - metarang
         relabel_configs:
           - source_labels: [__meta_kubernetes_pod_label_app]
             action: keep
@@ -199,13 +199,13 @@ data:
             target_label: __address__
             replacement: ${1}:9090
       
-      # MetaRGB Microservices - Dynasty Service
+      # metarang Microservices - Dynasty Service
       - job_name: 'dynasty-service'
         kubernetes_sd_configs:
           - role: pod
             namespaces:
               names:
-                - metargb
+                - metarang
         relabel_configs:
           - source_labels: [__meta_kubernetes_pod_label_app]
             action: keep
@@ -215,13 +215,13 @@ data:
             target_label: __address__
             replacement: ${1}:9090
       
-      # MetaRGB Microservices - Support Service
+      # metarang Microservices - Support Service
       - job_name: 'support-service'
         kubernetes_sd_configs:
           - role: pod
             namespaces:
               names:
-                - metargb
+                - metarang
         relabel_configs:
           - source_labels: [__meta_kubernetes_pod_label_app]
             action: keep
@@ -231,13 +231,13 @@ data:
             target_label: __address__
             replacement: ${1}:9090
       
-      # MetaRGB Microservices - Calendar Service
+      # metarang Microservices - Calendar Service
       - job_name: 'calendar-service'
         kubernetes_sd_configs:
           - role: pod
             namespaces:
               names:
-                - metargb
+                - metarang
         relabel_configs:
           - source_labels: [__meta_kubernetes_pod_label_app]
             action: keep
@@ -247,13 +247,13 @@ data:
             target_label: __address__
             replacement: ${1}:9090
       
-      # MetaRGB Microservices - Storage Service
+      # metarang Microservices - Storage Service
       - job_name: 'storage-service'
         kubernetes_sd_configs:
           - role: pod
             namespaces:
               names:
-                - metargb
+                - metarang
         relabel_configs:
           - source_labels: [__meta_kubernetes_pod_label_app]
             action: keep

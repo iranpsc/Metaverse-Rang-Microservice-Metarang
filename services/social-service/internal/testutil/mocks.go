@@ -3,8 +3,8 @@ package testutil
 import (
 	"context"
 
-	"metargb/social-service/internal/models"
-	"metargb/social-service/internal/repository"
+	"metarang/social-service/internal/models"
+	"metarang/social-service/internal/repository"
 )
 
 // MockChallengeRepository implements repository.ChallengeRepository for tests.

@@ -3,7 +3,7 @@ package testutil
 import (
 	"context"
 
-	"metargb/calendar-service/internal/models"
+	"metarang/calendar-service/internal/models"
 )
 
 // MockCalendarRepo implements repository.CalendarRepositoryInterface for tests.

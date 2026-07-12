@@ -10,29 +10,26 @@ RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11 && \
 
 WORKDIR /workspace
 
-RUN mkdir -p /workspace/metargb/levels-service /workspace/metargb/shared
+RUN mkdir -p /workspace/metarang/levels-service /workspace/metarang/shared
 
-COPY ./shared/proto/ /workspace/metargb/shared/proto/
+COPY ./shared/proto/ /workspace/metarang/shared/proto/
+COPY ./scripts/docker/generate-all-protos.sh /tmp/generate-all-protos.sh
 
 ENV PATH="${PATH}:/root/go/bin"
-RUN mkdir -p /workspace/metargb/shared/pb/levels && \
-    protoc --go_out=/workspace/metargb/shared/pb/levels --go_opt=paths=source_relative \
-        --go-grpc_out=/workspace/metargb/shared/pb/levels --go-grpc_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/levels.proto
+RUN sed -i 's/\r$//' /tmp/generate-all-protos.sh && sh /tmp/generate-all-protos.sh /workspace/metarang/shared
 
-COPY ./shared/go.mod /workspace/metargb/shared/
-COPY ./shared/ /workspace/metargb/shared/
+COPY ./shared/go.mod ./shared/go.sum /workspace/metarang/shared/
+COPY ./shared/pkg/ /workspace/metarang/shared/pkg/
 
-COPY ./services/levels-service/go.mod ./services/levels-service/go.sum* /workspace/metargb/levels-service/
-COPY ./services/levels-service/ /workspace/metargb/levels-service/
+COPY ./services/levels-service/go.mod ./services/levels-service/go.sum* /workspace/metarang/levels-service/
+COPY ./services/levels-service/ /workspace/metarang/levels-service/
 
 WORKDIR /workspace
 RUN echo 'go 1.25.0' > go.work && \
-    printf '\nuse (\n\t./metargb/levels-service\n\t./metargb/shared\n)\n' >> go.work
+    printf '\nuse (\n\t./metarang/levels-service\n\t./metarang/shared\n)\n' >> go.work
 
-WORKDIR /workspace/metargb/levels-service
-RUN sed -i 's|replace metargb/shared => ../../shared|replace metargb/shared => /workspace/metargb/shared|g' go.mod || true && \
-    go get metargb/shared@v0.0.0 || true && \
+WORKDIR /workspace/metarang/levels-service
+RUN sed -i 's|replace metarang/shared => ../../shared|replace metarang/shared => /workspace/metarang/shared|g' go.mod || true && \
     go mod download
 
 ENV GOWORK=/workspace/go.work

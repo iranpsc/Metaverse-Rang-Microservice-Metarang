@@ -1,4 +1,4 @@
-module metargb/auth-service
+module metarang/auth-service
 
 go 1.25.0
 
@@ -37,7 +37,7 @@ require (
 require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
 	github.com/redis/go-redis/v9 v9.16.0
-	metargb/shared v0.0.0
+	metarang/shared v0.0.0
 )
 
-replace metargb/shared => ../../shared
+replace metarang/shared => ../../shared

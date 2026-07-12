@@ -8,9 +8,9 @@ import (
 
 	"google.golang.org/grpc"
 
-	"metargb/grpc-gateway/internal/middleware"
-	pb "metargb/shared/pb/auth"
-	socialpb "metargb/shared/pb/social"
+	"metarang/grpc-gateway/internal/middleware"
+	pb "metarang/shared/pb/auth"
+	socialpb "metarang/shared/pb/social"
 )
 
 type SocialHandler struct {

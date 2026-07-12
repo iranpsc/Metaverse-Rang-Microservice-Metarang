@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"metargb/notifications-service/internal/models"
+	"metarang/notifications-service/internal/models"
 
 	"github.com/kavenegar/kavenegar-go"
 )

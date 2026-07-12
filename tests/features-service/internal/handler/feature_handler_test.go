@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"testing"
 
-	"metargb/features-service/internal/handler"
-	pb "metargb/shared/pb/features"
+	"metarang/features-service/internal/handler"
+	pb "metarang/shared/pb/features"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

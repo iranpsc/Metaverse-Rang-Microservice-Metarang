@@ -8,7 +8,7 @@ import (
 
 	"google.golang.org/grpc/metadata"
 
-	"metargb/grpc-gateway/internal/middleware"
+	"metarang/grpc-gateway/internal/middleware"
 )
 
 const (

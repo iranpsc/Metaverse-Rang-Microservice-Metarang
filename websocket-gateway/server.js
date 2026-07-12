@@ -85,7 +85,7 @@ io.on('connection', (socket) => {
   
   // Send welcome message
   socket.emit('connected', {
-    message: 'Connected to MetaRGB WebSocket Gateway',
+    message: 'Connected to metarang WebSocket Gateway',
     userId: socket.userId,
     timestamp: new Date().toISOString()
   });

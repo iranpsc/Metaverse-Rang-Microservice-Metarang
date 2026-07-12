@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"metargb/storage-service/internal/ftp"
-	"metargb/storage-service/internal/service"
+	"metarang/storage-service/internal/ftp"
+	"metarang/storage-service/internal/service"
 )
 
 func TestHandleChunkUpload_CustomUploadPaths(t *testing.T) {

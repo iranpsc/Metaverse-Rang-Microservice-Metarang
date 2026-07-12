@@ -9,8 +9,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"metargb/financial-service/internal/service"
-	pb "metargb/shared/pb/financial"
+	"metarang/financial-service/internal/service"
+	pb "metarang/shared/pb/financial"
 )
 
 type OrderHandler struct {

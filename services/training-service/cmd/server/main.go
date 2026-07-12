@@ -15,12 +15,12 @@ import (
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 
-	"metargb/shared/pkg/metrics"
-	"metargb/shared/pkg/sentry"
-	"metargb/training-service/internal/client"
-	"metargb/training-service/internal/handler"
-	"metargb/training-service/internal/repository"
-	"metargb/training-service/internal/service"
+	"metarang/shared/pkg/metrics"
+	"metarang/shared/pkg/sentry"
+	"metarang/training-service/internal/client"
+	"metarang/training-service/internal/handler"
+	"metarang/training-service/internal/repository"
+	"metarang/training-service/internal/service"
 )
 
 func main() {
@@ -62,7 +62,7 @@ func main() {
 		getEnv("DB_PASSWORD", ""),
 		getEnv("DB_HOST", "localhost"),
 		getEnv("DB_PORT", "3306"),
-		getEnv("DB_DATABASE", "metargb_db"),
+		getEnv("DB_DATABASE", "metarang_db"),
 	)
 
 	// Parse DSN to get config

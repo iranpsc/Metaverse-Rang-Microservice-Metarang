@@ -143,7 +143,7 @@ storage-service:
     GRPC_PORT: 50059
 ```
 
-**Client Access:** `http://api.metargb.com/api/upload` → Kong → Storage Service
+**Client Access:** `http://api.metarang.com/api/upload` → Kong → Storage Service
 
 ### Development (Local Testing)
 
@@ -238,7 +238,7 @@ curl -X POST http://localhost:8059/upload \
 
 ```bash
 # Start all services including Kong
-cd metargb-microservices
+cd metarang-microservices
 docker-compose up -d
 
 # Verify Kong is routing correctly
@@ -253,7 +253,7 @@ curl http://localhost:8001/routes  # Kong Admin API
 ```yaml
 # Kong will use service discovery
 - name: storage-service-upload
-  url: http://storage-service.metargb.svc.cluster.local:8059
+  url: http://storage-service.metarang.svc.cluster.local:8059
 ```
 
 ## 📝 Summary

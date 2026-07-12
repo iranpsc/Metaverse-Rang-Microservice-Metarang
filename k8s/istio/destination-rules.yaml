@@ -9,7 +9,7 @@ apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
   name: auth-service
-  namespace: metargb
+  namespace: metarang
 spec:
   host: auth-service
   trafficPolicy:
@@ -40,7 +40,7 @@ apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
   name: commercial-service
-  namespace: metargb
+  namespace: metarang
 spec:
   host: commercial-service
   trafficPolicy:
@@ -69,7 +69,7 @@ apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
   name: features-service
-  namespace: metargb
+  namespace: metarang
 spec:
   host: features-service
   trafficPolicy:
@@ -98,7 +98,7 @@ apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
   name: levels-service
-  namespace: metargb
+  namespace: metarang
 spec:
   host: levels-service
   trafficPolicy:
@@ -127,7 +127,7 @@ apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
   name: dynasty-service
-  namespace: metargb
+  namespace: metarang
 spec:
   host: dynasty-service
   trafficPolicy:
@@ -156,7 +156,7 @@ apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
   name: support-service
-  namespace: metargb
+  namespace: metarang
 spec:
   host: support-service
   trafficPolicy:
@@ -185,7 +185,7 @@ apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
   name: calendar-service
-  namespace: metargb
+  namespace: metarang
 spec:
   host: calendar-service
   trafficPolicy:
@@ -214,7 +214,7 @@ apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
   name: storage-service
-  namespace: metargb
+  namespace: metarang
 spec:
   host: storage-service
   trafficPolicy:
@@ -244,7 +244,7 @@ apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
   name: websocket-gateway
-  namespace: metargb
+  namespace: metarang
 spec:
   host: websocket-gateway
   trafficPolicy:

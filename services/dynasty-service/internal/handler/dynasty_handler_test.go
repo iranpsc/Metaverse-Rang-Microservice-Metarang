@@ -12,10 +12,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"metargb/dynasty-service/internal/handler"
-	"metargb/dynasty-service/internal/repository"
-	"metargb/dynasty-service/internal/service"
-	dynastypb "metargb/shared/pb/dynasty"
+	"metarang/dynasty-service/internal/handler"
+	"metarang/dynasty-service/internal/repository"
+	"metarang/dynasty-service/internal/service"
+	dynastypb "metarang/shared/pb/dynasty"
 )
 
 func TestDynastyHandler_CreateDynasty(t *testing.T) {

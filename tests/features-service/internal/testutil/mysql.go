@@ -9,7 +9,7 @@ import (
 )
 
 // OpenMySQLOrSkip returns a pooled MySQL connection when TEST_MYSQL_DSN is set; otherwise skips the test.
-// Example DSN: user:pass@tcp(127.0.0.1:3306)/metargb_db?parseTime=true&charset=utf8mb4&collation=utf8mb4_unicode_ci
+// Example DSN: user:pass@tcp(127.0.0.1:3306)/metarang_db?parseTime=true&charset=utf8mb4&collation=utf8mb4_unicode_ci
 func OpenMySQLOrSkip(t *testing.T) *sql.DB {
 	t.Helper()
 	dsn := os.Getenv("TEST_MYSQL_DSN")

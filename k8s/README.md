@@ -1,6 +1,6 @@
 # Kubernetes Manifests
 
-This directory contains Kubernetes manifests for deploying MetaRGB microservices infrastructure.
+This directory contains Kubernetes manifests for deploying metarang microservices infrastructure.
 
 ## Prerequisites
 
@@ -33,17 +33,17 @@ kubectl apply -f mysql-statefulset.yaml
 
 Wait for MySQL to be ready:
 ```bash
-kubectl wait --for=condition=ready pod -l app=mysql -n metargb --timeout=300s
+kubectl wait --for=condition=ready pod -l app=mysql -n metarang --timeout=300s
 ```
 
 ### 4. Initialize Database Schema
 
 ```bash
 # Copy schema to MySQL pod
-kubectl cp ../scripts/schema.sql metargb/mysql-0:/tmp/schema.sql
+kubectl cp ../scripts/schema.sql metarang/mysql-0:/tmp/schema.sql
 
 # Apply schema
-kubectl exec -it mysql-0 -n metargb -- mysql -u root -p metargb_db < /tmp/schema.sql
+kubectl exec -it mysql-0 -n metarang -- mysql -u root -p metarang_db < /tmp/schema.sql
 ```
 
 ### 5. Deploy Redis
@@ -56,13 +56,13 @@ kubectl apply -f redis-deployment.yaml
 
 ```bash
 # Check all pods
-kubectl get pods -n metargb
+kubectl get pods -n metarang
 
 # Check services
-kubectl get svc -n metargb
+kubectl get svc -n metarang
 
 # Check PVCs
-kubectl get pvc -n metargb
+kubectl get pvc -n metarang
 ```
 
 ## Infrastructure Components
@@ -85,8 +85,8 @@ kubectl get pvc -n metargb
 
 ## Service URLs (within cluster)
 
-- MySQL: `mysql.metargb.svc.cluster.local:3306`
-- Redis: `redis.metargb.svc.cluster.local:6379`
+- MySQL: `mysql.metarang.svc.cluster.local:3306`
+- Redis: `redis.metarang.svc.cluster.local:6379`
 
 ## Scaling
 
@@ -108,10 +108,10 @@ After deploying Prometheus:
 
 ```bash
 # View MySQL metrics
-kubectl port-forward svc/mysql-exporter 9104:9104 -n metargb
+kubectl port-forward svc/mysql-exporter 9104:9104 -n metarang
 
 # View Redis metrics
-kubectl port-forward svc/redis-exporter 9121:9121 -n metargb
+kubectl port-forward svc/redis-exporter 9121:9121 -n metarang
 ```
 
 ## Backup
@@ -120,7 +120,7 @@ kubectl port-forward svc/redis-exporter 9121:9121 -n metargb
 
 ```bash
 # Manual backup
-kubectl exec mysql-0 -n metargb -- mysqldump -u root -p metargb_db > backup-$(date +%Y%m%d).sql
+kubectl exec mysql-0 -n metarang -- mysqldump -u root -p metarang_db > backup-$(date +%Y%m%d).sql
 ```
 
 ### Automated Backups
@@ -131,27 +131,27 @@ Use CronJob (see `cronjobs/mysql-backup.yaml`)
 ### MySQL won't start
 ```bash
 # Check logs
-kubectl logs -f mysql-0 -n metargb
+kubectl logs -f mysql-0 -n metarang
 
 # Check PVC
-kubectl describe pvc mysql-data-mysql-0 -n metargb
+kubectl describe pvc mysql-data-mysql-0 -n metarang
 ```
 
 ### Can't connect to MySQL
 ```bash
 # Test connection
-kubectl run mysql-client --rm -it --image=mysql:8.0 -n metargb -- \
-  mysql -h mysql.metargb.svc.cluster.local -u metargb -p
+kubectl run mysql-client --rm -it --image=mysql:8.0 -n metarang -- \
+  mysql -h mysql.metarang.svc.cluster.local -u metarang -p
 ```
 
 ### Redis issues
 ```bash
 # Check logs
-kubectl logs -f deployment/redis -n metargb
+kubectl logs -f deployment/redis -n metarang
 
 # Test connection
-kubectl run redis-client --rm -it --image=redis:7-alpine -n metargb -- \
-  redis-cli -h redis.metargb.svc.cluster.local ping
+kubectl run redis-client --rm -it --image=redis:7-alpine -n metarang -- \
+  redis-cli -h redis.metarang.svc.cluster.local ping
 ```
 
 ## Security Considerations

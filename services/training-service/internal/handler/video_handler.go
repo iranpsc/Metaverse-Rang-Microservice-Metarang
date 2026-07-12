@@ -8,9 +8,9 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	commonpb "metargb/shared/pb/common"
-	trainingpb "metargb/shared/pb/training"
-	"metargb/training-service/internal/service"
+	commonpb "metarang/shared/pb/common"
+	trainingpb "metarang/shared/pb/training"
+	"metarang/training-service/internal/service"
 )
 
 type VideoHandler struct {

@@ -5,14 +5,13 @@ import (
 	"database/sql"
 	"errors"
 	"testing"
-	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"metargb/auth-service/internal/models"
-	"metargb/auth-service/internal/service"
-	pb "metargb/shared/pb/auth"
+	"metarang/auth-service/internal/models"
+	"metarang/auth-service/internal/service"
+	pb "metarang/shared/pb/auth"
 )
 
 // Test data constants
@@ -24,11 +23,11 @@ const (
 
 // mockKYCService is a mock implementation for testing bank account handlers
 type mockKYCService struct {
-	listBankAccountsFunc   func(ctx context.Context, userID uint64) ([]*models.BankAccount, error)
-	createBankAccountFunc  func(ctx context.Context, userID uint64, bankName, shabaNum, cardNum string) (*models.BankAccount, error)
-	getBankAccountFunc     func(ctx context.Context, userID uint64, bankAccountID uint64) (*models.BankAccount, error)
-	updateBankAccountFunc  func(ctx context.Context, userID uint64, bankAccountID uint64, bankName, shabaNum, cardNum string) (*models.BankAccount, error)
-	deleteBankAccountFunc  func(ctx context.Context, userID uint64, bankAccountID uint64) error
+	listBankAccountsFunc  func(ctx context.Context, userID uint64) ([]*models.BankAccount, error)
+	createBankAccountFunc func(ctx context.Context, userID uint64, bankName, shabaNum, cardNum string) (*models.BankAccount, error)
+	getBankAccountFunc    func(ctx context.Context, userID uint64, bankAccountID uint64) (*models.BankAccount, error)
+	updateBankAccountFunc func(ctx context.Context, userID uint64, bankAccountID uint64, bankName, shabaNum, cardNum string) (*models.BankAccount, error)
+	deleteBankAccountFunc func(ctx context.Context, userID uint64, bankAccountID uint64) error
 }
 
 func (m *mockKYCService) ListBankAccounts(ctx context.Context, userID uint64) ([]*models.BankAccount, error) {
@@ -466,7 +465,7 @@ func TestKYCHandler_UpdateBankAccount(t *testing.T) {
 				BankName:     bankName,
 				ShabaNum:     shabaNum,
 				CardNum:      cardNum,
-				Status:       0, // Reset to pending
+				Status:       0,                // Reset to pending
 				Errors:       sql.NullString{}, // Cleared
 			}, nil
 		}
@@ -646,4 +645,3 @@ func TestKYCHandler_DeleteBankAccount(t *testing.T) {
 		}
 	})
 }
-

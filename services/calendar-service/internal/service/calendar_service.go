@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"metargb/calendar-service/internal/models"
-	"metargb/calendar-service/internal/repository"
+	"metarang/calendar-service/internal/models"
+	"metarang/calendar-service/internal/repository"
 )
 
 var ErrEventNotFound = errors.New("event not found")

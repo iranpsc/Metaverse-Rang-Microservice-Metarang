@@ -1,4 +1,4 @@
-module metargb/shared
+module metarang/shared
 
 go 1.25.0
 

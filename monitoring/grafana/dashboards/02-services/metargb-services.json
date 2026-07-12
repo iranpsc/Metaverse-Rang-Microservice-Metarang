@@ -94,42 +94,42 @@
       },
       "targets": [
         {
-          "expr": "metargb:http_requests_per_second:5m",
+          "expr": "metarang:http_requests_per_second:5m",
           "legendFormat": "API Gateway (Total RPS)",
           "refId": "A"
         },
         {
-          "expr": "rate(metargb_auth_service_requests_total[5m])",
+          "expr": "rate(metarang_auth_service_requests_total[5m])",
           "legendFormat": "Auth Service",
           "refId": "B"
         },
         {
-          "expr": "rate(metargb_commercial_service_requests_total[5m])",
+          "expr": "rate(metarang_commercial_service_requests_total[5m])",
           "legendFormat": "Commercial Service",
           "refId": "C"
         },
         {
-          "expr": "rate(metargb_features_service_requests_total[5m])",
+          "expr": "rate(metarang_features_service_requests_total[5m])",
           "legendFormat": "Features Service",
           "refId": "D"
         },
         {
-          "expr": "rate(metargb_levels_service_requests_total[5m])",
+          "expr": "rate(metarang_levels_service_requests_total[5m])",
           "legendFormat": "Levels Service",
           "refId": "E"
         },
         {
-          "expr": "rate(metargb_dynasty_service_requests_total[5m])",
+          "expr": "rate(metarang_dynasty_service_requests_total[5m])",
           "legendFormat": "Dynasty Service",
           "refId": "F"
         },
         {
-          "expr": "rate(metargb_calendar_service_requests_total[5m])",
+          "expr": "rate(metarang_calendar_service_requests_total[5m])",
           "legendFormat": "Calendar Service",
           "refId": "G"
         },
         {
-          "expr": "rate(metargb_storage_service_requests_total[5m])",
+          "expr": "rate(metarang_storage_service_requests_total[5m])",
           "legendFormat": "Storage Service",
           "refId": "H"
         }
@@ -200,42 +200,42 @@
       },
       "targets": [
         {
-          "expr": "metargb:http_latency_p95:5m",
+          "expr": "metarang:http_latency_p95:5m",
           "legendFormat": "Gateway P95",
           "refId": "GW"
         },
         {
-          "expr": "histogram_quantile(0.95, rate(metargb_auth_service_request_duration_seconds_bucket[5m]))",
+          "expr": "histogram_quantile(0.95, rate(metarang_auth_service_request_duration_seconds_bucket[5m]))",
           "legendFormat": "Auth Service p95",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.95, rate(metargb_commercial_service_request_duration_seconds_bucket[5m]))",
+          "expr": "histogram_quantile(0.95, rate(metarang_commercial_service_request_duration_seconds_bucket[5m]))",
           "legendFormat": "Commercial Service p95",
           "refId": "B"
         },
         {
-          "expr": "histogram_quantile(0.95, rate(metargb_features_service_request_duration_seconds_bucket[5m]))",
+          "expr": "histogram_quantile(0.95, rate(metarang_features_service_request_duration_seconds_bucket[5m]))",
           "legendFormat": "Features Service p95",
           "refId": "C"
         },
         {
-          "expr": "histogram_quantile(0.95, rate(metargb_levels_service_request_duration_seconds_bucket[5m]))",
+          "expr": "histogram_quantile(0.95, rate(metarang_levels_service_request_duration_seconds_bucket[5m]))",
           "legendFormat": "Levels Service p95",
           "refId": "D"
         },
         {
-          "expr": "histogram_quantile(0.95, rate(metargb_dynasty_service_request_duration_seconds_bucket[5m]))",
+          "expr": "histogram_quantile(0.95, rate(metarang_dynasty_service_request_duration_seconds_bucket[5m]))",
           "legendFormat": "Dynasty Service p95",
           "refId": "E"
         },
         {
-          "expr": "histogram_quantile(0.95, rate(metargb_calendar_service_request_duration_seconds_bucket[5m]))",
+          "expr": "histogram_quantile(0.95, rate(metarang_calendar_service_request_duration_seconds_bucket[5m]))",
           "legendFormat": "Calendar Service p95",
           "refId": "F"
         },
         {
-          "expr": "histogram_quantile(0.95, rate(metargb_storage_service_request_duration_seconds_bucket[5m]))",
+          "expr": "histogram_quantile(0.95, rate(metarang_storage_service_request_duration_seconds_bucket[5m]))",
           "legendFormat": "Storage Service p95",
           "refId": "G"
         }
@@ -315,37 +315,37 @@
           "refId": "GW"
         },
         {
-          "expr": "rate(metargb_auth_service_requests_total{status!=\"ok\"}[5m])",
+          "expr": "rate(metarang_auth_service_requests_total{status!=\"ok\"}[5m])",
           "legendFormat": "Auth Service Errors",
           "refId": "A"
         },
         {
-          "expr": "rate(metargb_commercial_service_requests_total{status!=\"ok\"}[5m])",
+          "expr": "rate(metarang_commercial_service_requests_total{status!=\"ok\"}[5m])",
           "legendFormat": "Commercial Service Errors",
           "refId": "B"
         },
         {
-          "expr": "rate(metargb_features_service_requests_total{status!=\"ok\"}[5m])",
+          "expr": "rate(metarang_features_service_requests_total{status!=\"ok\"}[5m])",
           "legendFormat": "Features Service Errors",
           "refId": "C"
         },
         {
-          "expr": "rate(metargb_levels_service_requests_total{status!=\"ok\"}[5m])",
+          "expr": "rate(metarang_levels_service_requests_total{status!=\"ok\"}[5m])",
           "legendFormat": "Levels Service Errors",
           "refId": "D"
         },
         {
-          "expr": "rate(metargb_dynasty_service_requests_total{status!=\"ok\"}[5m])",
+          "expr": "rate(metarang_dynasty_service_requests_total{status!=\"ok\"}[5m])",
           "legendFormat": "Dynasty Service Errors",
           "refId": "E"
         },
         {
-          "expr": "rate(metargb_calendar_service_requests_total{status!=\"ok\"}[5m])",
+          "expr": "rate(metarang_calendar_service_requests_total{status!=\"ok\"}[5m])",
           "legendFormat": "Calendar Service Errors",
           "refId": "F"
         },
         {
-          "expr": "rate(metargb_storage_service_requests_total{status!=\"ok\"}[5m])",
+          "expr": "rate(metarang_storage_service_requests_total{status!=\"ok\"}[5m])",
           "legendFormat": "Storage Service Errors",
           "refId": "G"
         }
@@ -1101,7 +1101,7 @@
   "schemaVersion": 27,
   "style": "dark",
   "tags": [
-    "metargb",
+    "metarang",
     "microservices"
   ],
   "templating": {
@@ -1126,6 +1126,6 @@
   },
   "timezone": "",
   "title": "Services - Per-Service Metrics",
-  "uid": "metargb-services",
+  "uid": "metarang-services",
   "version": 8
 }

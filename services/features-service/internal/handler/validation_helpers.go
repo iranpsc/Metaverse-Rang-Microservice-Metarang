@@ -6,7 +6,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"metargb/shared/pkg/helpers"
+	"metarang/shared/pkg/helpers"
 )
 
 // ReturnValidationError returns a gRPC InvalidArgument error with encoded validation fields

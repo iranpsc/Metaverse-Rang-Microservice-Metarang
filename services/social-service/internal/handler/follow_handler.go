@@ -9,9 +9,9 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	pb "metargb/shared/pb/social"
-	"metargb/social-service/internal/models"
-	"metargb/social-service/internal/service"
+	pb "metarang/shared/pb/social"
+	"metarang/social-service/internal/models"
+	"metarang/social-service/internal/service"
 )
 
 type followHandler struct {

@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"time"
 
-	"metargb/features-service/internal/client"
-	"metargb/features-service/internal/constants"
-	"metargb/features-service/internal/models"
-	"metargb/features-service/internal/repository"
-	"metargb/shared/pkg/logger"
+	"metarang/features-service/internal/client"
+	"metarang/features-service/internal/constants"
+	"metarang/features-service/internal/models"
+	"metarang/features-service/internal/repository"
+	"metarang/shared/pkg/logger"
 )
 
 // ProfitServiceInterface defines the interface for profit service operations

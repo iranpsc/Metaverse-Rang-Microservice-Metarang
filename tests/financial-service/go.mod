@@ -1,12 +1,12 @@
-module metargb/financial-service-tests
+module metarang/financial-service-tests
 
 go 1.25.0
 
 require (
 	google.golang.org/grpc v1.79.3
 	google.golang.org/protobuf v1.36.11
-	metargb/financial-service v0.0.0
-	metargb/shared v0.0.0
+	metarang/financial-service v0.0.0
+	metarang/shared v0.0.0
 )
 
 require (
@@ -24,6 +24,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 )
 
-replace metargb/financial-service => ../../services/financial-service
+replace metarang/financial-service => ../../services/financial-service
 
-replace metargb/shared => ../../shared
+replace metarang/shared => ../../shared

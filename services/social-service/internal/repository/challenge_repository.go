@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"metargb/social-service/internal/models"
+	"metarang/social-service/internal/models"
 )
 
 type ChallengeRepository interface {

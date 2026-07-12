@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"metargb/grpc-gateway/internal/middleware"
-	featurespb "metargb/shared/pb/features"
+	"metarang/grpc-gateway/internal/middleware"
+	featurespb "metarang/shared/pb/features"
 )
 
 func buyRequestToMap(req *featurespb.BuyRequestResponse) map[string]interface{} {

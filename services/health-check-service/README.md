@@ -85,9 +85,9 @@ The service can be configured via environment variables:
 - `REDIS_URL` - Redis connection URL (default: `redis://redis:6379`)
 - `DB_HOST` - Database host (default: `mysql`)
 - `DB_PORT` - Database port (default: `3306`)
-- `DB_USER` - Database user (default: `metargb_user`)
-- `DB_PASSWORD` - Database password (default: `metargb_password`)
-- `DB_DATABASE` - Database name (default: `metargb_db`)
+- `DB_USER` - Database user (default: `metarang_user`)
+- `DB_PASSWORD` - Database password (default: `metarang_password`)
+- `DB_DATABASE` - Database name (default: `metarang_db`)
 - `PARSIAN_API_URL` - Parsian payment gateway URL (optional)
 - `ISTIO_METRICS_URL` - Istio metrics endpoint URL (optional)
 
@@ -151,7 +151,7 @@ The service is automatically scraped by Prometheus (configured in `monitoring/pr
       "status": "healthy",
       "host": "mysql",
       "port": 3306,
-      "database": "metargb_db",
+      "database": "metarang_db",
       "connected": true,
       "latency": "5ms",
       "pool_stats": {

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package financial;
 
-option go_package = "metargb/shared/pb/financial";
+option go_package = "metarang/shared/pb/financial";
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";

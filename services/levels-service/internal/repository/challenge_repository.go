@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strconv"
 
-	pb "metargb/shared/pb/levels"
+	pb "metarang/shared/pb/levels"
 )
 
 // ChallengeRepository handles questions and answers

@@ -7,14 +7,14 @@ import (
 	"strconv"
 	"time"
 
-	"metargb/features-service/internal/client"
-	"metargb/features-service/internal/constants"
-	"metargb/features-service/internal/events"
-	"metargb/features-service/internal/metrics"
-	"metargb/features-service/internal/models"
-	"metargb/features-service/internal/repository"
-	pb "metargb/shared/pb/features"
-	"metargb/shared/pkg/logger"
+	"metarang/features-service/internal/client"
+	"metarang/features-service/internal/constants"
+	"metarang/features-service/internal/events"
+	"metarang/features-service/internal/metrics"
+	"metarang/features-service/internal/models"
+	"metarang/features-service/internal/repository"
+	pb "metarang/shared/pb/features"
+	"metarang/shared/pkg/logger"
 )
 
 // MarketplaceService implements marketplace logic with gRPC cross-service calls

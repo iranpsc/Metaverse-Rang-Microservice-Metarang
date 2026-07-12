@@ -2,16 +2,14 @@ package validation
 
 import (
 	"context"
-	"database/sql"
 	"testing"
-	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"metargb/dynasty-service/internal/repository"
-	"metargb/dynasty-service/internal/validation"
+	"metarang/dynasty-service/internal/repository"
+	"metarang/dynasty-service/internal/validation"
 )
 
 func TestFamilyValidator_ValidateRelationship(t *testing.T) {
@@ -156,4 +154,3 @@ func TestFamilyValidator_ValidateAddFamilyMember(t *testing.T) {
 
 	require.NoError(t, mock.ExpectationsWereMet())
 }
-

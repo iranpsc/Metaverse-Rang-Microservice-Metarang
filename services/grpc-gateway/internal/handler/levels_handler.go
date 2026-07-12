@@ -6,7 +6,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	levelspb "metargb/shared/pb/levels"
+	levelspb "metarang/shared/pb/levels"
 )
 
 type LevelsHandler struct {

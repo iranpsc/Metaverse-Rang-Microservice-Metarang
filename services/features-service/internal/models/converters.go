@@ -3,7 +3,7 @@ package models
 import (
 	"fmt"
 
-	pb "metargb/shared/pb/features"
+	pb "metarang/shared/pb/features"
 )
 
 // FeatureToPB converts internal Feature model to protobuf message

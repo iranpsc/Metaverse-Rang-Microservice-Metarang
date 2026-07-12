@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"metargb/notifications-service/internal/models"
+	"metarang/notifications-service/internal/models"
 
 	"github.com/google/uuid"
 )

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"metargb/features-service/internal/repository"
+	"metarang/features-service/internal/repository"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

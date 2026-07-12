@@ -9,13 +9,13 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	commonpb "metargb/shared/pb/common"
-	trainingpb "metargb/shared/pb/training"
+	commonpb "metarang/shared/pb/common"
+	trainingpb "metarang/shared/pb/training"
 
-	"metargb/training-service/internal/handler"
-	"metargb/training-service/internal/models"
-	"metargb/training-service/internal/service"
-	"metargb/training-service/internal/testutil"
+	"metarang/training-service/internal/handler"
+	"metarang/training-service/internal/models"
+	"metarang/training-service/internal/service"
+	"metarang/training-service/internal/testutil"
 )
 
 func TestVideoHandler_GetVideo_NotFound(t *testing.T) {

@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"metargb/features-service/internal/handler"
-	pb "metargb/shared/pb/features"
-	"metargb/shared/pkg/auth"
+	"metarang/features-service/internal/handler"
+	pb "metarang/shared/pb/features"
+	"metarang/shared/pkg/auth"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

@@ -6,8 +6,8 @@ import (
 
 	"google.golang.org/grpc"
 
-	"metargb/financial-service/internal/service"
-	pb "metargb/shared/pb/financial"
+	"metarang/financial-service/internal/service"
+	pb "metarang/shared/pb/financial"
 )
 
 type stubStoreSvc struct{}

@@ -30,7 +30,7 @@ Repository tests call a real MySQL when `TEST_MYSQL_DSN` is set; otherwise they 
 Example:
 
 ```bash
-export TEST_MYSQL_DSN='metargb_user:metargb_password@tcp(127.0.0.1:3306)/metargb_db?parseTime=true&charset=utf8mb4&collation=utf8mb4_unicode_ci'
+export TEST_MYSQL_DSN='metarang_user:metarang_password@tcp(127.0.0.1:3306)/metarang_db?parseTime=true&charset=utf8mb4&collation=utf8mb4_unicode_ci'
 go test ./internal/repository/... -count=1
 ```
 

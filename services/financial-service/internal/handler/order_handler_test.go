@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"metargb/financial-service/internal/service"
-	pb "metargb/shared/pb/financial"
+	"metarang/financial-service/internal/service"
+	pb "metarang/shared/pb/financial"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -310,7 +310,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 
 		req := &pb.CreateOrderRequest{
 			UserId: 1,
-			Amount: 0, // Invalid
+			Amount: 0,  // Invalid
 			Asset:  "", // Invalid
 		}
 
@@ -626,4 +626,3 @@ func TestOrderHandler_RegisterOrderHandler(t *testing.T) {
 		}
 	})
 }
-

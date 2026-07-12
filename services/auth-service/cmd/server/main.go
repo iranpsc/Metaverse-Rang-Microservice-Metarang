@@ -18,15 +18,15 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"metargb/auth-service/internal/handler"
-	"metargb/auth-service/internal/pubsub"
-	"metargb/auth-service/internal/repository"
-	"metargb/auth-service/internal/service"
-	pb "metargb/shared/pb/auth"
-	notificationspb "metargb/shared/pb/notifications"
-	storagepb "metargb/shared/pb/storage"
-	"metargb/shared/pkg/metrics"
-	"metargb/shared/pkg/sentry"
+	"metarang/auth-service/internal/handler"
+	"metarang/auth-service/internal/pubsub"
+	"metarang/auth-service/internal/repository"
+	"metarang/auth-service/internal/service"
+	pb "metarang/shared/pb/auth"
+	notificationspb "metarang/shared/pb/notifications"
+	storagepb "metarang/shared/pb/storage"
+	"metarang/shared/pkg/metrics"
+	"metarang/shared/pkg/sentry"
 )
 
 func main() {
@@ -71,7 +71,7 @@ func main() {
 		getEnv("DB_PASSWORD", ""),
 		getEnv("DB_HOST", "localhost"),
 		getEnv("DB_PORT", "3306"),
-		getEnv("DB_DATABASE", "metargb_db"),
+		getEnv("DB_DATABASE", "metarang_db"),
 	)
 
 	// Parse DSN to get config

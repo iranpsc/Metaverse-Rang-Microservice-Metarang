@@ -6,14 +6,14 @@ import (
 	"errors"
 	"testing"
 
-	"metargb/auth-service/internal/models"
+	"metarang/auth-service/internal/models"
 )
 
 // Valid test data for Iranian bank accounts
 // These are valid format but not real accounts
 const (
 	validShebaNum  = "6201600000000000080068121" // 24 digits (sample format)
-	validCardNum   = "6037997551234567"           // Valid Luhn-algorithm card number
+	validCardNum   = "6037997551234567"          // Valid Luhn-algorithm card number
 	validBankName  = "Tejarat"
 	validBankName2 = "Melli"
 )
@@ -744,4 +744,3 @@ func TestBankAccountHelperMethods(t *testing.T) {
 		}
 	})
 }
-

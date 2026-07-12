@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -38,28 +39,30 @@ func NewConnection(cfg Config) (*Connection, error) {
 	var db *sql.DB
 	var err error
 
-	// Retry logic for initial connection
-	maxRetries := 5
-	for i := 0; i < maxRetries; i++ {
+	// Retry logic for initial connection (MySQL may report healthy before accepting TCP).
+	const maxRetries = 30
+	for attempt := 1; attempt <= maxRetries; attempt++ {
 		db, err = sql.Open("mysql", dsn)
 		if err != nil {
-			if i == maxRetries-1 {
+			if attempt == maxRetries {
 				return nil, fmt.Errorf("failed to open database after %d attempts: %w", maxRetries, err)
 			}
-			time.Sleep(time.Second * time.Duration(i+1))
+			log.Printf("Database open attempt %d/%d failed: %v", attempt, maxRetries, err)
+			time.Sleep(retryDelay(attempt))
 			continue
 		}
 
 		err = db.Ping()
 		if err != nil {
-			if i == maxRetries-1 {
+			_ = db.Close()
+			if attempt == maxRetries {
 				return nil, fmt.Errorf("failed to ping database after %d attempts: %w", maxRetries, err)
 			}
-			time.Sleep(time.Second * time.Duration(i+1))
+			log.Printf("Database ping attempt %d/%d failed: %v", attempt, maxRetries, err)
+			time.Sleep(retryDelay(attempt))
 			continue
 		}
 
-		// Successfully connected
 		break
 	}
 
@@ -95,3 +98,10 @@ func (c *Connection) Ping() error {
 	return c.DB.Ping()
 }
 
+func retryDelay(attempt int) time.Duration {
+	delay := time.Duration(attempt) * time.Second
+	if delay > 5*time.Second {
+		return 5 * time.Second
+	}
+	return delay
+}

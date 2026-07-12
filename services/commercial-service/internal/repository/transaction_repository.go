@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"metargb/commercial-service/internal/models"
-	"metargb/shared/pkg/helpers"
+	"metarang/commercial-service/internal/models"
+	"metarang/shared/pkg/helpers"
 )
 
 type TransactionRepository interface {

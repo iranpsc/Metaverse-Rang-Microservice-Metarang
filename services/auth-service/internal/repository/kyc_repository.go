@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"metargb/auth-service/internal/models"
+	"metarang/auth-service/internal/models"
 )
 
 type KYCRepository interface {

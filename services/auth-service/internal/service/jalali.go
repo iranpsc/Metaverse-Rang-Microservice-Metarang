@@ -3,7 +3,7 @@ package service
 import (
 	"time"
 
-	"metargb/shared/pkg/helpers"
+	"metarang/shared/pkg/helpers"
 )
 
 // FormatJalaliDate formats a time.Time to Jalali format Y/m/d.

@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"metargb/dynasty-service/internal/models"
-	"metargb/dynasty-service/internal/policy"
+	"metarang/dynasty-service/internal/models"
+	"metarang/dynasty-service/internal/policy"
 )
 
 func TestJoinRequestPolicy_CanView(t *testing.T) {
@@ -186,4 +186,3 @@ func TestJoinRequestPolicy_CanReject(t *testing.T) {
 		assert.False(t, canReject)
 	})
 }
-

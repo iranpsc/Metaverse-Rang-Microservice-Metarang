@@ -1,4 +1,4 @@
-module metargb/support-service
+module metarang/support-service
 
 go 1.25.0
 
@@ -6,10 +6,10 @@ require (
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/joho/godotenv v1.5.1
 	google.golang.org/grpc v1.79.3
-	metargb/shared v0.0.0
+	metarang/shared v0.0.0
 )
 
-replace metargb/shared => ../../shared
+replace metarang/shared => ../../shared
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect

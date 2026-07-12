@@ -5,7 +5,7 @@ package features;
 import "common.proto";
 import "google/protobuf/empty.proto";
 
-option go_package = "metargb/shared/pb/features";
+option go_package = "metarang/shared/pb/features";
 
 // FeatureService handles feature CRUD operations
 service FeatureService {

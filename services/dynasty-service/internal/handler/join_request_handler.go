@@ -7,11 +7,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"metargb/dynasty-service/internal/models"
-	"metargb/dynasty-service/internal/service"
-	commonpb "metargb/shared/pb/common"
-	dynastypb "metargb/shared/pb/dynasty"
-	"metargb/shared/pkg/helpers"
+	"metarang/dynasty-service/internal/models"
+	"metarang/dynasty-service/internal/service"
+	commonpb "metarang/shared/pb/common"
+	dynastypb "metarang/shared/pb/dynasty"
+	"metarang/shared/pkg/helpers"
 )
 
 // JoinRequestHandler handles JoinRequestService gRPC methods
@@ -286,11 +286,11 @@ func (h *JoinRequestHandler) SearchUsers(ctx context.Context, req *dynastypb.Sea
 	var protoResults []*dynastypb.UserSearchResult
 	for _, r := range results {
 		protoResults = append(protoResults, &dynastypb.UserSearchResult{
-			Id:     r.ID,
-			Code:   r.Code,
-			Name:   r.Name,
-			Image:  stringOrEmpty(r.Image),
-			Level:  r.Level,
+			Id:    r.ID,
+			Code:  r.Code,
+			Name:  r.Name,
+			Image: stringOrEmpty(r.Image),
+			Level: r.Level,
 		})
 	}
 
@@ -300,4 +300,3 @@ func (h *JoinRequestHandler) SearchUsers(ctx context.Context, req *dynastypb.Sea
 		Data: protoResults,
 	}, nil
 }
-

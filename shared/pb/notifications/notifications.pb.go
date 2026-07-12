@@ -7,12 +7,13 @@
 package notifications
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	common "metargb/shared/pb/common"
+	common "metarang/shared/pb/common"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -934,7 +935,7 @@ const file_notifications_proto_rawDesc = "" +
 	"\aSendSMS\x12\x1d.notifications.SendSMSRequest\x1a\x1a.notifications.SMSResponse\x12D\n" +
 	"\aSendOTP\x12\x1d.notifications.SendOTPRequest\x1a\x1a.notifications.SMSResponse2Z\n" +
 	"\fEmailService\x12J\n" +
-	"\tSendEmail\x12\x1f.notifications.SendEmailRequest\x1a\x1c.notifications.EmailResponseB!Z\x1fmetargb/shared/pb/notificationsb\x06proto3"
+	"\tSendEmail\x12\x1f.notifications.SendEmailRequest\x1a\x1c.notifications.EmailResponseB!Z\x1fmetarang/shared/pb/notificationsb\x06proto3"
 
 var (
 	file_notifications_proto_rawDescOnce sync.Once

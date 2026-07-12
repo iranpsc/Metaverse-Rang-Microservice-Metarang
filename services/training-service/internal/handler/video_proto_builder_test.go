@@ -4,10 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"metargb/training-service/internal/handler"
-	"metargb/training-service/internal/models"
-	"metargb/training-service/internal/repository"
-	"metargb/training-service/internal/service"
+	"metarang/training-service/internal/handler"
+	"metarang/training-service/internal/models"
+	"metarang/training-service/internal/repository"
+	"metarang/training-service/internal/service"
 )
 
 func TestVideoDetailsToProto(t *testing.T) {

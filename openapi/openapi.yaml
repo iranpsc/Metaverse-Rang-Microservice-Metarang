@@ -4,9 +4,9 @@
 openapi: 3.0.3
 info:
     contact:
-        name: MetaRGB
-    description: REST API for MetaRGB microservices. Laravel-compatible JSON responses served via Kong → grpc-gateway → gRPC services.
-    title: MetaRGB API
+        name: metarang
+    description: REST API for metarang microservices. Laravel-compatible JSON responses served via Kong → grpc-gateway → gRPC services.
+    title: metarang API
     version: 1.0.0
 servers:
     - description: Kong API Gateway (local)

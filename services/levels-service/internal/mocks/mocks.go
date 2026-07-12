@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	pb "metargb/shared/pb/levels"
+	pb "metarang/shared/pb/levels"
 )
 
 type MockCommercialClient struct {

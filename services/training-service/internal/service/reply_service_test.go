@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"metargb/training-service/internal/models"
-	"metargb/training-service/internal/service"
-	"metargb/training-service/internal/testutil"
+	"metarang/training-service/internal/models"
+	"metarang/training-service/internal/service"
+	"metarang/training-service/internal/testutil"
 )
 
 func TestReplyService_AddReply_SelfBlocked(t *testing.T) {

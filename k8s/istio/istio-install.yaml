@@ -6,7 +6,7 @@ apiVersion: install.istio.io/v1alpha1
 kind: IstioOperator
 metadata:
   namespace: istio-system
-  name: metargb-istio
+  name: metarang-istio
 spec:
   profile: default
   
@@ -28,7 +28,7 @@ spec:
       - settings:
           clusterLocal: true
         hosts:
-          - "*.metargb.svc.cluster.local"
+          - "*.metarang.svc.cluster.local"
   
   components:
     # Ingress gateway configuration

@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"metargb/features-service/internal/handler"
+	"metarang/features-service/internal/handler"
 )
 
 func TestValidateRequired_uint64Zero(t *testing.T) {

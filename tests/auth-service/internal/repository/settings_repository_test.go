@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"testing"
 
-	"metargb/auth-service/internal/models"
+	"metarang/auth-service/internal/models"
 )
 
 func TestSettingsRepository_FindByUserID(t *testing.T) {
@@ -165,7 +165,7 @@ func TestSettingsRepository_Update(t *testing.T) {
 func setupSettingsTestDB(t *testing.T) *sql.DB {
 	// This should use a test database connection
 	// For now, we'll skip if DB is not available
-	db, err := sql.Open("mysql", "root@tcp(localhost:3306)/metargb_test?parseTime=true")
+	db, err := sql.Open("mysql", "root@tcp(localhost:3306)/metarang_test?parseTime=true")
 	if err != nil {
 		t.Skipf("skipping test - database not available: %v", err)
 	}

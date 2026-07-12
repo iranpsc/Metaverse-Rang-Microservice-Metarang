@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	pb "metargb/shared/pb/features"
-	"metargb/shared/pkg/auth"
+	pb "metarang/shared/pb/features"
+	"metarang/shared/pkg/auth"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

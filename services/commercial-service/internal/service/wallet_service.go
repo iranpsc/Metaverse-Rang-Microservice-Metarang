@@ -6,7 +6,7 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	"metargb/commercial-service/internal/repository"
+	"metarang/commercial-service/internal/repository"
 )
 
 type WalletService interface {

@@ -10,12 +10,12 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb "metargb/shared/pb/support"
+	pb "metarang/shared/pb/support"
 
-	"metargb/support-service/internal/handler"
-	"metargb/support-service/internal/models"
-	"metargb/support-service/internal/service"
-	"metargb/support-service/tests/internal/testutil"
+	"metarang/support-service/internal/handler"
+	"metarang/support-service/internal/models"
+	"metarang/support-service/internal/service"
+	"metarang/support-service/tests/internal/testutil"
 )
 
 func TestNoteHandler_CreateNote_Validation(t *testing.T) {

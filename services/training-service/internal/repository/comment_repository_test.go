@@ -7,7 +7,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 
-	"metargb/training-service/internal/repository"
+	"metarang/training-service/internal/repository"
 )
 
 func TestCommentRepository_GetComments(t *testing.T) {

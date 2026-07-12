@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"metargb/features-service/internal/repository"
+	"metarang/features-service/internal/repository"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,10 +42,10 @@ func TestFeatureRepository_FindByBoundingBox(t *testing.T) {
 
 	// Test bounding box: small area
 	points := []string{
-		"0.0,0.0",   // minX, minY
-		"1.0,0.0",   // maxX, minY
-		"1.0,1.0",   // maxX, maxY
-		"0.0,1.0",   // minX, maxY
+		"0.0,0.0", // minX, minY
+		"1.0,0.0", // maxX, minY
+		"1.0,1.0", // maxX, maxY
+		"0.0,1.0", // minX, maxY
 	}
 
 	features, err := repo.FindByBoundingBox(ctx, points, false)
@@ -77,4 +77,3 @@ func TestFeatureRepository_UpdateOwner(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, newOwnerID, feature.OwnerID)
 }
-

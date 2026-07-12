@@ -11,9 +11,9 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
 
-	"metargb/auth-service/internal/models"
-	"metargb/auth-service/internal/repository"
-	notificationspb "metargb/shared/pb/notifications"
+	"metarang/auth-service/internal/models"
+	"metarang/auth-service/internal/repository"
+	notificationspb "metarang/shared/pb/notifications"
 )
 
 func TestRequestAccountSecurityCreatesAndDispatchesOTP(t *testing.T) {

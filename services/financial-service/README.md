@@ -83,7 +83,7 @@ DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=
-DB_DATABASE=metargb_db
+DB_DATABASE=metarang_db
 
 GRPC_PORT=50058
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"metargb/auth-service/internal/repository"
+	"metarang/auth-service/internal/repository"
 )
 
 type SearchService interface {

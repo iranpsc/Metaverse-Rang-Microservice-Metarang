@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	pb "metargb/shared/pb/levels"
-	"metargb/shared/pkg/helpers"
+	pb "metarang/shared/pb/levels"
+	"metarang/shared/pkg/helpers"
 )
 
 // LevelRepository handles level database operations

@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: mysql-secret
-  namespace: metargb
+  namespace: metarang
 type: Opaque
 stringData:
   mysql-root-password: "changeme-root-password"
@@ -12,7 +12,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: mysql-config
-  namespace: metargb
+  namespace: metarang
 data:
   my.cnf: |
     [mysqld]
@@ -28,7 +28,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mysql
-  namespace: metargb
+  namespace: metarang
   labels:
     app: mysql
 spec:
@@ -43,7 +43,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: mysql
-  namespace: metargb
+  namespace: metarang
 spec:
   serviceName: mysql
   replicas: 1
@@ -68,9 +68,9 @@ spec:
               name: mysql-secret
               key: mysql-root-password
         - name: MYSQL_DATABASE
-          value: metargb_db
+          value: metarang_db
         - name: MYSQL_USER
-          value: metargb
+          value: metarang
         - name: MYSQL_PASSWORD
           valueFrom:
             secretKeyRef:

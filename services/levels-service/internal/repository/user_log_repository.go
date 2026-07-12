@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strconv"
 
-	pb "metargb/shared/pb/levels"
+	pb "metarang/shared/pb/levels"
 )
 
 // UserLogRepository handles user_logs table operations

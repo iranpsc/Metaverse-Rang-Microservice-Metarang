@@ -8,8 +8,8 @@ import (
 
 	"google.golang.org/grpc/metadata"
 
-	pb "metargb/shared/pb/auth"
-	authpkg "metargb/shared/pkg/auth"
+	pb "metarang/shared/pb/auth"
+	authpkg "metarang/shared/pkg/auth"
 )
 
 // AuthMiddleware creates an HTTP middleware that validates authentication tokens

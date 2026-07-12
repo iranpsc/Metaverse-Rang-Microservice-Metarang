@@ -31,7 +31,7 @@ func GetTestConfig() *TestConfig {
 	return &TestConfig{
 		DBHost:     getEnv("DB_HOST", "localhost"),
 		DBPort:     getEnv("DB_PORT", "3306"),
-		DBDatabase: getEnv("DB_DATABASE", "metargb_test"),
+		DBDatabase: getEnv("DB_DATABASE", "metarang_test"),
 		DBUser:     getEnv("DB_USER", "test_user"),
 		DBPassword: getEnv("DB_PASSWORD", "test_password"),
 		AuthURL:    getEnv("AUTH_SERVICE_URL", "localhost:50051"),
@@ -121,7 +121,7 @@ func CreateTestWallet(t *testing.T, db *sql.DB, userID int64, psc, rgb string) {
 // CreateTestFeature creates a test feature in the database
 func CreateTestFeature(t *testing.T, db *sql.DB, userID *int64) string {
 	featureID := fmt.Sprintf("F-%d", time.Now().UnixNano())
-	
+
 	_, err := db.Exec(`
 		INSERT INTO features (id, user_id, status, created_at, updated_at)
 		VALUES (?, ?, 'active', NOW(), NOW())
@@ -171,4 +171,3 @@ func WaitForService(address string, timeout time.Duration) error {
 		}
 	}
 }
-

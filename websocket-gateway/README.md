@@ -1,6 +1,6 @@
-# MetaRGB WebSocket Gateway
+# metarang WebSocket Gateway
 
-Real-time event broadcasting gateway for MetaRGB microservices architecture using Socket.IO and Redis Pub/Sub.
+Real-time event broadcasting gateway for metarang microservices architecture using Socket.IO and Redis Pub/Sub.
 
 ## Features
 
@@ -55,8 +55,8 @@ npm start
 
 ### Docker
 ```bash
-docker build -t metargb/websocket-gateway .
-docker run -p 3000:3000 --env-file .env metargb/websocket-gateway
+docker build -t metarang/websocket-gateway .
+docker run -p 3000:3000 --env-file .env metarang/websocket-gateway
 ```
 
 ## Client Usage

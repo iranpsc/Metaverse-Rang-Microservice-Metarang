@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"testing"
 
-	"metargb/auth-service/internal/models"
+	"metarang/auth-service/internal/models"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/assert"
@@ -14,7 +14,7 @@ import (
 
 func setupProfileLimitationTestDB(t *testing.T) *sql.DB {
 	// Use test database connection
-	dsn := "root@tcp(localhost:3306)/metargb_db_test?parseTime=true&charset=utf8mb4&collation=utf8mb4_unicode_ci"
+	dsn := "root@tcp(localhost:3306)/metarang_db_test?parseTime=true&charset=utf8mb4&collation=utf8mb4_unicode_ci"
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		t.Skipf("Database not available: %v", err)

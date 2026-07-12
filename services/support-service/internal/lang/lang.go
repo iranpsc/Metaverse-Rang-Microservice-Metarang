@@ -4,7 +4,7 @@ import (
 	_ "embed"
 	"strings"
 
-	"metargb/shared/pkg/i18n"
+	"metarang/shared/pkg/i18n"
 )
 
 //go:embed en.json

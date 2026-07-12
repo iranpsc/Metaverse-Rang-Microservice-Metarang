@@ -15,14 +15,14 @@ import (
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 
-	"metargb/dynasty-service/internal/client"
-	"metargb/dynasty-service/internal/handler"
-	"metargb/dynasty-service/internal/repository"
-	"metargb/dynasty-service/internal/service"
+	"metarang/dynasty-service/internal/client"
+	"metarang/dynasty-service/internal/handler"
+	"metarang/dynasty-service/internal/repository"
+	"metarang/dynasty-service/internal/service"
 
-	dynastypb "metargb/shared/pb/dynasty"
-	"metargb/shared/pkg/metrics"
-	"metargb/shared/pkg/sentry"
+	dynastypb "metarang/shared/pb/dynasty"
+	"metarang/shared/pkg/metrics"
+	"metarang/shared/pkg/sentry"
 )
 
 func main() {
@@ -56,7 +56,7 @@ func main() {
 		getEnv("DB_PASSWORD", ""),
 		getEnv("DB_HOST", "localhost"),
 		getEnv("DB_PORT", "3306"),
-		getEnv("DB_DATABASE", "metargb_db"),
+		getEnv("DB_DATABASE", "metarang_db"),
 	)
 
 	db, err := sql.Open("mysql", dsn)

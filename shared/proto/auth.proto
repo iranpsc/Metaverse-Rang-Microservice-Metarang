@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package auth;
 
-option go_package = "metargb/shared/pb/auth";
+option go_package = "metarang/shared/pb/auth";
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";

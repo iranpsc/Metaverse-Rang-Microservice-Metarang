@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"metargb/support-service/internal/handler"
+	"metarang/support-service/internal/handler"
 )
 
 func TestMapServiceError(t *testing.T) {

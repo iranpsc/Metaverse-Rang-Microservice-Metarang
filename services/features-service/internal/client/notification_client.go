@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	pb "metargb/shared/pb/notifications"
+	pb "metarang/shared/pb/notifications"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -121,7 +121,7 @@ func (c *NotificationClient) SendSellRequestNotification(ctx context.Context, se
 	title := "درخواست فروش ملک"
 	message := fmt.Sprintf("ملک %s با موفقیت قیمت گذاری شد.", featurePropertiesID)
 	data := map[string]string{
-		"feature_id":     fmt.Sprintf("%d", featureID),
+		"feature_id":    fmt.Sprintf("%d", featureID),
 		"properties_id": featurePropertiesID,
 		"related-to":    "sell-requests",
 	}

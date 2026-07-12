@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"metargb/dynasty-service/internal/models"
-	"metargb/dynasty-service/internal/repository"
-	"metargb/dynasty-service/internal/service"
+	"metarang/dynasty-service/internal/models"
+	"metarang/dynasty-service/internal/repository"
+	"metarang/dynasty-service/internal/service"
 )
 
 // TestDynastyFlow tests complete dynasty creation and member management flow

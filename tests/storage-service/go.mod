@@ -1,8 +1,8 @@
-module metargb/storage-service/tests
+module metarang/storage-service/tests
 
 go 1.25.0
 
-require metargb/storage-service v0.0.0
+require metarang/storage-service v0.0.0
 
 require (
 	github.com/getsentry/sentry-go v0.47.0 // indirect
@@ -15,9 +15,9 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	google.golang.org/grpc v1.79.3 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
-	metargb/shared v0.0.0 // indirect
+	metarang/shared v0.0.0 // indirect
 )
 
-replace metargb/shared => ../../shared
+replace metarang/shared => ../../shared
 
-replace metargb/storage-service => ../../services/storage-service
+replace metarang/storage-service => ../../services/storage-service

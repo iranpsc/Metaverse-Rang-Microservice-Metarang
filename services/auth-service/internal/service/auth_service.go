@@ -19,9 +19,9 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"metargb/auth-service/internal/models"
-	"metargb/auth-service/internal/repository"
-	notificationspb "metargb/shared/pb/notifications"
+	"metarang/auth-service/internal/models"
+	"metarang/auth-service/internal/repository"
+	notificationspb "metarang/shared/pb/notifications"
 )
 
 type AuthService interface {

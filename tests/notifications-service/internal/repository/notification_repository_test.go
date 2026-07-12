@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"metargb/notifications-service/internal/models"
+	"metarang/notifications-service/internal/models"
 )
 
 func TestCreateNotification(t *testing.T) {

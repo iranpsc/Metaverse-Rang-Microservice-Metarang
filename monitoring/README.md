@@ -1,4 +1,4 @@
-# MetaRGB Monitoring Stack
+# metarang Monitoring Stack
 
 Prometheus and Grafana configuration aligned with [MICROSERVICE_METRICS.md](./MICROSERVICE_METRICS.md).
 
@@ -42,11 +42,11 @@ Dashboards are provisioned from folder structure (`foldersFromFilesStructure: tr
 
 Pre-aggregated golden signals in `prometheus/recording_rules.yml`:
 
-- `metargb:http_requests_per_second:5m` — Traffic
-- `metargb:http_latency_p50/p95/p99:5m` — Latency
-- `metargb:http_error_percentage:5m` — Errors (5xx)
-- `metargb:service_availability_percentage` — Availability
-- `metargb:node_cpu_usage_percentage` / `metargb:node_memory_usage_percentage` — Saturation
+- `metarang:http_requests_per_second:5m` — Traffic
+- `metarang:http_latency_p50/p95/p99:5m` — Latency
+- `metarang:http_error_percentage:5m` — Errors (5xx)
+- `metarang:service_availability_percentage` — Availability
+- `metarang:node_cpu_usage_percentage` / `metarang:node_memory_usage_percentage` — Saturation
 
 ## Alerting Rules
 
@@ -95,12 +95,12 @@ monitoring/
 
 ## Per-Service Metrics
 
-Services using `metargb/shared/pkg/metrics` expose:
+Services using `metarang/shared/pkg/metrics` expose:
 
-- `metargb_<service>_requests_total{method,status}`
-- `metargb_<service>_request_duration_seconds_bucket{method,le}`
-- `metargb_<service>_requests_in_flight{method}`
-- `metargb_<service>_db_connection_pool{stat}`
+- `metarang_<service>_requests_total{method,status}`
+- `metarang_<service>_request_duration_seconds_bucket{method,le}`
+- `metarang_<service>_requests_in_flight{method}`
+- `metarang_<service>_db_connection_pool{stat}`
 
 Start an HTTP server on port 9090 with `promhttp.Handler()` for Prometheus to scrape.
 
@@ -125,4 +125,4 @@ Start an HTTP server on port 9090 with `promhttp.Handler()` for Prometheus to sc
 
 Restart Kong after changes. Metrics like `kong_http_requests_total` only appear after traffic flows through the gateway.
 
-**Per-service gRPC metrics empty:** Services must expose `/metrics` on port 9090 via `metargb/shared/pkg/metrics`. Rebuild and restart services after code changes: `docker compose build <service> && docker compose up -d <service>`.
+**Per-service gRPC metrics empty:** Services must expose `/metrics` on port 9090 via `metarang/shared/pkg/metrics`. Rebuild and restart services after code changes: `docker compose build <service> && docker compose up -d <service>`.

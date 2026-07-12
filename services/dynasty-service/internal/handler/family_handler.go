@@ -7,10 +7,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"metargb/dynasty-service/internal/service"
-	commonpb "metargb/shared/pb/common"
-	dynastypb "metargb/shared/pb/dynasty"
-	"metargb/shared/pkg/helpers"
+	"metarang/dynasty-service/internal/service"
+	commonpb "metarang/shared/pb/common"
+	dynastypb "metarang/shared/pb/dynasty"
+	"metarang/shared/pkg/helpers"
 )
 
 // FamilyHandler handles FamilyService gRPC methods
@@ -193,4 +193,3 @@ func (h *FamilyHandler) SetChildPermissions(ctx context.Context, req *dynastypb.
 
 	return &commonpb.Empty{}, nil
 }
-

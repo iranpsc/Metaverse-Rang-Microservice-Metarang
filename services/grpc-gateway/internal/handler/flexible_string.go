@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"metargb/shared/pkg/helpers"
+	"metarang/shared/pkg/helpers"
 )
 
 // flexibleString unmarshals JSON numbers or strings (including Persian digits).

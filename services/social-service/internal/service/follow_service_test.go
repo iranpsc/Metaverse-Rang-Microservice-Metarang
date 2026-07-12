@@ -6,9 +6,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"metargb/social-service/internal/repository"
-	"metargb/social-service/internal/service"
-	"metargb/social-service/internal/testutil"
+	"metarang/social-service/internal/repository"
+	"metarang/social-service/internal/service"
+	"metarang/social-service/internal/testutil"
 )
 
 func TestFollowService_Follow_Self(t *testing.T) {

@@ -9,10 +9,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"metargb/auth-service/internal/models"
-	"metargb/auth-service/internal/service"
-	pb "metargb/shared/pb/auth"
-	"metargb/shared/pkg/helpers"
+	"metarang/auth-service/internal/models"
+	"metarang/auth-service/internal/service"
+	pb "metarang/shared/pb/auth"
+	"metarang/shared/pkg/helpers"
 )
 
 type citizenHandler struct {

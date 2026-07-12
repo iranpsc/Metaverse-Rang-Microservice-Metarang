@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"metargb/auth-service/internal/models"
+	"metarang/auth-service/internal/models"
 )
 
 type CitizenRepository interface {
@@ -339,7 +339,7 @@ func (r *citizenRepository) GetCitizenReferralChartData(ctx context.Context, ref
 	// Laravel behavior:
 	// - yearly: ALL data, no time filter (groups by year from first to current)
 	// - monthly: last 12 months
-	// - weekly: last 7 days  
+	// - weekly: last 7 days
 	// - daily: last 24 hours
 	var dateFormat string
 	var timeFilter string

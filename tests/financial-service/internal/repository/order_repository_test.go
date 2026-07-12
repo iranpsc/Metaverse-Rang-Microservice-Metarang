@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"metargb/financial-service/internal/models"
+	"metarang/financial-service/internal/models"
 )
 
 func TestOrderRepository_Create(t *testing.T) {

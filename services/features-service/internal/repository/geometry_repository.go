@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"metargb/features-service/internal/models"
+	"metarang/features-service/internal/models"
 )
 
 type GeometryRepository struct {

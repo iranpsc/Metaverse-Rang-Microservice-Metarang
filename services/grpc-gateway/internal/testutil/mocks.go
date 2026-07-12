@@ -6,9 +6,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	pb "metargb/shared/pb/auth"
-	calendarpb "metargb/shared/pb/calendar"
-	featurespb "metargb/shared/pb/features"
+	pb "metarang/shared/pb/auth"
+	calendarpb "metarang/shared/pb/calendar"
+	featurespb "metarang/shared/pb/features"
 )
 
 // AuthMocks groups auth-service gRPC mocks registered on one bufconn server.

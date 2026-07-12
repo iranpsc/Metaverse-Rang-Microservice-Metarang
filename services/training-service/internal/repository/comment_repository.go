@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"metargb/training-service/internal/models"
+	"metarang/training-service/internal/models"
 )
 
 // CommentRepositoryInterface defines persistence for comments, replies, reports, and interactions.

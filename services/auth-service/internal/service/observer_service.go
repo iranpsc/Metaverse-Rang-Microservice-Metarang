@@ -7,9 +7,9 @@ import (
 	"math"
 	"time"
 
-	"metargb/auth-service/internal/models"
-	"metargb/auth-service/internal/pubsub"
-	"metargb/auth-service/internal/repository"
+	"metarang/auth-service/internal/models"
+	"metarang/auth-service/internal/pubsub"
+	"metarang/auth-service/internal/repository"
 )
 
 // ObserverService handles user events, activity tracking, and score calculation

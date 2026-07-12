@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"metargb/commercial-service/internal/models"
-	"metargb/commercial-service/internal/repository"
+	"metarang/commercial-service/internal/models"
+	"metarang/commercial-service/internal/repository"
 )
 
 type TransactionService interface {

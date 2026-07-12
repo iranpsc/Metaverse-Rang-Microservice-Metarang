@@ -1,4 +1,4 @@
-module metargb/features-service
+module metarang/features-service
 
 go 1.25.0
 
@@ -8,7 +8,7 @@ require (
 	github.com/redis/go-redis/v9 v9.16.0
 	google.golang.org/grpc v1.79.3
 	google.golang.org/protobuf v1.36.11
-	metargb/shared v0.0.0
+	metarang/shared v0.0.0
 )
 
 require (
@@ -36,4 +36,4 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 )
 
-replace metargb/shared => ../../shared
+replace metarang/shared => ../../shared

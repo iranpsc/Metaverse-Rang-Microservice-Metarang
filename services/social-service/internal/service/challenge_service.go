@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"math"
 
-	"metargb/social-service/internal/client"
-	"metargb/social-service/internal/models"
-	"metargb/social-service/internal/repository"
+	"metarang/social-service/internal/client"
+	"metarang/social-service/internal/models"
+	"metarang/social-service/internal/repository"
 )
 
 var (

@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 
-	"metargb/shared/pkg/helpers"
+	"metarang/shared/pkg/helpers"
 )
 
 // writeValidationErrorWithLocale writes a validation error response with locale support

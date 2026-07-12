@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"metargb/dynasty-service/internal/models"
-	"metargb/dynasty-service/internal/repository"
-	"metargb/dynasty-service/internal/validation"
-	"metargb/shared/pkg/helpers"
+	"metarang/dynasty-service/internal/models"
+	"metarang/dynasty-service/internal/repository"
+	"metarang/dynasty-service/internal/validation"
+	"metarang/shared/pkg/helpers"
 )
 
 // JoinRequestServiceEnhanced provides enhanced join request operations with full validation

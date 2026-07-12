@@ -6,7 +6,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"metargb/training-service/internal/service"
+	"metarang/training-service/internal/service"
 )
 
 func mapServiceError(err error) error {

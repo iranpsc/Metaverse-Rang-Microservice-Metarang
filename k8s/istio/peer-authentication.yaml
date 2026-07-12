@@ -5,7 +5,7 @@ apiVersion: security.istio.io/v1beta1
 kind: PeerAuthentication
 metadata:
   name: default
-  namespace: metargb
+  namespace: metarang
 spec:
   mtls:
     mode: STRICT

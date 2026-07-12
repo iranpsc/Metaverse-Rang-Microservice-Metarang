@@ -1,6 +1,6 @@
-# MetaRGB Shared Libraries
+# metarang Shared Libraries
 
-This directory contains shared Go packages and Protocol Buffer definitions used across all MetaRGB microservices.
+This directory contains shared Go packages and Protocol Buffer definitions used across all metarang microservices.
 
 ## Structure
 
@@ -69,9 +69,9 @@ Import in your service:
 
 ```go
 import (
-    "github.com/metargb/shared/pkg/db"
-    "github.com/metargb/shared/pkg/logger"
-    "github.com/metargb/shared/proto/auth"
+    "github.com/metarang/shared/pkg/db"
+    "github.com/metarang/shared/pkg/logger"
+    "github.com/metarang/shared/proto/auth"
 )
 ```
 

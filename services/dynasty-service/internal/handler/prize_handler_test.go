@@ -11,15 +11,19 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"metargb/dynasty-service/internal/repository"
-	"metargb/dynasty-service/internal/service"
-	dynastypb "metargb/shared/pb/dynasty"
+	"metarang/dynasty-service/internal/repository"
+	"metarang/dynasty-service/internal/service"
+	dynastypb "metarang/shared/pb/dynasty"
 )
 
 type walletStub struct{}
 
-func (w *walletStub) IncrementWalletPSC(ctx context.Context, userID uint64, amount float64) error { return nil }
-func (w *walletStub) IncrementSatisfaction(ctx context.Context, userID uint64, amount float64) error { return nil }
+func (w *walletStub) IncrementWalletPSC(ctx context.Context, userID uint64, amount float64) error {
+	return nil
+}
+func (w *walletStub) IncrementSatisfaction(ctx context.Context, userID uint64, amount float64) error {
+	return nil
+}
 
 func TestPrizeHandler_NilService(t *testing.T) {
 	h := NewPrizeHandler(nil)

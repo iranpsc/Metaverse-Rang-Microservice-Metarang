@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"metargb/training-service/internal/models"
+	"metarang/training-service/internal/models"
 )
 
 // CategoryRepositoryInterface defines the interface for category repository operations.

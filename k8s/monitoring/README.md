@@ -1,4 +1,4 @@
-# MetaRGB Monitoring Stack
+# metarang Monitoring Stack
 
 > **Production Grafana empty but local works?** See **[PRODUCTION.md](./PRODUCTION.md)** for the full fix guide (Istio scrape blocking, Kong plugin, dashboard metric mismatch, image rollout).
 
@@ -29,32 +29,32 @@ kubectl port-forward -n istio-system svc/kiali 20001:20001
 
 **Request Rate (RPS) by Service:**
 ```promql
-sum(rate(grpc_server_handled_total{namespace="metargb"}[5m])) by (job)
+sum(rate(grpc_server_handled_total{namespace="metarang"}[5m])) by (job)
 ```
 
 **Error Rate (%) by Service:**
 ```promql
-sum(rate(grpc_server_handled_total{grpc_code!="OK",namespace="metargb"}[5m])) by (job)
-/ sum(rate(grpc_server_handled_total{namespace="metargb"}[5m])) by (job) * 100
+sum(rate(grpc_server_handled_total{grpc_code!="OK",namespace="metarang"}[5m])) by (job)
+/ sum(rate(grpc_server_handled_total{namespace="metarang"}[5m])) by (job) * 100
 ```
 
 **P95 Latency by Service:**
 ```promql
 histogram_quantile(0.95, 
-  sum(rate(grpc_server_handling_seconds_bucket{namespace="metargb"}[5m])) by (job, le)
+  sum(rate(grpc_server_handling_seconds_bucket{namespace="metarang"}[5m])) by (job, le)
 )
 ```
 
 **Database Connection Pool Usage:**
 ```promql
-db_connections_in_use{namespace="metargb"} 
-/ db_connections_max{namespace="metargb"} * 100
+db_connections_in_use{namespace="metarang"} 
+/ db_connections_max{namespace="metarang"} * 100
 ```
 
 **Memory Usage (%):**
 ```promql
-container_memory_working_set_bytes{namespace="metargb"} 
-/ container_spec_memory_limit_bytes{namespace="metargb"} * 100
+container_memory_working_set_bytes{namespace="metarang"} 
+/ container_spec_memory_limit_bytes{namespace="metarang"} * 100
 ```
 
 ### Check Monitoring Health
@@ -78,10 +78,10 @@ kubectl exec -it -n monitoring deploy/grafana -- \
 **Service not showing metrics:**
 ```bash
 # Check ServiceMonitor
-kubectl get servicemonitor -n metargb
+kubectl get servicemonitor -n metarang
 
 # Check service labels
-kubectl get svc <service-name> -n metargb --show-labels
+kubectl get svc <service-name> -n metarang --show-labels
 
 # Check Prometheus logs
 kubectl logs -n monitoring -l app=prometheus
@@ -93,7 +93,7 @@ kubectl logs -n monitoring -l app=prometheus
 kubectl get telemetry -n istio-system -o yaml
 
 # Check sidecar logs
-kubectl logs <pod-name> -n metargb -c istio-proxy | grep jaeger
+kubectl logs <pod-name> -n metarang -c istio-proxy | grep jaeger
 ```
 
 **Grafana shows no data:**

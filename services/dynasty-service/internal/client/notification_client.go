@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	pb "metarang/shared/pb/notifications"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	pb "metargb/shared/pb/notifications"
 )
 
 // NotificationClient wraps gRPC client for Notifications Service
@@ -46,13 +47,13 @@ func (c *NotificationClient) Close() error {
 // SendNotification sends a notification to a user
 func (c *NotificationClient) SendNotification(ctx context.Context, userID uint64, notificationType, title, message string, data map[string]string, sendSMS, sendEmail bool) error {
 	req := &pb.SendNotificationRequest{
-		UserId:     userID,
-		Type:       notificationType,
-		Title:      title,
-		Message:    message,
-		Data:       data,
-		SendSms:    sendSMS,
-		SendEmail:  sendEmail,
+		UserId:    userID,
+		Type:      notificationType,
+		Title:     title,
+		Message:   message,
+		Data:      data,
+		SendSms:   sendSMS,
+		SendEmail: sendEmail,
 	}
 
 	resp, err := c.notificationClient.SendNotification(ctx, req)
@@ -66,4 +67,3 @@ func (c *NotificationClient) SendNotification(ctx context.Context, userID uint64
 
 	return nil
 }
-

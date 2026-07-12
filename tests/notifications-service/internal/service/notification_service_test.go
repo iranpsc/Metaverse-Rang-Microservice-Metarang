@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"metargb/notifications-service/internal/models"
-	"metargb/notifications-service/internal/repository"
+	"metarang/notifications-service/internal/models"
+	"metarang/notifications-service/internal/repository"
 )
 
 // MockNotificationRepository is a mock implementation that wraps the repository

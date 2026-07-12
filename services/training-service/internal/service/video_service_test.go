@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"metargb/training-service/internal/models"
-	"metargb/training-service/internal/repository"
-	"metargb/training-service/internal/service"
-	"metargb/training-service/internal/testutil"
+	"metarang/training-service/internal/models"
+	"metarang/training-service/internal/repository"
+	"metarang/training-service/internal/service"
+	"metarang/training-service/internal/testutil"
 )
 
 func TestVideoService_GetVideos(t *testing.T) {

@@ -7,7 +7,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: health-check-service
-  namespace: metargb
+  namespace: metarang
   labels:
     app: health-check-service
     release: prometheus
@@ -27,7 +27,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: kong
-  namespace: metargb
+  namespace: metarang
   labels:
     app: kong
     release: prometheus
@@ -47,7 +47,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: auth-service
-  namespace: metargb
+  namespace: metarang
   labels:
     app: auth-service
     release: prometheus
@@ -67,7 +67,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: commercial-service
-  namespace: metargb
+  namespace: metarang
   labels:
     app: commercial-service
     release: prometheus
@@ -87,7 +87,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: features-service
-  namespace: metargb
+  namespace: metarang
   labels:
     app: features-service
     release: prometheus
@@ -107,7 +107,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: levels-service
-  namespace: metargb
+  namespace: metarang
   labels:
     app: levels-service
     release: prometheus
@@ -127,7 +127,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: dynasty-service
-  namespace: metargb
+  namespace: metarang
   labels:
     app: dynasty-service
     release: prometheus
@@ -147,7 +147,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: support-service
-  namespace: metargb
+  namespace: metarang
   labels:
     app: support-service
     release: prometheus
@@ -167,7 +167,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: calendar-service
-  namespace: metargb
+  namespace: metarang
   labels:
     app: calendar-service
     release: prometheus
@@ -187,7 +187,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: storage-service
-  namespace: metargb
+  namespace: metarang
   labels:
     app: storage-service
     release: prometheus
@@ -207,7 +207,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: websocket-gateway
-  namespace: metargb
+  namespace: metarang
   labels:
     app: websocket-gateway
     release: prometheus

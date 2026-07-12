@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"metargb/dynasty-service/internal/repository"
-	"metargb/dynasty-service/internal/validation"
+	"metarang/dynasty-service/internal/repository"
+	"metarang/dynasty-service/internal/validation"
 )
 
 func TestFamilyValidator_ValidateRelationship(t *testing.T) {

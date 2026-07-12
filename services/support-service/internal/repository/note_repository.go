@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"metargb/support-service/internal/models"
+	"metarang/support-service/internal/models"
 )
 
 type NoteRepository interface {

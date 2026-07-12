@@ -7,12 +7,13 @@
 package training
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	common "metargb/shared/pb/common"
+	common "metarang/shared/pb/common"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -2380,7 +2381,7 @@ const file_training_proto_rawDesc = "" +
 	"\bAddReply\x12\x19.training.AddReplyRequest\x1a\x19.training.CommentResponse\x12F\n" +
 	"\vUpdateReply\x12\x1c.training.UpdateReplyRequest\x1a\x19.training.CommentResponse\x12:\n" +
 	"\vDeleteReply\x12\x1c.training.DeleteReplyRequest\x1a\r.common.Empty\x12J\n" +
-	"\x13AddReplyInteraction\x12$.training.AddReplyInteractionRequest\x1a\r.common.EmptyB\x1cZ\x1ametargb/shared/pb/trainingb\x06proto3"
+	"\x13AddReplyInteraction\x12$.training.AddReplyInteractionRequest\x1a\r.common.EmptyB\x1cZ\x1ametarang/shared/pb/trainingb\x06proto3"
 
 var (
 	file_training_proto_rawDescOnce sync.Once

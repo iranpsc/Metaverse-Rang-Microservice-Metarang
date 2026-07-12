@@ -9,10 +9,10 @@ import (
 
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	pb "metargb/shared/pb/auth"
+	pb "metarang/shared/pb/auth"
 
-	"metargb/grpc-gateway/internal/handler"
-	"metargb/grpc-gateway/internal/testutil"
+	"metarang/grpc-gateway/internal/handler"
+	"metarang/grpc-gateway/internal/testutil"
 )
 
 func newAccountSecurityAuthHandler(t *testing.T, auth *testutil.MockAuthService) *handler.AuthHandler {

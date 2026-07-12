@@ -1,12 +1,12 @@
-module metargb/calendar-service/tests
+module metarang/calendar-service/tests
 
 go 1.25.0
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	google.golang.org/grpc v1.79.3
-	metargb/calendar-service v0.0.0
-	metargb/shared v0.0.0
+	metarang/calendar-service v0.0.0
+	metarang/shared v0.0.0
 )
 
 require (
@@ -17,6 +17,6 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 )
 
-replace metargb/shared => ../../shared
+replace metarang/shared => ../../shared
 
-replace metargb/calendar-service => ../../services/calendar-service
+replace metarang/calendar-service => ../../services/calendar-service

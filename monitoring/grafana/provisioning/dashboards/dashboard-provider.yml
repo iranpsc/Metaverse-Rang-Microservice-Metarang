@@ -1,7 +1,7 @@
 apiVersion: 1
 
 providers:
-  - name: 'MetaRGB Dashboards'
+  - name: 'metarang Dashboards'
     orgId: 1
     folder: ''
     type: file

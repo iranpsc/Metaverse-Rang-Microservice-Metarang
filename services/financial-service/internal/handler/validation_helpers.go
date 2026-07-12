@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"metargb/shared/pkg/helpers"
+	"metarang/shared/pkg/helpers"
 )
 
 const defaultLocale = "en"

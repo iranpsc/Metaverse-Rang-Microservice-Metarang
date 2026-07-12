@@ -13,13 +13,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"metargb/commercial-service/internal/handler"
-	"metargb/commercial-service/internal/repository"
-	"metargb/commercial-service/internal/service"
-	"metargb/shared/pkg/auth"
-	"metargb/shared/pkg/db"
-	"metargb/shared/pkg/metrics"
-	"metargb/shared/pkg/sentry"
+	"metarang/commercial-service/internal/handler"
+	"metarang/commercial-service/internal/repository"
+	"metarang/commercial-service/internal/service"
+	"metarang/shared/pkg/auth"
+	"metarang/shared/pkg/db"
+	"metarang/shared/pkg/metrics"
+	"metarang/shared/pkg/sentry"
 )
 
 func main() {
@@ -55,7 +55,7 @@ func main() {
 		Port:            dbPort,
 		User:            getEnv("DB_USER", "root"),
 		Password:        getEnv("DB_PASSWORD", ""),
-		Database:        getEnv("DB_DATABASE", "metargb_db"),
+		Database:        getEnv("DB_DATABASE", "metarang_db"),
 		MaxOpenConns:    25,
 		MaxIdleConns:    5,
 		ConnMaxLifetime: 5 * time.Minute,

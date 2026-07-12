@@ -7,13 +7,14 @@
 package features
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
-	_ "metargb/shared/pb/common"
+	_ "metarang/shared/pb/common"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 const (
@@ -4745,7 +4746,7 @@ const file_features_proto_rawDesc = "" +
 	"\vMapsService\x12A\n" +
 	"\bListMaps\x12\x19.features.ListMapsRequest\x1a\x1a.features.ListMapsResponse\x12;\n" +
 	"\x06GetMap\x12\x17.features.GetMapRequest\x1a\x18.features.GetMapResponse\x12G\n" +
-	"\fGetMapBorder\x12\x17.features.GetMapRequest\x1a\x1e.features.GetMapBorderResponseB\x1cZ\x1ametargb/shared/pb/featuresb\x06proto3"
+	"\fGetMapBorder\x12\x17.features.GetMapRequest\x1a\x1e.features.GetMapBorderResponseB\x1cZ\x1ametarang/shared/pb/featuresb\x06proto3"
 
 var (
 	file_features_proto_rawDescOnce sync.Once

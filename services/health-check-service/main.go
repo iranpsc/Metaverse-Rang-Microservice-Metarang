@@ -16,8 +16,8 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
-	"github.com/redis/go-redis/v9/maintnotifications"
 	"github.com/redis/go-redis/v9"
+	"github.com/redis/go-redis/v9/maintnotifications"
 )
 
 // ServiceStatus represents the health status of a service
@@ -244,9 +244,9 @@ func initRedisClient() {
 func initDBConnection() {
 	dbHost := getEnv("DB_HOST", "mysql")
 	dbPort := getEnv("DB_PORT", "3306")
-	dbUser := getEnv("DB_USER", "metargb_user")
-	dbPassword := getEnv("DB_PASSWORD", "metargb_password")
-	dbName := getEnv("DB_DATABASE", "metargb_db")
+	dbUser := getEnv("DB_USER", "metarang_user")
+	dbPassword := getEnv("DB_PASSWORD", "metarang_password")
+	dbName := getEnv("DB_DATABASE", "metarang_db")
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&timeout=2s",
 		dbUser, dbPassword, dbHost, dbPort, dbName)
@@ -268,9 +268,9 @@ func initDBConnection() {
 func initServiceDBConnections() {
 	dbHost := getEnv("DB_HOST", "mysql")
 	dbPort := getEnv("DB_PORT", "3306")
-	dbUser := getEnv("DB_USER", "metargb_user")
-	dbPassword := getEnv("DB_PASSWORD", "metargb_password")
-	dbName := getEnv("DB_DATABASE", "metargb_db")
+	dbUser := getEnv("DB_USER", "metarang_user")
+	dbPassword := getEnv("DB_PASSWORD", "metarang_password")
+	dbName := getEnv("DB_DATABASE", "metarang_db")
 
 	// List of services that use database connections
 	services := []string{
@@ -551,7 +551,7 @@ func checkDatabaseConnection(ctx context.Context) DBConnectionStatus {
 	status := DBConnectionStatus{
 		Host:      getEnv("DB_HOST", "mysql"),
 		Port:      3306,
-		Database:  getEnv("DB_DATABASE", "metargb_db"),
+		Database:  getEnv("DB_DATABASE", "metarang_db"),
 		Status:    "unhealthy",
 		Connected: false,
 	}
@@ -597,9 +597,9 @@ func ensureServiceDBConnection(serviceName string) {
 	// Create connection on-demand
 	dbHost := getEnv("DB_HOST", "mysql")
 	dbPort := getEnv("DB_PORT", "3306")
-	dbUser := getEnv("DB_USER", "metargb_user")
-	dbPassword := getEnv("DB_PASSWORD", "metargb_password")
-	dbName := getEnv("DB_DATABASE", "metargb_db")
+	dbUser := getEnv("DB_USER", "metarang_user")
+	dbPassword := getEnv("DB_PASSWORD", "metarang_password")
+	dbName := getEnv("DB_DATABASE", "metarang_db")
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&timeout=2s&charset=utf8mb4&collation=utf8mb4_unicode_ci",
 		dbUser, dbPassword, dbHost, dbPort, dbName)
@@ -628,7 +628,7 @@ func checkServiceDatabaseConnection(ctx context.Context, serviceName string) DBC
 	status := DBConnectionStatus{
 		Host:      getEnv("DB_HOST", "mysql"),
 		Port:      3306,
-		Database:  getEnv("DB_DATABASE", "metargb_db"),
+		Database:  getEnv("DB_DATABASE", "metarang_db"),
 		Status:    "unhealthy",
 		Connected: false,
 	}
@@ -1070,7 +1070,7 @@ func exportDependencyHealthMetrics(w http.ResponseWriter) {
 	log.Printf("📊 Exporting database connection metrics for %d services", len(allServices))
 
 	dbHost := getEnv("DB_HOST", "mysql")
-	dbDatabase := getEnv("DB_DATABASE", "metargb_db")
+	dbDatabase := getEnv("DB_DATABASE", "metarang_db")
 
 	for _, serviceName := range allServices {
 		// Ensure connection exists, create on-demand if needed

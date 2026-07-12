@@ -83,7 +83,7 @@ api-docs/
 __pycache__/
 coverage-final.json
 .env
-/scripts/metargb_db.sql
+/scripts/metarang_db.sql
 /scripts/metarang_db.sql
 /.cursor/
 /docs/

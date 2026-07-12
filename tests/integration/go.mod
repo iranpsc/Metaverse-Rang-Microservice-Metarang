@@ -1,4 +1,4 @@
-module github.com/metargb/metargb-microservices/tests/integration
+module github.com/metarang/metarang-microservices/tests/integration
 
 go 1.25.0
 

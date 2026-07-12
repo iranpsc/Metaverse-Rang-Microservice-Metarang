@@ -7,11 +7,11 @@ apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: auth-service
-  namespace: metargb
+  namespace: metarang
 spec:
   hosts:
     - auth-service
-    - auth-service.metargb.svc.cluster.local
+    - auth-service.metarang.svc.cluster.local
   http:
     - match:
         - uri:
@@ -34,11 +34,11 @@ apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: commercial-service
-  namespace: metargb
+  namespace: metarang
 spec:
   hosts:
     - commercial-service
-    - commercial-service.metargb.svc.cluster.local
+    - commercial-service.metarang.svc.cluster.local
   http:
     - match:
         - uri:
@@ -61,11 +61,11 @@ apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: features-service
-  namespace: metargb
+  namespace: metarang
 spec:
   hosts:
     - features-service
-    - features-service.metargb.svc.cluster.local
+    - features-service.metarang.svc.cluster.local
   http:
     - match:
         - uri:
@@ -88,11 +88,11 @@ apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: levels-service
-  namespace: metargb
+  namespace: metarang
 spec:
   hosts:
     - levels-service
-    - levels-service.metargb.svc.cluster.local
+    - levels-service.metarang.svc.cluster.local
   http:
     - match:
         - uri:
@@ -115,11 +115,11 @@ apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: dynasty-service
-  namespace: metargb
+  namespace: metarang
 spec:
   hosts:
     - dynasty-service
-    - dynasty-service.metargb.svc.cluster.local
+    - dynasty-service.metarang.svc.cluster.local
   http:
     - match:
         - uri:
@@ -142,11 +142,11 @@ apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: support-service
-  namespace: metargb
+  namespace: metarang
 spec:
   hosts:
     - support-service
-    - support-service.metargb.svc.cluster.local
+    - support-service.metarang.svc.cluster.local
   http:
     - match:
         - uri:
@@ -169,11 +169,11 @@ apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: calendar-service
-  namespace: metargb
+  namespace: metarang
 spec:
   hosts:
     - calendar-service
-    - calendar-service.metargb.svc.cluster.local
+    - calendar-service.metarang.svc.cluster.local
   http:
     - match:
         - uri:
@@ -196,11 +196,11 @@ apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: storage-service
-  namespace: metargb
+  namespace: metarang
 spec:
   hosts:
     - storage-service
-    - storage-service.metargb.svc.cluster.local
+    - storage-service.metarang.svc.cluster.local
   http:
     - match:
         - uri:
@@ -223,11 +223,11 @@ apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: websocket-gateway
-  namespace: metargb
+  namespace: metarang
 spec:
   hosts:
     - websocket-gateway
-    - websocket-gateway.metargb.svc.cluster.local
+    - websocket-gateway.metarang.svc.cluster.local
   http:
     - match:
         - uri:

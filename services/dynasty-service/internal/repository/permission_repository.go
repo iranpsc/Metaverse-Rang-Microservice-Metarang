@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"metargb/dynasty-service/internal/models"
+	"metarang/dynasty-service/internal/models"
 )
 
 type PermissionRepository struct {

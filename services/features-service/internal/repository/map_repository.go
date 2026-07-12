@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"metargb/features-service/internal/models"
+	"metarang/features-service/internal/models"
 )
 
 type MapRepository struct {

@@ -3,10 +3,11 @@ package handler
 import (
 	"context"
 
+	"metarang/levels-service/internal/service"
+	pb "metarang/shared/pb/levels"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"metargb/levels-service/internal/service"
-	pb "metargb/shared/pb/levels"
 )
 
 type ActivityHandler struct {

@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 
-	"metargb/notifications-service/internal/models"
+	"metarang/notifications-service/internal/models"
 )
 
 // EmailService exposes email-related operations to transport handlers.

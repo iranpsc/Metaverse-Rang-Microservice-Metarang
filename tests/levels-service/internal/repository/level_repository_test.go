@@ -10,8 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	ptime "github.com/yaa110/go-persian-calendar"
-
-	pb "metargb/shared/pb/levels"
 )
 
 func TestLevelRepository_FormatImageURL(t *testing.T) {
@@ -21,15 +19,15 @@ func TestLevelRepository_FormatImageURL(t *testing.T) {
 
 	t.Run("WithAdminPanelURL", func(t *testing.T) {
 		repo := NewLevelRepository(db, "https://admin.example.com")
-		
+
 		// Test relative path
 		url := repo.formatImageURL("image.jpg")
 		assert.Equal(t, "https://admin.example.com/uploads/image.jpg", url)
-		
+
 		// Test path with uploads prefix
 		url = repo.formatImageURL("uploads/image.jpg")
 		assert.Equal(t, "https://admin.example.com/uploads/image.jpg", url)
-		
+
 		// Test full URL (should return as-is)
 		url = repo.formatImageURL("https://example.com/image.jpg")
 		assert.Equal(t, "https://example.com/image.jpg", url)
@@ -37,11 +35,11 @@ func TestLevelRepository_FormatImageURL(t *testing.T) {
 
 	t.Run("WithoutAdminPanelURL", func(t *testing.T) {
 		repo := NewLevelRepository(db, "")
-		
+
 		// Test relative path
 		url := repo.formatImageURL("image.jpg")
 		assert.Equal(t, "/uploads/image.jpg", url)
-		
+
 		// Test path with uploads prefix
 		url = repo.formatImageURL("uploads/image.jpg")
 		assert.Equal(t, "/uploads/image.jpg", url)
@@ -65,7 +63,7 @@ func TestLevelRepository_FormatJalaliDateTime(t *testing.T) {
 		// Test with a known date: 2024-01-15 14:30:45
 		testTime := time.Date(2024, 1, 15, 14, 30, 45, 0, time.UTC)
 		formatted := repo.formatJalaliDateTime(testTime)
-		
+
 		// Verify format is Y/m/d H:i:s (Jalali)
 		pt := ptime.New(testTime)
 		expected := pt.Format("yyyy/MM/dd HH:mm:ss")
@@ -95,10 +93,10 @@ func TestLevelRepository_GetLevelPrize_JalaliFormat(t *testing.T) {
 		prize, err := repo.GetLevelPrize(ctx, 1)
 		require.NoError(t, err)
 		require.NotNil(t, prize)
-		
+
 		// Verify satisfaction is formatted to 2 decimal places
 		assert.Equal(t, "50.75", prize.Satisfaction)
-		
+
 		// Verify created_at is in Jalali format Y/m/d H:i:s
 		pt := ptime.New(createdAt)
 		expectedJalali := pt.Format("yyyy/MM/dd HH:mm:ss")
@@ -130,7 +128,7 @@ func TestLevelRepository_GetLevelGeneralInfo_FileURLs(t *testing.T) {
 		info, err := repo.GetLevelGeneralInfo(ctx, 1)
 		require.NoError(t, err)
 		require.NotNil(t, info)
-		
+
 		// Verify file URLs are formatted with admin_panel_url
 		assert.Equal(t, "https://admin.example.com/uploads/png.png", info.PngFile)
 		assert.Equal(t, "https://admin.example.com/uploads/fbx.fbx", info.FbxFile)
@@ -157,10 +155,10 @@ func TestLevelRepository_GetAllLevels_ImageURLFormatting(t *testing.T) {
 		levels, err := repo.GetAllLevels(ctx)
 		require.NoError(t, err)
 		require.Len(t, levels, 2)
-		
+
 		// Verify image URL is formatted with admin_panel_url
 		assert.Equal(t, "https://admin.example.com/uploads/img1.jpg", levels[0].ImageUrl)
-		
+
 		// Verify empty image URL is not formatted
 		assert.Equal(t, "", levels[1].ImageUrl)
 	})
@@ -194,7 +192,7 @@ func TestLevelRepository_FindBySlug_ImageURLFormatting(t *testing.T) {
 		level, err := repo.FindBySlug(ctx, "level-1")
 		require.NoError(t, err)
 		require.NotNil(t, level)
-		
+
 		// Verify image URL is formatted with admin_panel_url
 		assert.Equal(t, "https://admin.example.com/uploads/img1.jpg", level.ImageUrl)
 	})
@@ -247,7 +245,7 @@ func TestLevelRepository_GetLevelPrize_SatisfactionFormatting(t *testing.T) {
 			prize, err := repo.GetLevelPrize(ctx, 1)
 			require.NoError(t, err)
 			require.NotNil(t, prize)
-			
+
 			assert.Equal(t, tc.expected, prize.Satisfaction)
 		})
 	}

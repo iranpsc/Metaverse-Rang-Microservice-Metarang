@@ -18,13 +18,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"metargb/financial-service/internal/handler"
-	"metargb/financial-service/internal/sadad"
-	"metargb/financial-service/internal/repository"
-	"metargb/financial-service/internal/service"
-	commercialpb "metargb/shared/pb/commercial"
-	"metargb/shared/pkg/metrics"
-	"metargb/shared/pkg/sentry"
+	"metarang/financial-service/internal/handler"
+	"metarang/financial-service/internal/repository"
+	"metarang/financial-service/internal/sadad"
+	"metarang/financial-service/internal/service"
+	commercialpb "metarang/shared/pb/commercial"
+	"metarang/shared/pkg/metrics"
+	"metarang/shared/pkg/sentry"
 )
 
 func main() {
@@ -67,7 +67,7 @@ func main() {
 		getEnv("DB_PASSWORD", ""),
 		getEnv("DB_HOST", "localhost"),
 		getEnv("DB_PORT", "3306"),
-		getEnv("DB_DATABASE", "metargb_db"),
+		getEnv("DB_DATABASE", "metarang_db"),
 	)
 
 	db, err := sql.Open("mysql", dsn)

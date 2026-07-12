@@ -36,7 +36,7 @@
         "showThresholdMarkers": true
       },
       "targets": [
-        { "expr": "metargb:node_cpu_usage_percentage", "legendFormat": "CPU", "refId": "A" }
+        { "expr": "metarang:node_cpu_usage_percentage", "legendFormat": "CPU", "refId": "A" }
       ],
       "title": "CPU Usage",
       "type": "gauge"
@@ -65,7 +65,7 @@
         "showThresholdMarkers": true
       },
       "targets": [
-        { "expr": "metargb:node_memory_usage_percentage", "legendFormat": "Memory", "refId": "A" }
+        { "expr": "metarang:node_memory_usage_percentage", "legendFormat": "Memory", "refId": "A" }
       ],
       "title": "Memory Usage",
       "type": "gauge"
@@ -83,8 +83,8 @@
       "id": 4,
       "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
       "targets": [
-        { "expr": "metargb:node_cpu_usage_percentage", "legendFormat": "CPU %", "refId": "A" },
-        { "expr": "metargb:node_memory_usage_percentage", "legendFormat": "Memory %", "refId": "B" }
+        { "expr": "metarang:node_cpu_usage_percentage", "legendFormat": "CPU %", "refId": "A" },
+        { "expr": "metarang:node_memory_usage_percentage", "legendFormat": "Memory %", "refId": "B" }
       ],
       "title": "CPU & Memory Over Time",
       "type": "timeseries"

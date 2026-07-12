@@ -9,9 +9,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"metargb/auth-service/internal/models"
-	"metargb/auth-service/internal/service"
-	pb "metargb/shared/pb/auth"
+	"metarang/auth-service/internal/models"
+	"metarang/auth-service/internal/service"
+	pb "metarang/shared/pb/auth"
 )
 
 // mockProfilePhotoService is a mock implementation for testing
@@ -58,8 +58,8 @@ func TestProfilePhotoHandler_ListProfilePhotos(t *testing.T) {
 		// Simulate database records stored by auth-service with relative URLs from storage-service
 		mockService.listPhotosFunc = func(ctx context.Context, userID uint64) ([]*models.Image, error) {
 			return []*models.Image{
-				{ID: 1, URL: "/uploads/profile/photo1.jpg"}, // Relative URL from storage-service
-				{ID: 2, URL: "/uploads/profile/photo2.jpg"}, // Relative URL from storage-service
+				{ID: 1, URL: "/uploads/profile/photo1.jpg"},            // Relative URL from storage-service
+				{ID: 2, URL: "/uploads/profile/photo2.jpg"},            // Relative URL from storage-service
 				{ID: 3, URL: "https://storage.example.com/photo3.jpg"}, // Already full URL
 			}, nil
 		}
@@ -540,11 +540,11 @@ func TestProfilePhotoHandler_DeleteProfilePhoto(t *testing.T) {
 // TestPrependGatewayURL tests the prependGatewayURL function with various edge cases
 func TestPrependGatewayURL(t *testing.T) {
 	tests := []struct {
-		name         string
-		gatewayURL   string
-		inputURL     string
-		expectedURL  string
-		description  string
+		name        string
+		gatewayURL  string
+		inputURL    string
+		expectedURL string
+		description string
 	}{
 		{
 			name:        "relative URL with gateway URL",

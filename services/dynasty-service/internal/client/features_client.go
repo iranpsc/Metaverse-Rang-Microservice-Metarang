@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	pb "metarang/shared/pb/features"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	pb "metargb/shared/pb/features"
 )
 
 // FeaturesClient wraps gRPC client for Features Service
@@ -85,4 +86,3 @@ func (c *FeaturesClient) ListMyFeatures(ctx context.Context, userID uint64, page
 
 	return resp.Data, nil
 }
-

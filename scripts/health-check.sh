@@ -47,7 +47,7 @@ check_http() {
     fi
 }
 
-echo "🏥 MetaRGB Microservices Health Check"
+echo "🏥 metarang Microservices Health Check"
 echo "======================================"
 echo ""
 

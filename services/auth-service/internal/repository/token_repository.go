@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"metargb/auth-service/internal/models"
+	"metarang/auth-service/internal/models"
 )
 
 type TokenRepository interface {

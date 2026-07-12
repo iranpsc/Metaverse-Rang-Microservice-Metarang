@@ -13,10 +13,10 @@ import (
     "database/sql"
     "log"
     
-    "metargb/commercial-service/internal/handler"
-    "metargb/commercial-service/internal/parsian"
-    "metargb/commercial-service/internal/repository"
-    "metargb/commercial-service/internal/service"
+    "metarang/commercial-service/internal/handler"
+    "metarang/commercial-service/internal/parsian"
+    "metarang/commercial-service/internal/repository"
+    "metarang/commercial-service/internal/service"
 )
 
 func main() {

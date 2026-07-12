@@ -13,7 +13,7 @@ groups:
           description: "Service {{ $labels.service }} ({{ $labels.display_name }}) has been unhealthy for more than 1 minute."
 
       - alert: HighErrorRate
-        expr: metargb:service_error_percentage > 5
+        expr: metarang:service_error_percentage > 5
         for: 5m
         labels:
           severity: critical
@@ -23,7 +23,7 @@ groups:
           description: "{{ $value | printf \"%.2f\" }}% of monitored services are unhealthy (threshold: 5%)."
 
       - alert: HighGatewayErrorRate
-        expr: metargb:http_error_percentage:5m > 5
+        expr: metarang:http_error_percentage:5m > 5
         for: 5m
         labels:
           severity: critical
@@ -33,7 +33,7 @@ groups:
           description: "Gateway 5xx error rate is {{ $value | printf \"%.2f\" }}% (threshold: 5%)."
 
       - alert: HighP99Latency
-        expr: metargb:http_latency_p99:5m > 1
+        expr: metarang:http_latency_p99:5m > 1
         for: 5m
         labels:
           severity: critical
@@ -43,7 +43,7 @@ groups:
           description: "P99 request latency is {{ $value | printf \"%.2f\" }}s (threshold: 1s)."
 
       - alert: HighCPUUsage
-        expr: metargb:node_cpu_usage_percentage > 90
+        expr: metarang:node_cpu_usage_percentage > 90
         for: 5m
         labels:
           severity: critical
@@ -53,7 +53,7 @@ groups:
           description: "CPU usage is {{ $value | printf \"%.2f\" }}% (threshold: 90%)."
 
       - alert: HighMemoryUsage
-        expr: metargb:node_memory_usage_percentage > 95
+        expr: metarang:node_memory_usage_percentage > 95
         for: 2m
         labels:
           severity: critical
@@ -76,7 +76,7 @@ groups:
   - name: warning_alerts
     rules:
       - alert: ModerateErrorRate
-        expr: metargb:service_error_percentage > 1
+        expr: metarang:service_error_percentage > 1
         for: 10m
         labels:
           severity: warning
@@ -86,7 +86,7 @@ groups:
           description: "{{ $value | printf \"%.2f\" }}% of services are unhealthy (threshold: 1%)."
 
       - alert: ModerateGatewayErrorRate
-        expr: metargb:http_error_percentage:5m > 1
+        expr: metarang:http_error_percentage:5m > 1
         for: 10m
         labels:
           severity: warning
@@ -96,7 +96,7 @@ groups:
           description: "Gateway 5xx error rate is {{ $value | printf \"%.2f\" }}% (threshold: 1%)."
 
       - alert: HighP95Latency
-        expr: metargb:http_latency_p95:5m > 0.5
+        expr: metarang:http_latency_p95:5m > 0.5
         for: 10m
         labels:
           severity: warning
@@ -106,7 +106,7 @@ groups:
           description: "P95 request latency is {{ $value | printf \"%.2f\" }}s (threshold: 500ms)."
 
       - alert: ModerateCPUUsage
-        expr: metargb:node_cpu_usage_percentage > 70
+        expr: metarang:node_cpu_usage_percentage > 70
         for: 15m
         labels:
           severity: warning
@@ -176,7 +176,7 @@ groups:
       - alert: HighServiceP99Latency
         expr: |
           histogram_quantile(0.99,
-            sum(rate(metargb_auth_service_request_duration_seconds_bucket[5m])) by (le)
+            sum(rate(metarang_auth_service_request_duration_seconds_bucket[5m])) by (le)
           ) > 1
         for: 5m
         labels:
@@ -189,10 +189,10 @@ groups:
       - alert: HighServiceErrorRate
         expr: |
           (
-            sum(rate(metargb_auth_service_requests_total{status!="ok"}[5m]))
-            / sum(rate(metargb_auth_service_requests_total[5m]))
+            sum(rate(metarang_auth_service_requests_total{status!="ok"}[5m]))
+            / sum(rate(metarang_auth_service_requests_total[5m]))
           ) * 100 > 5
-          and sum(rate(metargb_auth_service_requests_total[5m])) > 0
+          and sum(rate(metarang_auth_service_requests_total[5m])) > 0
         for: 5m
         labels:
           severity: critical
@@ -216,10 +216,10 @@ groups:
 
       - alert: HighTrafficSpike
         expr: |
-          metargb:http_requests_per_second:5m
+          metarang:http_requests_per_second:5m
           >
-          (avg_over_time(metargb:http_requests_per_second:5m[1h]) * 2)
-          and avg_over_time(metargb:http_requests_per_second:5m[1h]) > 0.1
+          (avg_over_time(metarang:http_requests_per_second:5m[1h]) * 2)
+          and avg_over_time(metarang:http_requests_per_second:5m[1h]) > 0.1
         for: 5m
         labels:
           severity: info

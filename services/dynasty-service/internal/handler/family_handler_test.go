@@ -9,8 +9,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"metargb/dynasty-service/internal/service"
-	dynastypb "metargb/shared/pb/dynasty"
+	"metarang/dynasty-service/internal/service"
+	dynastypb "metarang/shared/pb/dynasty"
 )
 
 func TestFamilyHandler_NilServiceErrors(t *testing.T) {

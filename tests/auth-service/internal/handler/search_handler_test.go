@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"metargb/auth-service/internal/service"
-	pb "metargb/shared/pb/auth"
+	"metarang/auth-service/internal/service"
+	pb "metarang/shared/pb/auth"
 )
 
 // MockSearchService is a mock implementation of SearchService

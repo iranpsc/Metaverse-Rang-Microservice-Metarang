@@ -78,7 +78,7 @@ func testVarcharPK(t *testing.T, db *sql.DB, table, column string, expectedLengt
 
 	assert.Equal(t, "PRI", columnKey, "Column %s.%s should be primary key", table, column)
 	assert.Equal(t, "varchar", dataType, "Column %s.%s should be VARCHAR", table, column)
-	
+
 	if characterMaxLength.Valid {
 		assert.Equal(t, int64(expectedLength), characterMaxLength.Int64,
 			"Column %s.%s should have length %d", table, column, expectedLength)
@@ -101,12 +101,12 @@ func testDecimalColumn(t *testing.T, db *sql.DB, table, column string, precision
 	require.NoError(t, err, "Column %s.%s not found", table, column)
 
 	assert.Equal(t, "decimal", dataType, "Column %s.%s should be DECIMAL", table, column)
-	
+
 	if numericPrecision.Valid {
 		assert.Equal(t, int64(precision), numericPrecision.Int64,
 			"Column %s.%s should have precision %d", table, column, precision)
 	}
-	
+
 	if numericScale.Valid {
 		assert.Equal(t, int64(scale), numericScale.Int64,
 			"Column %s.%s should have scale %d", table, column, scale)
@@ -129,7 +129,7 @@ func testVarcharColumn(t *testing.T, db *sql.DB, table, column string, length in
 	require.NoError(t, err, "Column %s.%s not found", table, column)
 
 	assert.Equal(t, "varchar", dataType, "Column %s.%s should be VARCHAR", table, column)
-	
+
 	if characterMaxLength.Valid {
 		assert.Equal(t, int64(length), characterMaxLength.Int64,
 			"Column %s.%s should have length %d", table, column, length)
@@ -195,7 +195,7 @@ func testForeignKey(t *testing.T, db *sql.DB, table, column, refTable, refColumn
 
 	err := db.QueryRow(query, table, column, refTable, refColumn).Scan(&count)
 	require.NoError(t, err)
-	
+
 	// Note: Foreign keys might not be enforced in some setups, so this is informational
 	if count == 0 {
 		t.Logf("Warning: Foreign key %s.%s -> %s.%s not found", table, column, refTable, refColumn)
@@ -208,7 +208,7 @@ func connectTestDB(t *testing.T) *sql.DB {
 		getEnv("DB_PASSWORD", "test_password"),
 		getEnv("DB_HOST", "localhost"),
 		getEnv("DB_PORT", "3306"),
-		getEnv("DB_DATABASE", "metargb_test"),
+		getEnv("DB_DATABASE", "metarang_test"),
 	)
 
 	db, err := sql.Open("mysql", dsn)
@@ -224,4 +224,3 @@ func getEnv(key, defaultValue string) string {
 	// In real implementation, use os.Getenv
 	return defaultValue
 }
-

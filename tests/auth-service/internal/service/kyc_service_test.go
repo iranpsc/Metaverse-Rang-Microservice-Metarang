@@ -7,20 +7,20 @@ import (
 	"testing"
 	"time"
 
-	"metargb/auth-service/internal/models"
-	"metargb/auth-service/internal/repository"
+	"metarang/auth-service/internal/models"
+	"metarang/auth-service/internal/repository"
 )
 
 // fakeKYCRepository is a mock implementation of KYCRepository for testing
 type fakeKYCRepository struct {
-	kycs                map[uint64]*models.KYC
-	bankAccounts        map[uint64]*models.BankAccount
-	verifyTexts         map[uint64]bool // Track which verify_text_ids exist
-	createCount         int
-	updateCount         int
-	findByUserID        func(ctx context.Context, userID uint64) (*models.KYC, error)
-	checkMelliCode      func(ctx context.Context, melliCode string, excludeUserID uint64) (bool, error)
-	checkVerifyText     func(ctx context.Context, verifyTextID uint64) (bool, error)
+	kycs            map[uint64]*models.KYC
+	bankAccounts    map[uint64]*models.BankAccount
+	verifyTexts     map[uint64]bool // Track which verify_text_ids exist
+	createCount     int
+	updateCount     int
+	findByUserID    func(ctx context.Context, userID uint64) (*models.KYC, error)
+	checkMelliCode  func(ctx context.Context, melliCode string, excludeUserID uint64) (bool, error)
+	checkVerifyText func(ctx context.Context, verifyTextID uint64) (bool, error)
 }
 
 func newFakeKYCRepository() *fakeKYCRepository {
@@ -29,7 +29,7 @@ func newFakeKYCRepository() *fakeKYCRepository {
 	verifyTexts[1] = true
 	verifyTexts[2] = true
 	verifyTexts[3] = true
-	
+
 	return &fakeKYCRepository{
 		kycs:         make(map[uint64]*models.KYC),
 		bankAccounts: make(map[uint64]*models.BankAccount),

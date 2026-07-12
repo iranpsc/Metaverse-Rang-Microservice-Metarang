@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	pb "metargb/shared/pb/levels"
+	pb "metarang/shared/pb/levels"
 )
 
 // ActivityRepository handles user_activities table operations

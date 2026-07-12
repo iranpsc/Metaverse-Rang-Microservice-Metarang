@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"metargb/auth-service/internal/models"
-	"metargb/auth-service/internal/repository"
+	"metarang/auth-service/internal/models"
+	"metarang/auth-service/internal/repository"
 )
 
 const (

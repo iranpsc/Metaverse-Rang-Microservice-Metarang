@@ -7,12 +7,13 @@
 package calendar
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	common "metargb/shared/pb/common"
+	common "metarang/shared/pb/common"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -795,7 +796,7 @@ const file_calendar_proto_rawDesc = "" +
 	"\bGetEvent\x12\x19.calendar.GetEventRequest\x1a\x17.calendar.EventResponse\x12[\n" +
 	"\x11FilterByDateRange\x12\".calendar.FilterByDateRangeRequest\x1a\".calendar.SimplifiedEventsResponse\x12V\n" +
 	"\x10GetLatestVersion\x12!.calendar.GetLatestVersionRequest\x1a\x1f.calendar.LatestVersionResponse\x12J\n" +
-	"\x0eAddInteraction\x12\x1f.calendar.AddInteractionRequest\x1a\x17.calendar.EventResponseB\x1cZ\x1ametargb/shared/pb/calendarb\x06proto3"
+	"\x0eAddInteraction\x12\x1f.calendar.AddInteractionRequest\x1a\x17.calendar.EventResponseB\x1cZ\x1ametarang/shared/pb/calendarb\x06proto3"
 
 var (
 	file_calendar_proto_rawDescOnce sync.Once

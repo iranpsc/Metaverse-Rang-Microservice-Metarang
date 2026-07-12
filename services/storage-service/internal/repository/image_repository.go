@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"metargb/storage-service/internal/models"
+	"metarang/storage-service/internal/models"
 )
 
 type ImageRepository struct {

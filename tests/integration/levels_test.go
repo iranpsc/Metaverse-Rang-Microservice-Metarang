@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	pb "metargb/shared/pb/levels"
+	pb "metarang/shared/pb/levels"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

@@ -6,12 +6,13 @@ import (
 	"math"
 	"time"
 
+	pb "metarang/shared/pb/commercial"
+	"metarang/shared/pkg/auth"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
-	pb "metargb/shared/pb/commercial"
-	"metargb/shared/pkg/auth"
 )
 
 // CommercialClient wraps gRPC clients for Commercial Service
@@ -60,7 +61,7 @@ func NewCommercialClient(address string) (*CommercialClient, error) {
 		transactionClient: pb.NewTransactionServiceClient(conn),
 		conn:              conn,
 		timeout:           3 * time.Second, // Default timeout as per plan
-		maxRetries:       3,                // Max retries as per plan
+		maxRetries:        3,               // Max retries as per plan
 	}, nil
 }
 

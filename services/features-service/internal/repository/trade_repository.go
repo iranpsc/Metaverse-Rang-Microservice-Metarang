@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"time"
 
-	"metargb/features-service/internal/models"
+	"metarang/features-service/internal/models"
 )
 
 type TradeRepository struct {

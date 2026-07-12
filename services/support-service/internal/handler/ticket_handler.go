@@ -4,12 +4,12 @@ import (
 	"context"
 	"strings"
 
-	"metargb/support-service/internal/models"
-	"metargb/support-service/internal/service"
-	"metargb/support-service/internal/utils"
+	"metarang/support-service/internal/models"
+	"metarang/support-service/internal/service"
+	"metarang/support-service/internal/utils"
 
-	pbCommon "metargb/shared/pb/common"
-	pb "metargb/shared/pb/support"
+	pbCommon "metarang/shared/pb/common"
+	pb "metarang/shared/pb/support"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"metargb/features-service/internal/handler"
-	pb "metargb/shared/pb/features"
+	"metarang/features-service/internal/handler"
+	pb "metarang/shared/pb/features"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

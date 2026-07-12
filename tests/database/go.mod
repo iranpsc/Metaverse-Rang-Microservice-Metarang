@@ -1,4 +1,4 @@
-module github.com/metargb/metargb-microservices/tests/database
+module github.com/metarang/metarang-microservices/tests/database
 
 go 1.25.0
 

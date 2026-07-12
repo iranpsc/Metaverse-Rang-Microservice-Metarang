@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"metargb/features-service/internal/models"
-	"metargb/features-service/internal/repository"
+	"metarang/features-service/internal/models"
+	"metarang/features-service/internal/repository"
 )
 
 // Mock repositories for testing

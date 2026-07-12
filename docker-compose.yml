@@ -12,18 +12,18 @@ services:
   # MySQL Database (shared)
   mysql:
     image: mysql:8.0.43
-    container_name: metargb-mysql
+    container_name: metarang-mysql
     environment:
       MYSQL_ROOT_PASSWORD: root_password
-      MYSQL_DATABASE: metargb_db
-      MYSQL_USER: metargb_user
-      MYSQL_PASSWORD: metargb_password
+      MYSQL_DATABASE: metarang_db
+      MYSQL_USER: metarang_user
+      MYSQL_PASSWORD: metarang_password
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
-      - metargb-network
+      - metarang-network
     command: 
       - --host-cache-size=0
       - --pid-file=/tmp/mysqld.pid
@@ -38,11 +38,11 @@ services:
   # Redis (for pub/sub and caching)
   redis:
     image: redis:7.4-alpine
-    container_name: metargb-redis
+    container_name: metarang-redis
     ports:
       - "6380:6379"
     networks:
-      - metargb-network
+      - metarang-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -59,7 +59,7 @@ services:
     build:
       context: .
       dockerfile: ./services/auth-service/Dockerfile
-    container_name: metargb-auth-service
+    container_name: metarang-auth-service
     ports:
       - "50051:50051"
     env_file:
@@ -68,9 +68,9 @@ services:
       GRPC_PORT: 50051
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_DATABASE: metargb_db
-      DB_USER: metargb_user
-      DB_PASSWORD: metargb_password
+      DB_DATABASE: metarang_db
+      DB_USER: metarang_user
+      DB_PASSWORD: metarang_password
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_URL: redis://redis:6379/0
@@ -89,7 +89,7 @@ services:
       commercial-service:
         condition: service_healthy
     networks:
-      - metargb-network
+      - metarang-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "50051"]
@@ -112,7 +112,7 @@ services:
     build:
       context: .
       dockerfile: ./services/grpc-gateway/Dockerfile
-    container_name: metargb-grpc-gateway
+    container_name: metarang-grpc-gateway
     # No host port mapping — API is exposed via Kong on :8000
     env_file:
       - ./services/grpc-gateway/config.env
@@ -145,7 +145,7 @@ services:
       social-service:
         condition: service_started
     networks:
-      - metargb-network
+      - metarang-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
@@ -169,7 +169,7 @@ services:
     build:
       context: .
       dockerfile: ./services/commercial-service/Dockerfile
-    container_name: metargb-commercial-service
+    container_name: metarang-commercial-service
     ports:
       - "50052:50052"
     env_file:
@@ -178,9 +178,9 @@ services:
       GRPC_PORT: 50052
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_DATABASE: metargb_db
-      DB_USER: metargb_user
-      DB_PASSWORD: metargb_password
+      DB_DATABASE: metarang_db
+      DB_USER: metarang_user
+      DB_PASSWORD: metarang_password
       AUTH_SERVICE_ADDR: auth-service:50051
       <<: *sentry-environment
     depends_on:
@@ -193,7 +193,7 @@ services:
       retries: 5
       start_period: 30s
     networks:
-      - metargb-network
+      - metarang-network
     restart: unless-stopped
     develop:
       watch:
@@ -211,7 +211,7 @@ services:
     build:
       context: .
       dockerfile: ./services/features-service/Dockerfile
-    container_name: metargb-features-service
+    container_name: metarang-features-service
     ports:
       - "50053:50053"
     env_file:
@@ -220,9 +220,9 @@ services:
       GRPC_PORT: 50053
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_DATABASE: metargb_db
-      DB_USER: metargb_user
-      DB_PASSWORD: metargb_password
+      DB_DATABASE: metarang_db
+      DB_USER: metarang_user
+      DB_PASSWORD: metarang_password
       REDIS_HOST: redis
       REDIS_PORT: 6379
       COMMERCIAL_SERVICE_ADDR: commercial-service:50052
@@ -235,7 +235,7 @@ services:
       commercial-service:
         condition: service_started
     networks:
-      - metargb-network
+      - metarang-network
     restart: unless-stopped
     develop:
       watch:
@@ -253,7 +253,7 @@ services:
     build:
       context: .
       dockerfile: ./services/levels-service/Dockerfile
-    container_name: metargb-levels-service
+    container_name: metarang-levels-service
     ports:
       - "50054:50054"
     env_file:
@@ -262,15 +262,15 @@ services:
       GRPC_PORT: 50054
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_DATABASE: metargb_db
-      DB_USER: metargb_user
-      DB_PASSWORD: metargb_password
+      DB_DATABASE: metarang_db
+      DB_USER: metarang_user
+      DB_PASSWORD: metarang_password
       <<: *sentry-environment
     depends_on:
       mysql:
         condition: service_healthy
     networks:
-      - metargb-network
+      - metarang-network
     restart: unless-stopped
     develop:
       watch:
@@ -288,7 +288,7 @@ services:
     build:
       context: .
       dockerfile: ./services/dynasty-service/Dockerfile
-    container_name: metargb-dynasty-service
+    container_name: metarang-dynasty-service
     ports:
       - "50055:50055"
     env_file:
@@ -297,15 +297,19 @@ services:
       GRPC_PORT: 50055
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_DATABASE: metargb_db
-      DB_USER: metargb_user
-      DB_PASSWORD: metargb_password
+      DB_DATABASE: metarang_db
+      DB_USER: metarang_user
+      DB_PASSWORD: metarang_password
+      COMMERCIAL_SERVICE_ADDR: commercial-service:50052
+      NOTIFICATION_SERVICE_ADDR: notifications-service:50058
+      AUTH_SERVICE_ADDR: auth-service:50051
+      FEATURES_SERVICE_ADDR: features-service:50053
       <<: *sentry-environment
     depends_on:
       mysql:
         condition: service_healthy
     networks:
-      - metargb-network
+      - metarang-network
     restart: unless-stopped
     develop:
       watch:
@@ -323,7 +327,7 @@ services:
     build:
       context: .
       dockerfile: ./services/calendar-service/Dockerfile
-    container_name: metargb-calendar-service
+    container_name: metarang-calendar-service
     ports:
       - "50059:50059"
     env_file:
@@ -332,15 +336,15 @@ services:
       GRPC_PORT: 50059
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_DATABASE: metargb_db
-      DB_USER: metargb_user
-      DB_PASSWORD: metargb_password
+      DB_DATABASE: metarang_db
+      DB_USER: metarang_user
+      DB_PASSWORD: metarang_password
       <<: *sentry-environment
     depends_on:
       mysql:
         condition: service_healthy
     networks:
-      - metargb-network
+      - metarang-network
     restart: unless-stopped
     develop:
       watch:
@@ -358,7 +362,7 @@ services:
     build:
       context: .
       dockerfile: ./services/support-service/Dockerfile
-    container_name: metargb-support-service
+    container_name: metarang-support-service
     ports:
       - "50056:50056"
     env_file:
@@ -367,9 +371,9 @@ services:
       GRPC_PORT: 50056
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_DATABASE: metargb_db
-      DB_USER: metargb_user
-      DB_PASSWORD: metargb_password
+      DB_DATABASE: metarang_db
+      DB_USER: metarang_user
+      DB_PASSWORD: metarang_password
       NOTIFICATION_SERVICE_ADDR: notifications-service:50058
       <<: *sentry-environment
     depends_on:
@@ -378,7 +382,7 @@ services:
       notifications-service:
         condition: service_started
     networks:
-      - metargb-network
+      - metarang-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "50056"]
@@ -401,7 +405,7 @@ services:
     build:
       context: .
       dockerfile: ./services/social-service/Dockerfile
-    container_name: metargb-social-service
+    container_name: metarang-social-service
     ports:
       - "50061:50061"
     env_file:
@@ -410,9 +414,9 @@ services:
       GRPC_PORT: 50061
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_DATABASE: metargb_db
-      DB_USER: metargb_user
-      DB_PASSWORD: metargb_password
+      DB_DATABASE: metarang_db
+      DB_USER: metarang_user
+      DB_PASSWORD: metarang_password
       COMMERCIAL_SERVICE_ADDR: commercial-service:50052
       <<: *sentry-environment
     depends_on:
@@ -421,7 +425,7 @@ services:
       commercial-service:
         condition: service_healthy
     networks:
-      - metargb-network
+      - metarang-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "50061"]
@@ -444,7 +448,7 @@ services:
     build:
       context: .
       dockerfile: ./services/training-service/Dockerfile
-    container_name: metargb-training-service
+    container_name: metarang-training-service
     ports:
       - "50057:50057"
     env_file:
@@ -453,9 +457,9 @@ services:
       GRPC_PORT: 50057
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_DATABASE: metargb_db
-      DB_USER: metargb_user
-      DB_PASSWORD: metargb_password
+      DB_DATABASE: metarang_db
+      DB_USER: metarang_user
+      DB_PASSWORD: metarang_password
       AUTH_SERVICE_ADDR: auth-service:50051
       <<: *sentry-environment
     depends_on:
@@ -464,7 +468,7 @@ services:
       auth-service:
         condition: service_healthy
     networks:
-      - metargb-network
+      - metarang-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "50057"]
@@ -487,7 +491,7 @@ services:
     build:
       context: .
       dockerfile: ./services/notifications-service/Dockerfile
-    container_name: metargb-notifications-service
+    container_name: metarang-notifications-service
     ports:
       - "50058:50058"
     env_file:
@@ -496,9 +500,9 @@ services:
       GRPC_PORT: 50058
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_DATABASE: metargb_db
-      DB_USER: metargb_user
-      DB_PASSWORD: metargb_password
+      DB_DATABASE: metarang_db
+      DB_USER: metarang_user
+      DB_PASSWORD: metarang_password
       DB_MAX_OPEN_CONNS: 25
       DB_MAX_IDLE_CONNS: 5
       DB_CONN_MAX_LIFETIME: 5m
@@ -511,7 +515,7 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - metargb-network
+      - metarang-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "50058"]
@@ -534,7 +538,7 @@ services:
     build:
       context: .
       dockerfile: ./services/financial-service/Dockerfile
-    container_name: metargb-financial-service
+    container_name: metarang-financial-service
     ports:
       - "50062:50062"
     env_file:
@@ -543,16 +547,16 @@ services:
       GRPC_PORT: 50062
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_DATABASE: metargb_db
-      DB_USER: metargb_user
-      DB_PASSWORD: metargb_password
+      DB_DATABASE: metarang_db
+      DB_USER: metarang_user
+      DB_PASSWORD: metarang_password
       PROJECT_URL: ${PROJECT_URL:-http://localhost:8000}
       <<: *sentry-environment
     depends_on:
       mysql:
         condition: service_healthy
     networks:
-      - metargb-network
+      - metarang-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "50062"]
@@ -575,7 +579,7 @@ services:
     build:
       context: .
       dockerfile: ./services/storage-service/Dockerfile
-    container_name: metargb-storage-service
+    container_name: metarang-storage-service
     ports:
       - "50060:50060"  # gRPC port
       - "8059:8059"    # HTTP REST API port
@@ -589,16 +593,16 @@ services:
       UPLOAD_DIR: /app/uploads
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_DATABASE: metargb_db
-      DB_USER: metargb_user
-      DB_PASSWORD: metargb_password
+      DB_DATABASE: metarang_db
+      DB_USER: metarang_user
+      DB_PASSWORD: metarang_password
       TEMP_DIR: /tmp/storage-chunks
       <<: *sentry-environment
     depends_on:
       mysql:
         condition: service_healthy
     networks:
-      - metargb-network
+      - metarang-network
     restart: unless-stopped
     develop:
       watch:
@@ -621,7 +625,7 @@ services:
     build:
       context: .
       dockerfile: ./websocket-gateway/Dockerfile
-    container_name: metargb-websocket-gateway
+    container_name: metarang-websocket-gateway
     ports:
       - "3002:3002"
     env_file:
@@ -637,7 +641,7 @@ services:
       auth-service:
         condition: service_started
     networks:
-      - metargb-network
+      - metarang-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3002/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
@@ -662,11 +666,11 @@ services:
     build:
       context: .
       dockerfile: ./services/health-check-service/Dockerfile
-    container_name: metargb-health-check-service
+    container_name: metarang-health-check-service
     ports:
       - "8090:8090"
     networks:
-      - metargb-network
+      - metarang-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8090/live"]
@@ -678,17 +682,17 @@ services:
   # Swagger UI - OpenAPI documentation browser
   swagger-ui:
     image: swaggerapi/swagger-ui:v5.18.2
-    container_name: metargb-swagger-ui
+    container_name: metarang-swagger-ui
     ports:
       - "8081:8080"
     volumes:
       - ./openapi:/usr/share/nginx/html/openapi:ro
       - ./openapi/swagger-initializer.js:/usr/share/nginx/html/swagger-initializer.js:ro
     networks:
-      - metargb-network
+      - metarang-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/openapi/openapi.yaml"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8080/openapi/openapi.yaml"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -697,7 +701,7 @@ services:
   # Kong API Gateway - HTTP to gRPC Translation
   kong:
     image: kong:3.9.3
-    container_name: metargb-kong
+    container_name: metarang-kong
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /kong/kong.yml
@@ -741,7 +745,7 @@ services:
       social-service:
         condition: service_started
     networks:
-      - metargb-network
+      - metarang-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "kong", "health"]
@@ -756,7 +760,7 @@ services:
   # Prometheus - Metrics Collection
   prometheus:
     image: prom/prometheus:v2.53.5
-    container_name: metargb-prometheus
+    container_name: metarang-prometheus
     ports:
       - "9090:9090"
     volumes:
@@ -769,7 +773,7 @@ services:
       - '--web.enable-lifecycle'
       - '--web.enable-admin-api'
     networks:
-      - metargb-network
+      - metarang-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
@@ -781,7 +785,7 @@ services:
   # Grafana - Visualization & Dashboards
   grafana:
     image: grafana/grafana:11.6.16
-    container_name: metargb-grafana
+    container_name: metarang-grafana
     ports:
       - "3001:3001"
     environment:
@@ -797,7 +801,7 @@ services:
       - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     networks:
-      - metargb-network
+      - metarang-network
     restart: unless-stopped
     depends_on:
       - prometheus
@@ -810,7 +814,7 @@ services:
   # Node Exporter - Host-level infrastructure metrics (CPU, Memory, Disk, Network)
   node-exporter:
     image: prom/node-exporter:v1.11.1
-    container_name: metargb-node-exporter
+    container_name: metarang-node-exporter
     command:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
@@ -823,7 +827,7 @@ services:
     ports:
       - "9100:9100"
     networks:
-      - metargb-network
+      - metarang-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9100/metrics"]
@@ -844,6 +848,6 @@ volumes:
     driver: local
 
 networks:
-  metargb-network:
+  metarang-network:
     driver: bridge
 

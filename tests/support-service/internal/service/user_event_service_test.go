@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"metargb/support-service/internal/models"
-	"metargb/support-service/internal/service"
-	"metargb/support-service/tests/internal/testutil"
+	"metarang/support-service/internal/models"
+	"metarang/support-service/internal/service"
+	"metarang/support-service/tests/internal/testutil"
 )
 
 func TestUserEventService_CreateAndList(t *testing.T) {

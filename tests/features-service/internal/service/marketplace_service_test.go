@@ -5,12 +5,12 @@ import (
 	"database/sql"
 	"testing"
 
-	"metargb/features-service/internal/metrics"
-	"metargb/features-service/internal/repository"
-	"metargb/features-service/internal/service"
-	"metargb/features-service/tests/internal/testutil"
-	commercialpb "metargb/shared/pb/commercial"
-	"metargb/shared/pkg/logger"
+	"metarang/features-service/internal/metrics"
+	"metarang/features-service/internal/repository"
+	"metarang/features-service/internal/service"
+	"metarang/features-service/tests/internal/testutil"
+	commercialpb "metarang/shared/pb/commercial"
+	"metarang/shared/pkg/logger"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

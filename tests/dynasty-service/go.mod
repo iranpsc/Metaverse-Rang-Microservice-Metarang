@@ -1,4 +1,4 @@
-module metargb/dynasty-service-test
+module metarang/dynasty-service-test
 
 go 1.25.5
 
@@ -6,8 +6,8 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/stretchr/testify v1.11.1
 	google.golang.org/grpc v1.79.3
-	metargb/dynasty-service v0.0.0
-	metargb/shared v0.0.0
+	metarang/dynasty-service v0.0.0
+	metarang/shared v0.0.0
 )
 
 require (
@@ -29,6 +29,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace metargb/dynasty-service => ../../services/dynasty-service
+replace metarang/dynasty-service => ../../services/dynasty-service
 
-replace metargb/shared => ../../shared
+replace metarang/shared => ../../shared

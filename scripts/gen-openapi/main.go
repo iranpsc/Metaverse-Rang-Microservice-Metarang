@@ -180,11 +180,11 @@ func buildSpec(routes []routeDef, discovered map[string]discoveredEndpoint) open
 	return openAPISpec{
 		OpenAPI: "3.0.3",
 		Info: map[string]interface{}{
-			"title":       "MetaRGB API",
-			"description": "REST API for MetaRGB microservices. Laravel-compatible JSON responses served via Kong → grpc-gateway → gRPC services.",
+			"title":       "metarang API",
+			"description": "REST API for metarang microservices. Laravel-compatible JSON responses served via Kong → grpc-gateway → gRPC services.",
 			"version":     "1.0.0",
 			"contact": map[string]string{
-				"name": "MetaRGB",
+				"name": "metarang",
 			},
 		},
 		Servers: []map[string]string{

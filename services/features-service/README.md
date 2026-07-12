@@ -1,6 +1,6 @@
 # Features Service
 
-The Features Service is a Go microservice that handles all feature-related operations in the MetaRGB platform, including marketplace transactions, buy/sell requests, hourly profits, and map data.
+The Features Service is a Go microservice that handles all feature-related operations in the metarang platform, including marketplace transactions, buy/sell requests, hourly profits, and map data.
 
 ## Overview
 
@@ -57,7 +57,7 @@ DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=
-DB_DATABASE=metargb_db
+DB_DATABASE=metarang_db
 
 # gRPC Server
 GRPC_PORT=50053
@@ -343,13 +343,13 @@ Validation errors follow Laravel format:
 
 Prometheus metrics are exposed on `/metrics` endpoint (port 9090 by default):
 
-- `metargb_features_buy_requests_total`: Buy requests by status (accepted/rejected/cancelled)
-- `metargb_features_sell_requests_total`: Total sell requests
-- `metargb_features_trades_total`: Trades by type (limited/rgb/user)
-- `metargb_features_trade_value_psc`: Trade values in PSC (histogram)
-- `metargb_features_trade_value_irr`: Trade values in IRR (histogram)
-- `metargb_features_buy_request_locked_assets_psc`: Locked PSC assets (gauge)
-- `metargb_features_buy_request_locked_assets_irr`: Locked IRR assets (gauge)
+- `metarang_features_buy_requests_total`: Buy requests by status (accepted/rejected/cancelled)
+- `metarang_features_sell_requests_total`: Total sell requests
+- `metarang_features_trades_total`: Trades by type (limited/rgb/user)
+- `metarang_features_trade_value_psc`: Trade values in PSC (histogram)
+- `metarang_features_trade_value_irr`: Trade values in IRR (histogram)
+- `metarang_features_buy_request_locked_assets_psc`: Locked PSC assets (gauge)
+- `metarang_features_buy_request_locked_assets_irr`: Locked IRR assets (gauge)
 
 ## Event Broadcasting
 
@@ -417,5 +417,5 @@ features-service/
 
 ## License
 
-Part of the MetaRGB microservices platform.
+Part of the metarang microservices platform.
 

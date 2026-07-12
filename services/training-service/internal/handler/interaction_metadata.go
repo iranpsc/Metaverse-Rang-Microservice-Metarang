@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"metargb/training-service/internal/service"
+	"metarang/training-service/internal/service"
 )
 
 const (

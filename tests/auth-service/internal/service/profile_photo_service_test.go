@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"metargb/auth-service/internal/models"
+	"metarang/auth-service/internal/models"
 )
 
 // fakeProfilePhotoRepository is a mock implementation for testing

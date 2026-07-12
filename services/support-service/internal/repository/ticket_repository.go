@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"metargb/support-service/internal/models"
+	"metarang/support-service/internal/models"
 )
 
 type TicketRepository interface {

@@ -10,10 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	pb "metargb/shared/pb/auth"
+	pb "metarang/shared/pb/auth"
 
-	"metargb/grpc-gateway/internal/handler"
-	"metargb/grpc-gateway/internal/testutil"
+	"metarang/grpc-gateway/internal/handler"
+	"metarang/grpc-gateway/internal/testutil"
 )
 
 func TestGetCitizenProfile_LaravelShape(t *testing.T) {

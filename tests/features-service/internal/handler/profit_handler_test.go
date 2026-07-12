@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"metargb/features-service/internal/handler"
-	"metargb/features-service/internal/models"
-	pb "metargb/shared/pb/features"
-	"metargb/shared/pkg/logger"
+	"metarang/features-service/internal/handler"
+	"metarang/features-service/internal/models"
+	pb "metarang/shared/pb/features"
+	"metarang/shared/pkg/logger"
 )
 
 // mockProfitService implements profit service methods for testing

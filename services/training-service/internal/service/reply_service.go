@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"metargb/training-service/internal/models"
-	"metargb/training-service/internal/repository"
+	"metarang/training-service/internal/models"
+	"metarang/training-service/internal/repository"
 )
 
 type ReplyService struct {

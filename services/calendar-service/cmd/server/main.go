@@ -15,11 +15,11 @@ import (
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 
-	"metargb/calendar-service/internal/handler"
-	"metargb/calendar-service/internal/repository"
-	"metargb/calendar-service/internal/service"
-	"metargb/shared/pkg/metrics"
-	"metargb/shared/pkg/sentry"
+	"metarang/calendar-service/internal/handler"
+	"metarang/calendar-service/internal/repository"
+	"metarang/calendar-service/internal/service"
+	"metarang/shared/pkg/metrics"
+	"metarang/shared/pkg/sentry"
 )
 
 func main() {
@@ -52,7 +52,7 @@ func main() {
 		getEnv("DB_PASSWORD", ""),
 		getEnv("DB_HOST", "localhost"),
 		getEnv("DB_PORT", "3306"),
-		getEnv("DB_DATABASE", "metargb_db"),
+		getEnv("DB_DATABASE", "metarang_db"),
 	)
 
 	db, err := sql.Open("mysql", dsn)

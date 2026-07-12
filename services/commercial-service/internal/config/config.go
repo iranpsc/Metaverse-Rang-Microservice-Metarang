@@ -34,7 +34,7 @@ func LoadConfig() *Config {
 			Port:     getEnv("DB_PORT", "3306"),
 			User:     getEnv("DB_USER", "root"),
 			Password: getEnv("DB_PASSWORD", ""),
-			Database: getEnv("DB_DATABASE", "metargb"),
+			Database: getEnv("DB_DATABASE", "metarang"),
 		},
 		Server: ServerConfig{
 			GRPCPort: getEnv("GRPC_PORT", "50052"),

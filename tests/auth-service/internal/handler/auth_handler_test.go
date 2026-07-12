@@ -9,10 +9,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"metargb/auth-service/internal/models"
-	"metargb/auth-service/internal/repository"
-	"metargb/auth-service/internal/service"
-	pb "metargb/shared/pb/auth"
+	"metarang/auth-service/internal/models"
+	"metarang/auth-service/internal/repository"
+	"metarang/auth-service/internal/service"
+	pb "metarang/shared/pb/auth"
 )
 
 func TestAuthHandler_Register(t *testing.T) {
@@ -213,11 +213,11 @@ func TestAuthHandler_GetMe(t *testing.T) {
 		mockAuthService := &mockAuthService{}
 		mockAuthService.getMeFunc = func(ctx context.Context, token string) (*service.UserDetails, error) {
 			return &service.UserDetails{
-				ID:              1,
-				Name:            "Test User",
-				Token:           token,
-				AutomaticLogout: 60,
-				Code:            "USER123",
+				ID:                       1,
+				Name:                     "Test User",
+				Token:                    token,
+				AutomaticLogout:          60,
+				Code:                     "USER123",
 				UnreadNotificationsCount: 5,
 			}, nil
 		}

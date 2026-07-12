@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 
-	"metargb/dynasty-service/internal/models"
-	"metargb/dynasty-service/internal/repository"
+	"metarang/dynasty-service/internal/models"
+	"metarang/dynasty-service/internal/repository"
 )
 
 // WalletPort credits wallet balances via commercial-service (AddBalance gRPC).

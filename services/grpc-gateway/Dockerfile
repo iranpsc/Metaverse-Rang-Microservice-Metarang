@@ -10,72 +10,26 @@ RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11 && \
 
 WORKDIR /workspace
 
-RUN mkdir -p /workspace/metargb/grpc-gateway /workspace/metargb/shared
+RUN mkdir -p /workspace/metarang/grpc-gateway /workspace/metarang/shared
 
-COPY ./shared/proto/ /workspace/metargb/shared/proto/
+COPY ./shared/proto/ /workspace/metarang/shared/proto/
+COPY ./scripts/docker/generate-all-protos.sh /tmp/generate-all-protos.sh
 
 ENV PATH="${PATH}:/root/go/bin"
-RUN mkdir -p /workspace/metargb/shared/pb/auth && \
-    protoc --go_out=/workspace/metargb/shared/pb/auth --go_opt=paths=source_relative \
-        --go-grpc_out=/workspace/metargb/shared/pb/auth --go-grpc_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/auth.proto && \
-    mkdir -p /workspace/metargb/shared/pb/common && \
-    protoc --go_out=/workspace/metargb/shared/pb/common --go_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/common.proto && \
-    mkdir -p /workspace/metargb/shared/pb/dynasty && \
-    protoc --go_out=/workspace/metargb/shared/pb/dynasty --go_opt=paths=source_relative \
-        --go-grpc_out=/workspace/metargb/shared/pb/dynasty --go-grpc_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/dynasty.proto && \
-    mkdir -p /workspace/metargb/shared/pb/levels && \
-    protoc --go_out=/workspace/metargb/shared/pb/levels --go_opt=paths=source_relative \
-        --go-grpc_out=/workspace/metargb/shared/pb/levels --go-grpc_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/levels.proto && \
-    mkdir -p /workspace/metargb/shared/pb/training && \
-    protoc --go_out=/workspace/metargb/shared/pb/training --go_opt=paths=source_relative \
-        --go-grpc_out=/workspace/metargb/shared/pb/training --go-grpc_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/training.proto && \
-    mkdir -p /workspace/metargb/shared/pb/features && \
-    protoc --go_out=/workspace/metargb/shared/pb/features --go_opt=paths=source_relative \
-        --go-grpc_out=/workspace/metargb/shared/pb/features --go-grpc_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/features.proto && \
-    mkdir -p /workspace/metargb/shared/pb/financial && \
-    protoc --go_out=/workspace/metargb/shared/pb/financial --go_opt=paths=source_relative \
-        --go-grpc_out=/workspace/metargb/shared/pb/financial --go-grpc_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/financial.proto && \
-    mkdir -p /workspace/metargb/shared/pb/commercial && \
-    protoc --go_out=/workspace/metargb/shared/pb/commercial --go_opt=paths=source_relative \
-        --go-grpc_out=/workspace/metargb/shared/pb/commercial --go-grpc_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/commercial.proto && \
-    mkdir -p /workspace/metargb/shared/pb/social && \
-    protoc --go_out=/workspace/metargb/shared/pb/social --go_opt=paths=source_relative \
-        --go-grpc_out=/workspace/metargb/shared/pb/social --go-grpc_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/social.proto && \
-    mkdir -p /workspace/metargb/shared/pb/notifications && \
-    protoc --go_out=/workspace/metargb/shared/pb/notifications --go_opt=paths=source_relative \
-        --go-grpc_out=/workspace/metargb/shared/pb/notifications --go-grpc_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/notifications.proto && \
-    mkdir -p /workspace/metargb/shared/pb/support && \
-    protoc --go_out=/workspace/metargb/shared/pb/support --go_opt=paths=source_relative \
-        --go-grpc_out=/workspace/metargb/shared/pb/support --go-grpc_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/support.proto && \
-    mkdir -p /workspace/metargb/shared/pb/calendar && \
-    protoc --go_out=/workspace/metargb/shared/pb/calendar --go_opt=paths=source_relative \
-        --go-grpc_out=/workspace/metargb/shared/pb/calendar --go-grpc_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/calendar.proto
+RUN sed -i 's/\r$//' /tmp/generate-all-protos.sh && sh /tmp/generate-all-protos.sh /workspace/metarang/shared
 
-COPY ./shared/go.mod /workspace/metargb/shared/
-COPY ./shared/go.sum /workspace/metargb/shared/
-COPY ./shared/pkg/ /workspace/metargb/shared/pkg/
+COPY ./shared/go.mod ./shared/go.sum /workspace/metarang/shared/
+COPY ./shared/pkg/ /workspace/metarang/shared/pkg/
 
-COPY ./services/grpc-gateway/go.mod ./services/grpc-gateway/go.sum* /workspace/metargb/grpc-gateway/
-COPY ./services/grpc-gateway/ /workspace/metargb/grpc-gateway/
+COPY ./services/grpc-gateway/go.mod ./services/grpc-gateway/go.sum* /workspace/metarang/grpc-gateway/
+COPY ./services/grpc-gateway/ /workspace/metarang/grpc-gateway/
 
 WORKDIR /workspace
 RUN echo 'go 1.25.0' > go.work && \
-    printf '\nuse (\n\t./metargb/grpc-gateway\n\t./metargb/shared\n)\n' >> go.work
+    printf '\nuse (\n\t./metarang/grpc-gateway\n\t./metarang/shared\n)\n' >> go.work
 
-WORKDIR /workspace/metargb/grpc-gateway
-RUN sed -i 's|replace metargb/shared => ../../shared|replace metargb/shared => /workspace/metargb/shared|g' go.mod && \
+WORKDIR /workspace/metarang/grpc-gateway
+RUN sed -i 's|replace metarang/shared => ../../shared|replace metarang/shared => /workspace/metarang/shared|g' go.mod && \
     go mod download
 
 ENV GOWORK=/workspace/go.work

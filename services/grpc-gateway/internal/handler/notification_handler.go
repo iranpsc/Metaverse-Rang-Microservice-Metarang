@@ -7,10 +7,10 @@ import (
 
 	"google.golang.org/grpc"
 
-	"metargb/grpc-gateway/internal/middleware"
-	pb "metargb/shared/pb/auth"
-	commonpb "metargb/shared/pb/common"
-	notificationpb "metargb/shared/pb/notifications"
+	"metarang/grpc-gateway/internal/middleware"
+	pb "metarang/shared/pb/auth"
+	commonpb "metarang/shared/pb/common"
+	notificationpb "metarang/shared/pb/notifications"
 )
 
 type NotificationHandler struct {

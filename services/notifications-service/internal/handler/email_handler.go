@@ -8,11 +8,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb "metargb/shared/pb/notifications"
+	pb "metarang/shared/pb/notifications"
 
-	"metargb/notifications-service/internal/errs"
-	"metargb/notifications-service/internal/models"
-	"metargb/notifications-service/internal/service"
+	"metarang/notifications-service/internal/errs"
+	"metarang/notifications-service/internal/models"
+	"metarang/notifications-service/internal/service"
 )
 
 // EmailHandler implements the gRPC EmailService.

@@ -1,4 +1,4 @@
-# MetaRGB Microservices Tests
+# metarang Microservices Tests
 
 This directory contains the test suite for verifying API compatibility and functionality of the microservices.
 
@@ -61,13 +61,13 @@ Integration and golden tests require a test database with known data:
 
 ```bash
 # Create test database
-mysql -u root -p -e "CREATE DATABASE metargb_test;"
+mysql -u root -p -e "CREATE DATABASE metarang_test;"
 
 # Import schema
-mysql -u root -p metargb_test < scripts/schema.sql
+mysql -u root -p metarang_test < scripts/schema.sql
 
 # Import test fixtures
-mysql -u root -p metargb_test < tests/fixtures/test_data.sql
+mysql -u root -p metarang_test < tests/fixtures/test_data.sql
 ```
 
 ## Environment Setup
@@ -77,7 +77,7 @@ mysql -u root -p metargb_test < tests/fixtures/test_data.sql
 cp .env.test.example .env.test
 
 # Edit with test database credentials
-DB_DATABASE=metargb_test
+DB_DATABASE=metarang_test
 DB_USER=test_user
 DB_PASSWORD=test_password
 ```

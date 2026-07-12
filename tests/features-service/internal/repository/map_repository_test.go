@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"metargb/features-service/internal/repository"
-	"metargb/features-service/tests/internal/testutil"
+	"metarang/features-service/internal/repository"
+	"metarang/features-service/tests/internal/testutil"
 
 	_ "github.com/go-sql-driver/mysql"
 )

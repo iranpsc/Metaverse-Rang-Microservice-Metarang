@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"metargb/auth-service/internal/models"
-	"metargb/auth-service/internal/repository"
+	"metarang/auth-service/internal/models"
+	"metarang/auth-service/internal/repository"
 )
 
 // MockSearchRepository is a mock implementation of SearchRepository

@@ -9,13 +9,13 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pbCommon "metargb/shared/pb/common"
-	pb "metargb/shared/pb/support"
+	pbCommon "metarang/shared/pb/common"
+	pb "metarang/shared/pb/support"
 
-	"metargb/support-service/internal/handler"
-	"metargb/support-service/internal/models"
-	"metargb/support-service/internal/service"
-	"metargb/support-service/tests/internal/testutil"
+	"metarang/support-service/internal/handler"
+	"metarang/support-service/internal/models"
+	"metarang/support-service/internal/service"
+	"metarang/support-service/tests/internal/testutil"
 )
 
 func TestUserEventHandler_CreateUserEvent_Success(t *testing.T) {

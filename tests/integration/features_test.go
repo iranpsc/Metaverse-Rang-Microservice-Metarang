@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	pb "github.com/metargb/shared/proto/features"
+	pb "github.com/metarang/shared/proto/features"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -24,9 +24,9 @@ func TestFeaturesList(t *testing.T) {
 	defer conn.Close()
 
 	client := pb.NewFeatureServiceClient(conn)
-	
+
 	req := &pb.ListFeaturesRequest{
-		Points: []string{"0,0", "100,0", "100,100", "0,100"},
+		Points:        []string{"0,0", "100,0", "100,100", "0,100"},
 		LoadBuildings: false,
 	}
 
@@ -53,7 +53,7 @@ func TestFeaturePurchaseFlow(t *testing.T) {
 	// 5. Verify wallet deduction
 	// 6. Verify transaction creation
 	// 7. Verify hourly profit creation
-	
+
 	t.Skip("Full implementation pending")
 }
 
@@ -67,7 +67,7 @@ func TestBuyRequestFlow(t *testing.T) {
 	// 5. Verify wallet updates (buyer, seller, RGB commission)
 	// 6. Verify request deletion
 	// 7. Verify other requests canceled
-	
+
 	t.Skip("Full implementation pending")
 }
 
@@ -77,7 +77,7 @@ func TestHourlyProfitCalculation(t *testing.T) {
 	// 1. Create feature with hourly profit
 	// 2. Wait for background job or trigger manually
 	// 3. Verify profit incremented by stability * 0.000041666
-	
+
 	t.Skip("Full implementation pending")
 }
 
@@ -90,7 +90,6 @@ func TestBuildingConstruction(t *testing.T) {
 	// 4. Verify construction_end_date calculated
 	// 5. Destroy building
 	// 6. Verify hourly profits reactivated
-	
+
 	t.Skip("Full implementation pending")
 }
-

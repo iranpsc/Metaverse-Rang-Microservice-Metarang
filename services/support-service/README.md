@@ -78,7 +78,7 @@ support-service/
 
 1. **Clone and navigate to service:**
 ```bash
-cd metargb-microservices/services/support-service
+cd metarang-microservices/services/support-service
 ```
 
 2. **Install dependencies:**
@@ -105,7 +105,7 @@ Create a `.env` file with the following variables:
 # Database Configuration
 DB_HOST=localhost
 DB_PORT=3306
-DB_DATABASE=metargb_db
+DB_DATABASE=metarang_db
 DB_USER=root
 DB_PASSWORD=
 
@@ -445,5 +445,5 @@ See `IMPLEMENTATION_COMPARISON.md` for detailed comparison.
 
 ## License
 
-Proprietary - MetaRGB Platform
+Proprietary - metarang Platform
 

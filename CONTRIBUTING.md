@@ -1,6 +1,6 @@
-# Contributing to MetaRGB Microservices
+# Contributing to metarang Microservices
 
-First off, thank you for considering contributing to MetaRGB Microservices. This document provides guidelines and instructions for contributing to this project.
+First off, thank you for considering contributing to metarang Microservices. This document provides guidelines and instructions for contributing to this project.
 
 ## Table of Contents
 1. [Code of Conduct](#code-of-conduct)
@@ -72,7 +72,7 @@ curl http://localhost:8000
 curl http://localhost:3002/health
 ```
 ### Project Architecture
-metargb-microservices/
+metarang-microservices/
 ├── services/                     # Each microservice
 │   ├── auth-service/
 │   │   ├── cmd/server/main.go

@@ -3,8 +3,8 @@ package testutil
 import (
 	"context"
 
-	"metargb/training-service/internal/models"
-	"metargb/training-service/internal/repository"
+	"metarang/training-service/internal/models"
+	"metarang/training-service/internal/repository"
 )
 
 // MockVideoRepo implements repository.VideoRepositoryInterface for tests.

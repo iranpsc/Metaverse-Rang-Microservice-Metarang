@@ -11,9 +11,9 @@ import (
 
 const (
 	// Database connection details
-	dbUser     = "metargb_user"
-	dbPassword = "metargb_password"
-	dbName     = "metargb_db"
+	dbUser     = "metarang_user"
+	dbPassword = "metarang_password"
+	dbName     = "metarang_db"
 	dbHost     = "127.0.0.1" // Change to your DB host if not local
 	dbPort     = "3306"
 
@@ -27,9 +27,9 @@ const (
 
 func main() {
 	// 1. Connect to the MySQL database
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", 
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		dbUser, dbPassword, dbHost, dbPort, dbName)
-	
+
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		log.Fatalf("❌ Error configuring database connection: %v", err)
@@ -39,7 +39,7 @@ func main() {
 	if err := db.Ping(); err != nil {
 		log.Fatalf("❌ Error connecting to the database: %v", err)
 	}
-	fmt.Println("🚀 Successfully connected to metargb_db")
+	fmt.Println("🚀 Successfully connected to metarang_db")
 
 	// 2. Fetch all text-based columns from all tables in the database
 	query := `
@@ -76,10 +76,10 @@ func main() {
 		)
 
 		// Execute the update
-		result, err := db.Exec(updateQuery, 
-			oldURL1, newURL1, 
-			oldURL2, newURL2, 
-			"%"+oldURL1+"%", 
+		result, err := db.Exec(updateQuery,
+			oldURL1, newURL1,
+			oldURL2, newURL2,
+			"%"+oldURL1+"%",
 			"%"+oldURL2+"%",
 		)
 		if err != nil {

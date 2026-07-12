@@ -1,7 +1,7 @@
 {
-  "name": "metargb-websocket-gateway",
+  "name": "metarang-websocket-gateway",
   "version": "1.0.0",
-  "description": "WebSocket Gateway for MetaRGB Microservices - Real-time event broadcasting",
+  "description": "WebSocket Gateway for metarang Microservices - Real-time event broadcasting",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -15,7 +15,7 @@
     "grpc",
     "microservices"
   ],
-  "author": "MetaRGB Team",
+  "author": "metarang Team",
   "license": "MIT",
   "dependencies": {
     "@sentry/node": "^9.47.1",

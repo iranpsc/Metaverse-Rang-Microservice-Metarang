@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"metargb/financial-service/internal/models"
-	"metargb/financial-service/internal/sadad"
-	commercialpb "metargb/shared/pb/commercial"
+	"metarang/financial-service/internal/models"
+	"metarang/financial-service/internal/sadad"
+	commercialpb "metarang/shared/pb/commercial"
 
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -172,16 +172,16 @@ func (m *mockJalaliConverter) FormatJalaliDate(t time.Time) string {
 
 func TestOrderService_CreateOrder(t *testing.T) {
 	tests := []struct {
-		name        string
-		userID      uint64
-		amount      int32
-		asset       string
-		canBuy      bool
-		rate        float64
+		name         string
+		userID       uint64
+		amount       int32
+		asset        string
+		canBuy       bool
+		rate         float64
 		sadadResCode string
-		sadadToken  string
-		expectError bool
-		errorType   error
+		sadadToken   string
+		expectError  bool
+		errorType    error
 	}{
 		{
 			name:         "successful order creation",

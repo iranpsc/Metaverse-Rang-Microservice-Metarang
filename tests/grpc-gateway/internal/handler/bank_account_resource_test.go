@@ -7,10 +7,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	pb "metargb/shared/pb/auth"
+	pb "metarang/shared/pb/auth"
 
-	"metargb/grpc-gateway/internal/handler"
-	"metargb/grpc-gateway/internal/testutil"
+	"metarang/grpc-gateway/internal/handler"
+	"metarang/grpc-gateway/internal/testutil"
 )
 
 func newBankAccountAuthHandler(t *testing.T, kyc *testutil.MockKYCService) *handler.AuthHandler {

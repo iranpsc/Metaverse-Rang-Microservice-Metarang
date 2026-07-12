@@ -70,7 +70,7 @@
       },
       "targets": [
         {
-          "expr": "metargb:http_requests_per_second:5m",
+          "expr": "metarang:http_requests_per_second:5m",
           "legendFormat": "RPS",
           "refId": "A"
         }
@@ -104,7 +104,7 @@
       },
       "targets": [
         {
-          "expr": "metargb:http_latency_p95:5m",
+          "expr": "metarang:http_latency_p95:5m",
           "legendFormat": "P95",
           "refId": "A"
         }
@@ -138,7 +138,7 @@
       },
       "targets": [
         {
-          "expr": "metargb:http_error_percentage:5m",
+          "expr": "metarang:http_error_percentage:5m",
           "legendFormat": "5xx %",
           "refId": "A"
         }
@@ -172,7 +172,7 @@
       },
       "targets": [
         {
-          "expr": "metargb:service_availability_percentage",
+          "expr": "metarang:service_availability_percentage",
           "legendFormat": "Availability",
           "refId": "A"
         }
@@ -202,17 +202,17 @@
       },
       "targets": [
         {
-          "expr": "metargb:http_latency_p50:5m",
+          "expr": "metarang:http_latency_p50:5m",
           "legendFormat": "P50",
           "refId": "A"
         },
         {
-          "expr": "metargb:http_latency_p95:5m",
+          "expr": "metarang:http_latency_p95:5m",
           "legendFormat": "P95",
           "refId": "B"
         },
         {
-          "expr": "metargb:http_latency_p99:5m",
+          "expr": "metarang:http_latency_p99:5m",
           "legendFormat": "P99",
           "refId": "C"
         }
@@ -242,7 +242,7 @@
       },
       "targets": [
         {
-          "expr": "metargb:http_requests_per_second:5m",
+          "expr": "metarang:http_requests_per_second:5m",
           "legendFormat": "Total RPS",
           "refId": "A"
         },
@@ -480,7 +480,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "metargb:service_error_percentage",
+          "expr": "metarang:service_error_percentage",
           "legendFormat": "Unhealthy Services %",
           "refId": "A"
         }

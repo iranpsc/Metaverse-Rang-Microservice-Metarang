@@ -1,6 +1,6 @@
-# MetaRGB Microservices
+# Metarang Microservices
 
-Microservices implementation for the MetaRGB platform migration from Laravel monolith to Golang/gRPC.
+Microservices implementation for the Metarang platform migration from Laravel monolith to Golang/gRPC.
 
 ## Architecture
 
@@ -126,7 +126,7 @@ make kong-reload      # Reload Kong
 ## Local Development (Without Docker)
 
 1. **Database & Redis**: Start MySQL 8 and Redis locally
-2. **Schema**: `mysql -u root -p metargb_db < scripts/schema.sql`
+2. **Schema**: `mysql -u root -p metarang_db < scripts/schema.sql`
 3. **Config**: Copy `config.env.sample` → `config.env` per service
 4. **Run services** in separate terminals:
 
@@ -140,7 +140,7 @@ cd websocket-gateway && npm install && npm start
 ## Project Structure
 
 ```
-metargb-microservices/
+metarang-microservices/
 ├── services/
 │   ├── auth-service/
 │   │   ├── cmd/server/main.go
@@ -181,7 +181,7 @@ Shared schema in `scripts/schema.sql`. Notes: `transactions.id` is VARCHAR; `fea
 | Issue | Command |
 |-------|---------|
 | Services not starting | `docker-compose logs auth-service` |
-| Database connection | `docker exec metargb-mysql mysql -uroot -proot_password -e "SELECT 1"` |
+| Database connection | `docker exec metarang-mysql mysql -uroot -proot_password -e "SELECT 1"` |
 | Port in use | `lsof -i :50051` (macOS) or `netstat -tulpn \| grep 50051` (Linux) |
 | Proto errors | `make clean-proto && make proto` |
 | Reset everything | `make clean && make dev` |
@@ -189,7 +189,7 @@ Shared schema in `scripts/schema.sql`. Notes: `transactions.id` is VARCHAR; `fea
 ## Deployment
 
 ```bash
-docker build -t metargb/auth-service:latest -f services/auth-service/Dockerfile .
+docker build -t metarang/auth-service:latest -f services/auth-service/Dockerfile .
 kubectl apply -f k8s/auth-service/
 ```
 
@@ -204,4 +204,4 @@ Key principles: 100% Laravel API compatibility, layered architecture (handler/se
 
 ## License
 
-Proprietary - MetaRGB Platform
+Proprietary - metarang Platform

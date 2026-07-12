@@ -1,4 +1,4 @@
-module metargb/gen-openapi
+module metarang/gen-openapi
 
 go 1.25.0
 

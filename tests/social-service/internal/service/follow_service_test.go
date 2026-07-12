@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"metargb/social-service/internal/repository"
+	"metarang/social-service/internal/repository"
 )
 
 // Mock repositories

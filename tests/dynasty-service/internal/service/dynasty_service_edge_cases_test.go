@@ -10,8 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"metargb/dynasty-service/internal/models"
-	"metargb/dynasty-service/internal/repository"
+	"metarang/dynasty-service/internal/repository"
 )
 
 // TestDynastyService_EdgeCases tests edge cases and boundary conditions
@@ -264,4 +263,3 @@ func TestPrizeService_EdgeCases(t *testing.T) {
 
 	require.NoError(t, mock.ExpectationsWereMet())
 }
-

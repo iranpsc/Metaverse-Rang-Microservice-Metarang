@@ -7,9 +7,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	commonpb "metargb/shared/pb/common"
-	storagepb "metargb/shared/pb/storage"
-	"metargb/storage-service/internal/service"
+	commonpb "metarang/shared/pb/common"
+	storagepb "metarang/shared/pb/storage"
+	"metarang/storage-service/internal/service"
 )
 
 type ImageHandler struct {

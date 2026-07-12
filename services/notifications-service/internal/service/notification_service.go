@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"metargb/notifications-service/internal/errs"
-	"metargb/notifications-service/internal/models"
-	"metargb/notifications-service/internal/repository"
+	"metarang/notifications-service/internal/errs"
+	"metarang/notifications-service/internal/models"
+	"metarang/notifications-service/internal/repository"
 )
 
 // SendNotificationInput represents the information required to dispatch a notification.

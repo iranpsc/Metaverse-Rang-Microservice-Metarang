@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"metargb/auth-service/internal/models"
+	"metarang/auth-service/internal/models"
 )
 
 type mockSettingsRepository struct {

@@ -117,7 +117,7 @@ Response format matches API docs:
 
 ## Notes
 
-1. **Jalali Date Formatting**: Uses `metargb/shared/pkg/helpers` for Jalali date conversion
+1. **Jalali Date Formatting**: Uses `metarang/shared/pkg/helpers` for Jalali date conversion
 2. **Unread Filtering**: By default, `GET /api/notifications` filters unread only (as per API docs)
 3. **Error Handling**: Proper gRPC status codes are returned (NotFound, InvalidArgument, Internal)
 4. **Authentication**: All endpoints require JWT authentication via Kong

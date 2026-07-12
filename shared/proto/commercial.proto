@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package commercial;
 
-option go_package = "metargb/shared/pb/commercial";
+option go_package = "metarang/shared/pb/commercial";
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";

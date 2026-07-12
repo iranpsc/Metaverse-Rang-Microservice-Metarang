@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"metargb/dynasty-service/internal/repository"
+	"metarang/dynasty-service/internal/repository"
 )
 
 // DynastyPolicy enforces dynasty business rules
 type DynastyPolicy struct {
-	dynastyRepo   *repository.DynastyRepository
+	dynastyRepo    *repository.DynastyRepository
 	featuresClient interface{} // Will be *client.FeaturesClient when injected
 	authClient     interface{} // Will be *client.AuthClient when injected
 }

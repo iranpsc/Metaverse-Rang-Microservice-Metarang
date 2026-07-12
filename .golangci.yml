@@ -12,7 +12,7 @@ linters-settings:
   gci:
     skip-generated: true
   goimports:
-    local-prefixes: metargb
+    local-prefixes: metarang
   staticcheck:
     checks: ["all"]
   typecheck:

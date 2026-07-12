@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	pb "metarang/shared/pb/auth"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	pb "metargb/shared/pb/auth"
 )
 
 // AuthClient wraps gRPC client for Auth Service
@@ -101,4 +102,3 @@ func (c *AuthClient) GetKYC(ctx context.Context, userID uint64) (*pb.KYCResponse
 
 	return resp, nil
 }
-

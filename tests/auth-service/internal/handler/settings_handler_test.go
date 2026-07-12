@@ -8,8 +8,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"metargb/auth-service/internal/models"
-	"metargb/auth-service/internal/service"
+	"metarang/auth-service/internal/models"
+	"metarang/auth-service/internal/service"
 )
 
 // Mock settings service for testing

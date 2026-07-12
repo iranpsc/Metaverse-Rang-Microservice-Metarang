@@ -6,8 +6,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"metargb/dynasty-service/internal/service"
-	dynastypb "metargb/shared/pb/dynasty"
+	"metarang/dynasty-service/internal/service"
+	dynastypb "metarang/shared/pb/dynasty"
 )
 
 // DynastyHandler handles DynastyService gRPC methods
@@ -165,4 +165,3 @@ func (h *DynastyHandler) UpdateDynastyFeature(ctx context.Context, req *dynastyp
 	// Return updated dynasty
 	return h.GetDynasty(ctx, &dynastypb.GetDynastyRequest{DynastyId: req.DynastyId})
 }
-

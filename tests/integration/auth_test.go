@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	pb "metargb/shared/pb/auth"
+	pb "metarang/shared/pb/auth"
 )
 
 const authServiceAddr = "localhost:50051"
@@ -89,4 +89,3 @@ func TestValidateToken(t *testing.T) {
 		}
 	})
 }
-

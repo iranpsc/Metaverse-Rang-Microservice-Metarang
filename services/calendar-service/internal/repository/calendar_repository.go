@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 
-	"metargb/calendar-service/internal/models"
-	"metargb/shared/pkg/jalali"
+	"metarang/calendar-service/internal/models"
+	"metarang/shared/pkg/jalali"
 )
 
 // Laravel morph map class name stored in likeable_type / viewable_type columns.

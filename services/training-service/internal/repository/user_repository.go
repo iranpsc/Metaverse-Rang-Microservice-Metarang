@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"metargb/training-service/internal/client"
+	"metarang/training-service/internal/client"
 )
 
 // UserRepositoryInterface defines the interface for user repository operations

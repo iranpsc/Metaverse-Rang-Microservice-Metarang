@@ -1,11 +1,11 @@
-module metargb/support-service/tests
+module metarang/support-service/tests
 
 go 1.25.0
 
 require (
 	google.golang.org/grpc v1.79.3
-	metargb/shared v0.0.0
-	metargb/support-service v0.0.0
+	metarang/shared v0.0.0
+	metarang/support-service v0.0.0
 )
 
 require (
@@ -24,6 +24,6 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 )
 
-replace metargb/shared => ../../shared
+replace metarang/shared => ../../shared
 
-replace metargb/support-service => ../../services/support-service
+replace metarang/support-service => ../../services/support-service

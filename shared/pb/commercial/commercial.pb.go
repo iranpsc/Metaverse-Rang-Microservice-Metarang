@@ -7,13 +7,14 @@
 package commercial
 
 import (
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
+
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
 )
 
 const (
@@ -1655,7 +1656,7 @@ const file_commercial_proto_rawDesc = "" +
 	"\x14GetLatestTransaction\x12'.commercial.GetLatestTransactionRequest\x1a%.commercial.LatestTransactionResponse\x12R\n" +
 	"\x11CreateTransaction\x12$.commercial.CreateTransactionRequest\x1a\x17.commercial.Transaction2`\n" +
 	"\x0fReferralService\x12M\n" +
-	"\x0fProcessReferral\x12\".commercial.ProcessReferralRequest\x1a\x16.google.protobuf.EmptyB\x1eZ\x1cmetargb/shared/pb/commercialb\x06proto3"
+	"\x0fProcessReferral\x12\".commercial.ProcessReferralRequest\x1a\x16.google.protobuf.EmptyB\x1eZ\x1cmetarang/shared/pb/commercialb\x06proto3"
 
 var (
 	file_commercial_proto_rawDescOnce sync.Once

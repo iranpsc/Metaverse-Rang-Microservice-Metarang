@@ -6,14 +6,14 @@ import (
 	"sync"
 	"time"
 
-	authpkg "metargb/shared/pkg/auth"
+	authpkg "metarang/shared/pkg/auth"
 )
 
 // requestRecord tracks the number of requests and the window start time
 type requestRecord struct {
-	count     int
+	count       int
 	windowStart time.Time
-	mu        sync.Mutex
+	mu          sync.Mutex
 }
 
 // throttleStore stores rate limit data per user
@@ -45,7 +45,7 @@ func (ts *throttleStore) startCleanup() {
 func (ts *throttleStore) cleanupOldRecords() {
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
-	
+
 	oneHourAgo := time.Now().Add(-1 * time.Hour)
 	for userID, record := range ts.records {
 		record.mu.Lock()
@@ -61,11 +61,11 @@ func (ts *throttleStore) getOrCreateRecord(userID uint64) *requestRecord {
 	ts.mu.RLock()
 	record, exists := ts.records[userID]
 	ts.mu.RUnlock()
-	
+
 	if exists {
 		return record
 	}
-	
+
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
 	// Double-check after acquiring write lock
@@ -84,10 +84,10 @@ func (ts *throttleStore) getOrCreateRecord(userID uint64) *requestRecord {
 // Returns true if allowed, false if rate limited
 func (ts *throttleStore) checkAndIncrement(userID uint64, maxRequests int, period time.Duration) bool {
 	record := ts.getOrCreateRecord(userID)
-	
+
 	record.mu.Lock()
 	defer record.mu.Unlock()
-	
+
 	now := time.Now()
 	// If the window has expired, reset it
 	if now.Sub(record.windowStart) >= period {
@@ -95,12 +95,12 @@ func (ts *throttleStore) checkAndIncrement(userID uint64, maxRequests int, perio
 		record.windowStart = now
 		return true
 	}
-	
+
 	// Check if limit is exceeded
 	if record.count >= maxRequests {
 		return false
 	}
-	
+
 	// Increment and allow
 	record.count++
 	return true
@@ -120,7 +120,7 @@ func ThrottleMiddleware(maxRequests int, period time.Duration) func(http.Handler
 	if period <= 0 {
 		period = time.Minute
 	}
-	
+
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Get user from context (set by auth middleware)
@@ -131,7 +131,7 @@ func ThrottleMiddleware(maxRequests int, period time.Duration) func(http.Handler
 				next.ServeHTTP(w, r)
 				return
 			}
-			
+
 			// Check rate limit
 			allowed := globalThrottleStore.checkAndIncrement(userCtx.UserID, maxRequests, period)
 			if !allowed {
@@ -141,7 +141,7 @@ func ThrottleMiddleware(maxRequests int, period time.Duration) func(http.Handler
 				w.Write([]byte(`{"error":"rate limit exceeded"}`))
 				return
 			}
-			
+
 			// Request allowed, proceed
 			next.ServeHTTP(w, r)
 		})
@@ -156,4 +156,3 @@ func formatRetryAfter(period time.Duration) string {
 	}
 	return strconv.Itoa(seconds)
 }
-

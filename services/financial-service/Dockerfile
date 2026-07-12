@@ -10,36 +10,27 @@ RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11 && \
 
 WORKDIR /workspace
 
-RUN mkdir -p /workspace/metargb/financial-service /workspace/metargb/shared
+RUN mkdir -p /workspace/metarang/financial-service /workspace/metarang/shared
 
-COPY ./shared/proto/ /workspace/metargb/shared/proto/
+COPY ./shared/proto/ /workspace/metarang/shared/proto/
+COPY ./scripts/docker/generate-all-protos.sh /tmp/generate-all-protos.sh
 
 ENV PATH="${PATH}:/root/go/bin"
-RUN mkdir -p /workspace/metargb/shared/pb/financial && \
-    protoc --go_out=/workspace/metargb/shared/pb/financial --go_opt=paths=source_relative \
-        --go-grpc_out=/workspace/metargb/shared/pb/financial --go-grpc_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/financial.proto && \
-    mkdir -p /workspace/metargb/shared/pb/auth && \
-    protoc --go_out=/workspace/metargb/shared/pb/auth --go_opt=paths=source_relative \
-        --go-grpc_out=/workspace/metargb/shared/pb/auth --go-grpc_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/auth.proto
+RUN sed -i 's/\r$//' /tmp/generate-all-protos.sh && sh /tmp/generate-all-protos.sh /workspace/metarang/shared
 
-COPY ./shared/go.mod /workspace/metargb/shared/
-COPY ./services/financial-service/go.mod ./services/financial-service/go.sum* /workspace/metargb/financial-service/
+COPY ./shared/go.mod ./shared/go.sum /workspace/metarang/shared/
+COPY ./shared/pkg/ /workspace/metarang/shared/pkg/
+
+COPY ./services/financial-service/go.mod ./services/financial-service/go.sum* /workspace/metarang/financial-service/
+COPY ./services/financial-service/ /workspace/metarang/financial-service/
 
 WORKDIR /workspace
 RUN echo 'go 1.25.0' > go.work && \
-    printf '\nuse (\n\t./metargb/financial-service\n\t./metargb/shared\n)\n' >> go.work
+    printf '\nuse (\n\t./metarang/financial-service\n\t./metarang/shared\n)\n' >> go.work
 
-WORKDIR /workspace/metargb/financial-service
-RUN sed -i 's|replace metargb/shared => ../../shared|replace metargb/shared => /workspace/metargb/shared|g' go.mod || true && \
+WORKDIR /workspace/metarang/financial-service
+RUN sed -i 's|replace metarang/shared => ../../shared|replace metarang/shared => /workspace/metarang/shared|g' go.mod || true && \
     go mod download
-
-COPY ./shared/ /workspace/metargb/shared/
-COPY ./services/financial-service/ /workspace/metargb/financial-service/
-
-WORKDIR /workspace/metargb/financial-service
-RUN sed -i 's|replace metargb/shared => ../../shared|replace metargb/shared => /workspace/metargb/shared|g' go.mod || true
 
 ENV GOWORK=/workspace/go.work
 RUN go build -trimpath -ldflags="-s -w" -o /app/financial-service ./cmd/server

@@ -7,9 +7,9 @@ import (
 	"os"
 	"time"
 
-	"metargb/features-service/internal/repository"
-	"metargb/features-service/internal/service"
-	"metargb/shared/pkg/logger"
+	"metarang/features-service/internal/repository"
+	"metarang/features-service/internal/service"
+	"metarang/shared/pkg/logger"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -18,11 +18,11 @@ func main() {
 	log := logger.NewLogger("calculate-hourly-profits")
 
 	dbDSN := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&charset=utf8mb4&collation=utf8mb4_unicode_ci",
-		getEnv("DB_USER", "metargb_user"),
-		getEnv("DB_PASSWORD", "metargb_password"),
+		getEnv("DB_USER", "metarang_user"),
+		getEnv("DB_PASSWORD", "metarang_password"),
 		getEnv("DB_HOST", "mysql"),
 		getEnv("DB_PORT", "3306"),
-		getEnv("DB_DATABASE", "metargb_db"),
+		getEnv("DB_DATABASE", "metarang_db"),
 	)
 
 	database, err := sql.Open("mysql", dbDSN)

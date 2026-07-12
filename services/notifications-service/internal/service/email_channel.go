@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 
-	"metargb/notifications-service/internal/errs"
-	"metargb/notifications-service/internal/models"
+	"metarang/notifications-service/internal/errs"
+	"metarang/notifications-service/internal/models"
 )
 
 type noopEmailChannel struct{}

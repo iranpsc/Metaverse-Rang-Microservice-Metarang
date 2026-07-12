@@ -7,7 +7,7 @@ metadata:
   name: prometheus-rules
   namespace: monitoring
 data:
-  metargb-alerts.yml: |
+  metarang-alerts.yml: |
     groups:
       # Service availability alerts
       - name: service_availability
@@ -24,7 +24,7 @@ data:
               description: "Service {{ $labels.job }} on pod {{ $labels.pod_name }} has been down for more than 2 minutes."
           
           - alert: ServiceHighRestart
-            expr: rate(kube_pod_container_status_restarts_total{namespace="metargb"}[15m]) > 0.1
+            expr: rate(kube_pod_container_status_restarts_total{namespace="metarang"}[15m]) > 0.1
             for: 5m
             labels:
               severity: warning
@@ -40,9 +40,9 @@ data:
           - alert: HighErrorRate
             expr: |
               (
-                sum(rate(grpc_server_handled_total{grpc_code!="OK",namespace="metargb"}[5m])) by (job, grpc_service)
+                sum(rate(grpc_server_handled_total{grpc_code!="OK",namespace="metarang"}[5m])) by (job, grpc_service)
                 /
-                sum(rate(grpc_server_handled_total{namespace="metargb"}[5m])) by (job, grpc_service)
+                sum(rate(grpc_server_handled_total{namespace="metarang"}[5m])) by (job, grpc_service)
               ) > 0.01
             for: 5m
             labels:
@@ -55,9 +55,9 @@ data:
           - alert: CriticalErrorRate
             expr: |
               (
-                sum(rate(grpc_server_handled_total{grpc_code!="OK",namespace="metargb"}[5m])) by (job, grpc_service)
+                sum(rate(grpc_server_handled_total{grpc_code!="OK",namespace="metarang"}[5m])) by (job, grpc_service)
                 /
-                sum(rate(grpc_server_handled_total{namespace="metargb"}[5m])) by (job, grpc_service)
+                sum(rate(grpc_server_handled_total{namespace="metarang"}[5m])) by (job, grpc_service)
               ) > 0.05
             for: 2m
             labels:
@@ -70,9 +70,9 @@ data:
           - alert: High5xxErrors
             expr: |
               (
-                sum(rate(grpc_server_handled_total{grpc_code=~"Internal|DataLoss|Unknown",namespace="metargb"}[5m])) by (job)
+                sum(rate(grpc_server_handled_total{grpc_code=~"Internal|DataLoss|Unknown",namespace="metarang"}[5m])) by (job)
                 /
-                sum(rate(grpc_server_handled_total{namespace="metargb"}[5m])) by (job)
+                sum(rate(grpc_server_handled_total{namespace="metarang"}[5m])) by (job)
               ) > 0.005
             for: 5m
             labels:
@@ -87,7 +87,7 @@ data:
         interval: 30s
         rules:
           - alert: HighLatency
-            expr: metargb:grpc_latency_p95:5m > 0.5
+            expr: metarang:grpc_latency_p95:5m > 0.5
             for: 10m
             labels:
               severity: warning
@@ -97,7 +97,7 @@ data:
               description: "Service {{ $labels.job }} has P95 latency of {{ $value }}s (threshold: 500ms)."
 
           - alert: CriticalP99Latency
-            expr: metargb:grpc_latency_p99:5m > 1.0
+            expr: metarang:grpc_latency_p99:5m > 1.0
             for: 5m
             labels:
               severity: critical
@@ -109,7 +109,7 @@ data:
           - alert: SlowDatabaseQueries
             expr: |
               histogram_quantile(0.95,
-                sum(rate(db_query_duration_seconds_bucket{namespace="metargb"}[5m])) by (job, le)
+                sum(rate(db_query_duration_seconds_bucket{namespace="metarang"}[5m])) by (job, le)
               ) > 1.0
             for: 10m
             labels:
@@ -126,9 +126,9 @@ data:
           - alert: HighMemoryUsage
             expr: |
               (
-                container_memory_working_set_bytes{namespace="metargb",container!=""}
+                container_memory_working_set_bytes{namespace="metarang",container!=""}
                 /
-                container_spec_memory_limit_bytes{namespace="metargb",container!=""}
+                container_spec_memory_limit_bytes{namespace="metarang",container!=""}
               ) > 0.9
             for: 5m
             labels:
@@ -141,9 +141,9 @@ data:
           - alert: HighCPUUsage
             expr: |
               (
-                rate(container_cpu_usage_seconds_total{namespace="metargb",container!=""}[5m])
+                rate(container_cpu_usage_seconds_total{namespace="metarang",container!=""}[5m])
                 /
-                container_spec_cpu_quota{namespace="metargb",container!=""} * 100000
+                container_spec_cpu_quota{namespace="metarang",container!=""} * 100000
               ) > 0.9
             for: 10m
             labels:
@@ -154,7 +154,7 @@ data:
               description: "Pod {{ $labels.pod }} is using {{ $value | humanizePercentage }} of CPU limit."
           
           - alert: PodOOMKilled
-            expr: increase(kube_pod_container_status_terminated_reason{reason="OOMKilled",namespace="metargb"}[5m]) > 0
+            expr: increase(kube_pod_container_status_terminated_reason{reason="OOMKilled",namespace="metarang"}[5m]) > 0
             labels:
               severity: critical
               team: platform
@@ -169,9 +169,9 @@ data:
           - alert: DatabaseConnectionPoolExhausted
             expr: |
               (
-                db_connections_in_use{namespace="metargb"}
+                db_connections_in_use{namespace="metarang"}
                 /
-                db_connections_max{namespace="metargb"}
+                db_connections_max{namespace="metarang"}
               ) > 0.9
             for: 5m
             labels:
@@ -197,9 +197,9 @@ data:
         rules:
           - alert: CircuitBreakerOpen
             expr: |
-              sum(rate(istio_requests_total{response_code=~"5..",destination_workload_namespace="metargb"}[5m])) by (destination_workload)
+              sum(rate(istio_requests_total{response_code=~"5..",destination_workload_namespace="metarang"}[5m])) by (destination_workload)
               /
-              sum(rate(istio_requests_total{destination_workload_namespace="metargb"}[5m])) by (destination_workload)
+              sum(rate(istio_requests_total{destination_workload_namespace="metarang"}[5m])) by (destination_workload)
               > 0.5
             for: 2m
             labels:
@@ -215,7 +215,7 @@ data:
         rules:
           - alert: WebSocketConnectionsDrop
             expr: |
-              rate(websocket_connections_total{namespace="metargb"}[5m]) < -10
+              rate(websocket_connections_total{namespace="metarang"}[5m]) < -10
             for: 5m
             labels:
               severity: warning
@@ -231,9 +231,9 @@ data:
           - alert: PVCAlmostFull
             expr: |
               (
-                kubelet_volume_stats_used_bytes{namespace=~"metargb|monitoring|istio-system"}
+                kubelet_volume_stats_used_bytes{namespace=~"metarang|monitoring|istio-system"}
                 /
-                kubelet_volume_stats_capacity_bytes{namespace=~"metargb|monitoring|istio-system"}
+                kubelet_volume_stats_capacity_bytes{namespace=~"metarang|monitoring|istio-system"}
               ) > 0.85
             for: 10m
             labels:
@@ -246,9 +246,9 @@ data:
           - alert: PVCCriticallyFull
             expr: |
               (
-                kubelet_volume_stats_used_bytes{namespace=~"metargb|monitoring|istio-system"}
+                kubelet_volume_stats_used_bytes{namespace=~"metarang|monitoring|istio-system"}
                 /
-                kubelet_volume_stats_capacity_bytes{namespace=~"metargb|monitoring|istio-system"}
+                kubelet_volume_stats_capacity_bytes{namespace=~"metarang|monitoring|istio-system"}
               ) > 0.95
             for: 5m
             labels:
@@ -258,40 +258,40 @@ data:
               summary: "CRITICAL: PVC {{ $labels.persistentvolumeclaim }} critically full"
               description: "PVC {{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full. Immediate action required!"
 
-  metargb-recording.yml: |
+  metarang-recording.yml: |
     groups:
       - name: golden_signals_k8s
         interval: 30s
         rules:
-          - record: metargb:grpc_requests_per_second:5m
-            expr: sum(rate(grpc_server_handled_total{namespace="metargb"}[5m])) by (job)
+          - record: metarang:grpc_requests_per_second:5m
+            expr: sum(rate(grpc_server_handled_total{namespace="metarang"}[5m])) by (job)
 
-          - record: metargb:grpc_error_percentage:5m
+          - record: metarang:grpc_error_percentage:5m
             expr: |
               (
-                sum(rate(grpc_server_handled_total{namespace="metargb",grpc_code!="OK"}[5m])) by (job)
+                sum(rate(grpc_server_handled_total{namespace="metarang",grpc_code!="OK"}[5m])) by (job)
                 /
-                sum(rate(grpc_server_handled_total{namespace="metargb"}[5m])) by (job)
+                sum(rate(grpc_server_handled_total{namespace="metarang"}[5m])) by (job)
               ) * 100
 
-          - record: metargb:grpc_latency_p95:5m
+          - record: metarang:grpc_latency_p95:5m
             expr: |
               histogram_quantile(0.95,
-                sum(rate(grpc_server_handling_seconds_bucket{namespace="metargb"}[5m])) by (job, le)
+                sum(rate(grpc_server_handling_seconds_bucket{namespace="metarang"}[5m])) by (job, le)
               )
 
-          - record: metargb:grpc_latency_p99:5m
+          - record: metarang:grpc_latency_p99:5m
             expr: |
               histogram_quantile(0.99,
-                sum(rate(grpc_server_handling_seconds_bucket{namespace="metargb"}[5m])) by (job, le)
+                sum(rate(grpc_server_handling_seconds_bucket{namespace="metarang"}[5m])) by (job, le)
               )
 
       - name: golden_signals_health_check
         interval: 30s
         rules:
-          - record: metargb:service_availability_percentage
+          - record: metarang:service_availability_percentage
             expr: (service_health_healthy / service_health_total) * 100
 
-          - record: metargb:service_error_percentage
+          - record: metarang:service_error_percentage
             expr: (service_health_unhealthy / service_health_total) * 100
 

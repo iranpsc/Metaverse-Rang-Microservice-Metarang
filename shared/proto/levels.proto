@@ -4,7 +4,7 @@ package levels;
 
 import "common.proto";
 
-option go_package = "metargb/shared/pb/levels";
+option go_package = "metarang/shared/pb/levels";
 
 // LevelService handles user level progression
 service LevelService {

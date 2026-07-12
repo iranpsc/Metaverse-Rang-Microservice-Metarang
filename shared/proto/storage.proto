@@ -4,7 +4,7 @@ package storage;
 
 import "common.proto";
 
-option go_package = "metargb/shared/pb/storage";
+option go_package = "metarang/shared/pb/storage";
 
 // FileStorageService handles file uploads and management
 service FileStorageService {

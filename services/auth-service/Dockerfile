@@ -10,56 +10,27 @@ RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11 && \
 
 WORKDIR /workspace
 
-RUN mkdir -p /workspace/metargb/auth-service /workspace/metargb/shared
+RUN mkdir -p /workspace/metarang/auth-service /workspace/metarang/shared
 
-COPY ./shared/proto/ /workspace/metargb/shared/proto/
+COPY ./shared/proto/ /workspace/metarang/shared/proto/
+COPY ./scripts/docker/generate-all-protos.sh /tmp/generate-all-protos.sh
 
 ENV PATH="${PATH}:/root/go/bin"
-RUN mkdir -p /workspace/metargb/shared/pb/auth && \
-    protoc --go_out=/workspace/metargb/shared/pb/auth --go_opt=paths=source_relative \
-        --go-grpc_out=/workspace/metargb/shared/pb/auth --go-grpc_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/auth.proto && \
-    mkdir -p /workspace/metargb/shared/pb/commercial && \
-    protoc --go_out=/workspace/metargb/shared/pb/commercial --go_opt=paths=source_relative \
-        --go-grpc_out=/workspace/metargb/shared/pb/commercial --go-grpc_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/commercial.proto && \
-    mkdir -p /workspace/metargb/shared/pb/common && \
-    protoc --go_out=/workspace/metargb/shared/pb/common --go_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/common.proto && \
-    mkdir -p /workspace/metargb/shared/pb/features && \
-    protoc --go_out=/workspace/metargb/shared/pb/features --go_opt=paths=source_relative \
-        --go-grpc_out=/workspace/metargb/shared/pb/features --go-grpc_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/features.proto && \
-    mkdir -p /workspace/metargb/shared/pb/levels && \
-    protoc --go_out=/workspace/metargb/shared/pb/levels --go_opt=paths=source_relative \
-        --go-grpc_out=/workspace/metargb/shared/pb/levels --go-grpc_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/levels.proto && \
-    mkdir -p /workspace/metargb/shared/pb/notifications && \
-    protoc --go_out=/workspace/metargb/shared/pb/notifications --go_opt=paths=source_relative \
-        --go-grpc_out=/workspace/metargb/shared/pb/notifications --go-grpc_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/notifications.proto && \
-    mkdir -p /workspace/metargb/shared/pb/storage && \
-    protoc --go_out=/workspace/metargb/shared/pb/storage --go_opt=paths=source_relative \
-        --go-grpc_out=/workspace/metargb/shared/pb/storage --go-grpc_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/storage.proto
+RUN sed -i 's/\r$//' /tmp/generate-all-protos.sh && sh /tmp/generate-all-protos.sh /workspace/metarang/shared
 
-COPY ./shared/go.mod /workspace/metargb/shared/
-COPY ./services/auth-service/go.mod ./services/auth-service/go.sum* /workspace/metargb/auth-service/
+COPY ./shared/go.mod ./shared/go.sum /workspace/metarang/shared/
+COPY ./shared/pkg/ /workspace/metarang/shared/pkg/
+
+COPY ./services/auth-service/go.mod ./services/auth-service/go.sum* /workspace/metarang/auth-service/
+COPY ./services/auth-service/ /workspace/metarang/auth-service/
 
 WORKDIR /workspace
 RUN echo 'go 1.25.0' > go.work && \
-    printf '\nuse (\n\t./metargb/auth-service\n\t./metargb/shared\n)\n' >> go.work
+    printf '\nuse (\n\t./metarang/auth-service\n\t./metarang/shared\n)\n' >> go.work
 
-WORKDIR /workspace/metargb/auth-service
-RUN sed -i 's|replace metargb/shared => ../../shared|replace metargb/shared => /workspace/metargb/shared|g' go.mod && \
+WORKDIR /workspace/metarang/auth-service
+RUN sed -i 's|replace metarang/shared => ../../shared|replace metarang/shared => /workspace/metarang/shared|g' go.mod && \
     go mod download
-
-COPY ./shared/go.sum /workspace/metargb/shared/
-COPY ./shared/pkg/ /workspace/metargb/shared/pkg/
-COPY ./services/auth-service/ /workspace/metargb/auth-service/
-
-WORKDIR /workspace/metargb/auth-service
-RUN sed -i 's|replace metargb/shared => ../../shared|replace metargb/shared => /workspace/metargb/shared|g' go.mod
 
 ENV GOWORK=/workspace/go.work
 RUN go build -trimpath -ldflags="-s -w" -o /app/auth-service ./cmd/server

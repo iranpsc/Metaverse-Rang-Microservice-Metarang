@@ -15,11 +15,11 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"metargb/grpc-gateway/internal/config"
-	"metargb/grpc-gateway/internal/handler"
-	"metargb/grpc-gateway/internal/middleware"
-	pb "metargb/shared/pb/auth"
-	"metargb/shared/pkg/sentry"
+	"metarang/grpc-gateway/internal/config"
+	"metarang/grpc-gateway/internal/handler"
+	"metarang/grpc-gateway/internal/middleware"
+	pb "metarang/shared/pb/auth"
+	"metarang/shared/pkg/sentry"
 )
 
 func main() {

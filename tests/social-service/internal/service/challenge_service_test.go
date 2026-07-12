@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"metargb/social-service/internal/models"
+	"metarang/social-service/internal/models"
 )
 
 // Mock repositories

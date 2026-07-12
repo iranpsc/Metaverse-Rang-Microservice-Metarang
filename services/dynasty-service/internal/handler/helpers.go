@@ -8,10 +8,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"metargb/dynasty-service/internal/models"
-	commonpb "metargb/shared/pb/common"
-	dynastypb "metargb/shared/pb/dynasty"
-	"metargb/shared/pkg/helpers"
+	"metarang/dynasty-service/internal/models"
+	commonpb "metarang/shared/pb/common"
+	dynastypb "metarang/shared/pb/dynasty"
+	"metarang/shared/pkg/helpers"
 )
 
 // Helper functions shared across all handlers

@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"metargb/financial-service/internal/models"
+	"metarang/financial-service/internal/models"
 )
 
 type OptionRepository interface {

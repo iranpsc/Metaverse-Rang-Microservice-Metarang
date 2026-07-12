@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	handlerpkg "metargb/financial-service/internal/handler"
-	"metargb/financial-service/internal/service"
-	pb "metargb/shared/pb/financial"
+	handlerpkg "metarang/financial-service/internal/handler"
+	"metarang/financial-service/internal/service"
+	pb "metarang/shared/pb/financial"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

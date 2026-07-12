@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"metargb/shared/pkg/jalali"
-	"metargb/training-service/internal/models"
-	"metargb/training-service/internal/repository"
+	"metarang/shared/pkg/jalali"
+	"metarang/training-service/internal/models"
+	"metarang/training-service/internal/repository"
 )
 
 type VideoService struct {

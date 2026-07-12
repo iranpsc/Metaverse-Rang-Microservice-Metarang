@@ -8,8 +8,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"metargb/social-service/internal/repository"
-	"metargb/social-service/internal/testutil"
+	"metarang/social-service/internal/repository"
+	"metarang/social-service/internal/testutil"
 )
 
 func TestFollowRepository_CreateExistsDelete(t *testing.T) {

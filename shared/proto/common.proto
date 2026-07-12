@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package common;
 
-option go_package = "metargb/shared/pb/common";
+option go_package = "metarang/shared/pb/common";
 
 // Empty response for operations that don't return data
 message Empty {}

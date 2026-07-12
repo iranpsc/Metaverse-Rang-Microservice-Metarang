@@ -4,7 +4,7 @@ package training;
 
 import "common.proto";
 
-option go_package = "metargb/shared/pb/training";
+option go_package = "metarang/shared/pb/training";
 
 // VideoService handles video tutorials
 service VideoService {

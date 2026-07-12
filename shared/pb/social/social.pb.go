@@ -7,12 +7,13 @@
 package social
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 const (
@@ -1055,7 +1056,7 @@ const file_social_proto_rawDesc = "" +
 	"\n" +
 	"GetTimings\x12\x19.social.GetTimingsRequest\x1a\x1a.social.GetTimingsResponse\x12F\n" +
 	"\vGetQuestion\x12\x1a.social.GetQuestionRequest\x1a\x1b.social.GetQuestionResponse\x12I\n" +
-	"\fSubmitAnswer\x12\x1b.social.SubmitAnswerRequest\x1a\x1c.social.SubmitAnswerResponseB\x1aZ\x18metargb/shared/pb/socialb\x06proto3"
+	"\fSubmitAnswer\x12\x1b.social.SubmitAnswerRequest\x1a\x1c.social.SubmitAnswerResponseB\x1aZ\x18metarang/shared/pb/socialb\x06proto3"
 
 var (
 	file_social_proto_rawDescOnce sync.Once

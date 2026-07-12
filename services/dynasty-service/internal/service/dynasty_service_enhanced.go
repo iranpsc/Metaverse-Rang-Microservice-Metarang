@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"metargb/dynasty-service/internal/repository"
+	"metarang/dynasty-service/internal/repository"
 )
 
 // DynastyServiceEnhanced provides enhanced dynasty operations with business logic

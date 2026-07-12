@@ -3,25 +3,33 @@ FROM golang:1.25-alpine AS builder
 
 ENV CGO_ENABLED=0
 
-RUN apk add --no-cache git
+RUN apk add --no-cache git make protoc protobuf-dev
+
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11 && \
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
 
 WORKDIR /workspace
 
-RUN mkdir -p /workspace/metargb/dynasty-service /workspace/metargb/shared
+RUN mkdir -p /workspace/metarang/dynasty-service /workspace/metarang/shared
 
-COPY ./shared/go.mod /workspace/metargb/shared/
-COPY ./shared/ /workspace/metargb/shared/
+COPY ./shared/proto/ /workspace/metarang/shared/proto/
+COPY ./scripts/docker/generate-all-protos.sh /tmp/generate-all-protos.sh
 
-COPY ./services/dynasty-service/go.mod ./services/dynasty-service/go.sum* /workspace/metargb/dynasty-service/
-COPY ./services/dynasty-service/ /workspace/metargb/dynasty-service/
+ENV PATH="${PATH}:/root/go/bin"
+RUN sed -i 's/\r$//' /tmp/generate-all-protos.sh && sh /tmp/generate-all-protos.sh /workspace/metarang/shared
+
+COPY ./shared/go.mod ./shared/go.sum /workspace/metarang/shared/
+COPY ./shared/pkg/ /workspace/metarang/shared/pkg/
+
+COPY ./services/dynasty-service/go.mod ./services/dynasty-service/go.sum* /workspace/metarang/dynasty-service/
+COPY ./services/dynasty-service/ /workspace/metarang/dynasty-service/
 
 WORKDIR /workspace
 RUN echo 'go 1.25.0' > go.work && \
-    printf '\nuse (\n\t./metargb/dynasty-service\n\t./metargb/shared\n)\n' >> go.work
+    printf '\nuse (\n\t./metarang/dynasty-service\n\t./metarang/shared\n)\n' >> go.work
 
-WORKDIR /workspace/metargb/dynasty-service
-RUN sed -i 's|replace metargb/shared => ../../shared|replace metargb/shared => /workspace/metargb/shared|g' go.mod || true && \
-    go get metargb/shared@v0.0.0 || true && \
+WORKDIR /workspace/metarang/dynasty-service
+RUN sed -i 's|replace metarang/shared => ../../shared|replace metarang/shared => /workspace/metarang/shared|g' go.mod || true && \
     go mod download
 
 ENV GOWORK=/workspace/go.work

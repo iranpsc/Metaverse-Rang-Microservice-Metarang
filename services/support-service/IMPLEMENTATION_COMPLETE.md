@@ -266,7 +266,7 @@ To ensure 100% compatibility, the following Laravel peculiarities were intention
 ```env
 DB_HOST=localhost
 DB_PORT=3306
-DB_DATABASE=metargb_db
+DB_DATABASE=metarang_db
 DB_USER=root
 DB_PASSWORD=
 GRPC_PORT=50054

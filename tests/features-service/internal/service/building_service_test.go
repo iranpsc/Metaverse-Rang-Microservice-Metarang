@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"metargb/features-service/internal/models"
-	"metargb/features-service/internal/service"
-	pb "metargb/shared/pb/features"
+	"metarang/features-service/internal/models"
+	"metarang/features-service/internal/service"
+	pb "metarang/shared/pb/features"
 )
 
 // Mock repositories for testing

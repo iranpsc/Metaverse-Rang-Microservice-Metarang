@@ -16,13 +16,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	"metargb/shared/pkg/logger"
-	"metargb/shared/pkg/metrics"
-	"metargb/shared/pkg/sentry"
-	"metargb/social-service/internal/client"
-	"metargb/social-service/internal/handler"
-	"metargb/social-service/internal/repository"
-	"metargb/social-service/internal/service"
+	"metarang/shared/pkg/logger"
+	"metarang/shared/pkg/metrics"
+	"metarang/shared/pkg/sentry"
+	"metarang/social-service/internal/client"
+	"metarang/social-service/internal/handler"
+	"metarang/social-service/internal/repository"
+	"metarang/social-service/internal/service"
 )
 
 func main() {
@@ -58,7 +58,7 @@ func main() {
 		getEnv("DB_PASSWORD", ""),
 		getEnv("DB_HOST", "localhost"),
 		getEnv("DB_PORT", "3306"),
-		getEnv("DB_DATABASE", "metargb_db"),
+		getEnv("DB_DATABASE", "metarang_db"),
 	)
 
 	db, err := sql.Open("mysql", dsn)

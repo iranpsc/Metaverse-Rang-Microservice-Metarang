@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"metargb/features-service/internal/models"
+	"metarang/features-service/internal/models"
 )
 
 // mockMapRepository implements repository.MapRepository for testing

@@ -16,18 +16,18 @@ spec:
       customTags:
         cluster:
           literal:
-            value: "metargb-cluster"
+            value: "metarang-cluster"
         environment:
           literal:
             value: "production"
 
 ---
-# Telemetry configuration for metargb namespace
+# Telemetry configuration for metarang namespace
 apiVersion: telemetry.istio.io/v1alpha1
 kind: Telemetry
 metadata:
   name: jaeger-tracing
-  namespace: metargb
+  namespace: metarang
 spec:
   tracing:
     - providers:
@@ -36,7 +36,7 @@ spec:
       customTags:
         namespace:
           literal:
-            value: "metargb"
+            value: "metarang"
         service_name:
           environment:
             name: "POD_NAME"

@@ -15,12 +15,12 @@ import (
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 
-	"metargb/shared/pkg/metrics"
-	"metargb/shared/pkg/sentry"
-	"metargb/storage-service/internal/ftp"
-	"metargb/storage-service/internal/handler"
-	"metargb/storage-service/internal/repository"
-	"metargb/storage-service/internal/service"
+	"metarang/shared/pkg/metrics"
+	"metarang/shared/pkg/sentry"
+	"metarang/storage-service/internal/ftp"
+	"metarang/storage-service/internal/handler"
+	"metarang/storage-service/internal/repository"
+	"metarang/storage-service/internal/service"
 )
 
 func main() {
@@ -53,7 +53,7 @@ func main() {
 		getEnv("DB_PASSWORD", ""),
 		getEnv("DB_HOST", "localhost"),
 		getEnv("DB_PORT", "3306"),
-		getEnv("DB_DATABASE", "metargb_db"),
+		getEnv("DB_DATABASE", "metarang_db"),
 	)
 
 	db, err := sql.Open("mysql", dsn)

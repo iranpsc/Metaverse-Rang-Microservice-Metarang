@@ -6,9 +6,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"metargb/dynasty-service/internal/service"
-	commonpb "metargb/shared/pb/common"
-	dynastypb "metargb/shared/pb/dynasty"
+	"metarang/dynasty-service/internal/service"
+	commonpb "metarang/shared/pb/common"
+	dynastypb "metarang/shared/pb/dynasty"
 )
 
 // PrizeHandler handles DynastyPrizeService gRPC methods
@@ -99,4 +99,3 @@ func (h *PrizeHandler) ClaimPrize(ctx context.Context, req *dynastypb.ClaimPrize
 
 	return &commonpb.Empty{}, nil
 }
-

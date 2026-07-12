@@ -4,7 +4,7 @@ package support;
 
 import "common.proto";
 
-option go_package = "metargb/shared/pb/support";
+option go_package = "metarang/shared/pb/support";
 
 // TicketService handles support tickets
 service TicketService {

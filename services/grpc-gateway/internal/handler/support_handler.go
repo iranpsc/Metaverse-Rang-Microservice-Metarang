@@ -8,10 +8,10 @@ import (
 
 	"google.golang.org/grpc"
 
-	"metargb/grpc-gateway/internal/middleware"
-	pbAuth "metargb/shared/pb/auth"
-	pbCommon "metargb/shared/pb/common"
-	pbSupport "metargb/shared/pb/support"
+	"metarang/grpc-gateway/internal/middleware"
+	pbAuth "metarang/shared/pb/auth"
+	pbCommon "metarang/shared/pb/common"
+	pbSupport "metarang/shared/pb/support"
 )
 
 type SupportHandler struct {

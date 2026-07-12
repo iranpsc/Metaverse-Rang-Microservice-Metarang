@@ -10,13 +10,13 @@ import (
 	"strings"
 	"time"
 
-	"metargb/features-service/internal/client"
-	"metargb/features-service/internal/constants"
-	"metargb/features-service/internal/repository"
-	"metargb/features-service/pkg/threed_client"
-	pb "metargb/shared/pb/features"
-	"metargb/shared/pkg/auth"
-	"metargb/shared/pkg/helpers"
+	"metarang/features-service/internal/client"
+	"metarang/features-service/internal/constants"
+	"metarang/features-service/internal/repository"
+	"metarang/features-service/pkg/threed_client"
+	pb "metarang/shared/pb/features"
+	"metarang/shared/pkg/auth"
+	"metarang/shared/pkg/helpers"
 )
 
 type BuildingService struct {

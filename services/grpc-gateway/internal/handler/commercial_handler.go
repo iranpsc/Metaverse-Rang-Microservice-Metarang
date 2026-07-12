@@ -7,9 +7,9 @@ import (
 
 	"google.golang.org/grpc"
 
-	"metargb/grpc-gateway/internal/middleware"
-	commercialpb "metargb/shared/pb/commercial"
-	"metargb/shared/pkg/helpers"
+	"metarang/grpc-gateway/internal/middleware"
+	commercialpb "metarang/shared/pb/commercial"
+	"metarang/shared/pkg/helpers"
 )
 
 type CommercialHandler struct {

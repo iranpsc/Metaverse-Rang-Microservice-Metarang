@@ -8,9 +8,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb "metargb/shared/pb/social"
-	"metargb/social-service/internal/models"
-	"metargb/social-service/internal/service"
+	pb "metarang/shared/pb/social"
+	"metarang/social-service/internal/models"
+	"metarang/social-service/internal/service"
 )
 
 type challengeHandler struct {

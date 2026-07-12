@@ -1,6 +1,6 @@
 # Notifications Service
 
-The Notification Service provides multi-channel delivery capabilities for MetaRGB. It is responsible for persisting in-app notifications and dispatching outbound messages via SMS and email providers.
+The Notification Service provides multi-channel delivery capabilities for metarang. It is responsible for persisting in-app notifications and dispatching outbound messages via SMS and email providers.
 
 ## Responsibilities
 - Persist user notifications for in-app consumption.
@@ -58,7 +58,7 @@ Each template expects the caller to provide:
 - Data fields referenced by the specific template (see table below).
 - Optional shared fields:  
   - `RecipientName`/`RecipientEmail` depending on the notification  
-  - `Assets.LogoURL` to override the default MetaRGB logo  
+  - `Assets.LogoURL` to override the default metarang logo  
   - `Footer.Tagline` and `Footer.Links` (array of `{Label, URL}`) to customize footer links
 
 | Template Name | Content Template | Expected Fields (besides `Subject`, `ContentTemplate`) |

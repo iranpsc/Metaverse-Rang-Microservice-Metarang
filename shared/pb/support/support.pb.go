@@ -7,12 +7,13 @@
 package support
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	common "metargb/shared/pb/common"
+	common "metarang/shared/pb/common"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -2600,7 +2601,7 @@ const file_support_proto_rawDesc = "" +
 	"\n" +
 	"UpdateNote\x12\x1a.support.UpdateNoteRequest\x1a\x15.support.NoteResponse\x127\n" +
 	"\n" +
-	"DeleteNote\x12\x1a.support.DeleteNoteRequest\x1a\r.common.EmptyB\x1bZ\x19metargb/shared/pb/supportb\x06proto3"
+	"DeleteNote\x12\x1a.support.DeleteNoteRequest\x1a\r.common.EmptyB\x1bZ\x19metarang/shared/pb/supportb\x06proto3"
 
 var (
 	file_support_proto_rawDescOnce sync.Once

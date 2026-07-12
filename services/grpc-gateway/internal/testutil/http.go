@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	authpkg "metargb/shared/pkg/auth"
+	authpkg "metarang/shared/pkg/auth"
 )
 
 // RequestWithUser attaches an authenticated user to the request context.

@@ -4,7 +4,7 @@ package notifications;
 
 import "common.proto";
 
-option go_package = "metargb/shared/pb/notifications";
+option go_package = "metarang/shared/pb/notifications";
 
 // NotificationService handles in-app notifications
 service NotificationService {

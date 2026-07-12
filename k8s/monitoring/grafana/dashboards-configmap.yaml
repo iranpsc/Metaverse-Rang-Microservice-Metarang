@@ -11,8 +11,8 @@ data:
   service-overview.json: |
     {
       "dashboard": {
-        "title": "MetaRGB Services Overview",
-        "tags": ["metargb", "overview"],
+        "title": "metarang Services Overview",
+        "tags": ["metarang", "overview"],
         "timezone": "browser",
         "schemaVersion": 16,
         "version": 1,
@@ -25,7 +25,7 @@ data:
             "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
             "targets": [
               {
-                "expr": "sum(rate(grpc_server_handled_total{namespace=\"metargb\"}[5m])) by (job)",
+                "expr": "sum(rate(grpc_server_handled_total{namespace=\"metarang\"}[5m])) by (job)",
                 "legendFormat": "{{job}}",
                 "refId": "A"
               }
@@ -42,7 +42,7 @@ data:
             "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
             "targets": [
               {
-                "expr": "sum(rate(grpc_server_handled_total{namespace=\"metargb\",grpc_code!=\"OK\"}[5m])) by (job) / sum(rate(grpc_server_handled_total{namespace=\"metargb\"}[5m])) by (job) * 100",
+                "expr": "sum(rate(grpc_server_handled_total{namespace=\"metarang\",grpc_code!=\"OK\"}[5m])) by (job) / sum(rate(grpc_server_handled_total{namespace=\"metarang\"}[5m])) by (job) * 100",
                 "legendFormat": "{{job}}",
                 "refId": "A"
               }
@@ -76,7 +76,7 @@ data:
             "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
             "targets": [
               {
-                "expr": "histogram_quantile(0.95, sum(rate(grpc_server_handling_seconds_bucket{namespace=\"metargb\"}[5m])) by (job, le))",
+                "expr": "histogram_quantile(0.95, sum(rate(grpc_server_handling_seconds_bucket{namespace=\"metarang\"}[5m])) by (job, le))",
                 "legendFormat": "{{job}}",
                 "refId": "A"
               }
@@ -93,7 +93,7 @@ data:
             "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
             "targets": [
               {
-                "expr": "sum(grpc_server_started_total{namespace=\"metargb\"} - grpc_server_handled_total{namespace=\"metargb\"}) by (job)",
+                "expr": "sum(grpc_server_started_total{namespace=\"metarang\"} - grpc_server_handled_total{namespace=\"metarang\"}) by (job)",
                 "legendFormat": "{{job}}",
                 "refId": "A"
               }
@@ -112,7 +112,7 @@ data:
     {
       "dashboard": {
         "title": "Auth Service Metrics",
-        "tags": ["metargb", "auth"],
+        "tags": ["metarang", "auth"],
         "timezone": "browser",
         "schemaVersion": 16,
         "version": 1,
@@ -222,7 +222,7 @@ data:
     {
       "dashboard": {
         "title": "Commercial Service Metrics",
-        "tags": ["metargb", "commercial"],
+        "tags": ["metarang", "commercial"],
         "timezone": "browser",
         "schemaVersion": 16,
         "version": 1,
@@ -311,7 +311,7 @@ data:
     {
       "dashboard": {
         "title": "Features Service Metrics",
-        "tags": ["metargb", "features"],
+        "tags": ["metarang", "features"],
         "timezone": "browser",
         "schemaVersion": 16,
         "version": 1,
@@ -385,7 +385,7 @@ data:
     {
       "dashboard": {
         "title": "WebSocket Gateway Metrics",
-        "tags": ["metargb", "websocket"],
+        "tags": ["metarang", "websocket"],
         "timezone": "browser",
         "schemaVersion": 16,
         "version": 1,
@@ -510,7 +510,7 @@ data:
     {
       "dashboard": {
         "title": "Database Metrics",
-        "tags": ["metargb", "database"],
+        "tags": ["metarang", "database"],
         "timezone": "browser",
         "schemaVersion": 16,
         "version": 1,
@@ -536,12 +536,12 @@ data:
             "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
             "targets": [
               {
-                "expr": "db_connections_in_use{namespace=\"metargb\"}",
+                "expr": "db_connections_in_use{namespace=\"metarang\"}",
                 "legendFormat": "{{job}} - In Use",
                 "refId": "A"
               },
               {
-                "expr": "db_connections_idle{namespace=\"metargb\"}",
+                "expr": "db_connections_idle{namespace=\"metarang\"}",
                 "legendFormat": "{{job}} - Idle",
                 "refId": "B"
               }

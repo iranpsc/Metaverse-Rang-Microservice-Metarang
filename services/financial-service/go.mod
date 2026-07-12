@@ -1,4 +1,4 @@
-module metargb/financial-service
+module metarang/financial-service
 
 go 1.25.0
 
@@ -7,7 +7,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	google.golang.org/grpc v1.79.3
 	google.golang.org/protobuf v1.36.11
-	metargb/shared v0.0.0
+	metarang/shared v0.0.0
 )
 
 require (
@@ -34,4 +34,4 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 )
 
-replace metargb/shared => ../../shared
+replace metarang/shared => ../../shared

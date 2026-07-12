@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	pb "metargb/shared/pb/auth"
+	pb "metarang/shared/pb/auth"
 )
 
 // AuthServiceTokenValidator implements TokenValidator interface using the auth service gRPC client.

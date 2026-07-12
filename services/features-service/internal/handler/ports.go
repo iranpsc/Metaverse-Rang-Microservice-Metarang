@@ -3,8 +3,8 @@ package handler
 import (
 	"context"
 
-	"metargb/features-service/internal/models"
-	pb "metargb/shared/pb/features"
+	"metarang/features-service/internal/models"
+	pb "metarang/shared/pb/features"
 )
 
 // FeatureServicePort is implemented by *service.FeatureService.

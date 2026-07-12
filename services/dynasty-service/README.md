@@ -1,6 +1,6 @@
 # Dynasty Service
 
-The Dynasty Service manages family dynasties, member relationships, join requests, permissions, and prizes within the MetaRGB microservices architecture.
+The Dynasty Service manages family dynasties, member relationships, join requests, permissions, and prizes within the metarang microservices architecture.
 
 ## Overview
 
@@ -247,5 +247,5 @@ Full API documentation is available in:
 
 ## License
 
-Proprietary - MetaRGB
+Proprietary - metarang
 

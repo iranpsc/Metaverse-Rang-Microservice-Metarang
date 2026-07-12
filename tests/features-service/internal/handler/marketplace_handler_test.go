@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"metargb/features-service/internal/handler"
-	"metargb/features-service/internal/models"
-	pb "metargb/shared/pb/features"
+	"metarang/features-service/internal/handler"
+	"metarang/features-service/internal/models"
+	pb "metarang/shared/pb/features"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

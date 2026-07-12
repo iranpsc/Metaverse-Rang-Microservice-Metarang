@@ -1,4 +1,4 @@
-module metargb/features-service/tests
+module metarang/features-service/tests
 
 go 1.25.0
 
@@ -6,8 +6,8 @@ require (
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/stretchr/testify v1.11.1
 	google.golang.org/grpc v1.79.3
-	metargb/features-service v0.0.0
-	metargb/shared v0.0.0
+	metarang/features-service v0.0.0
+	metarang/shared v0.0.0
 )
 
 require (
@@ -41,6 +41,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace metargb/features-service => ../../services/features-service
+replace metarang/features-service => ../../services/features-service
 
-replace metargb/shared => ../../shared
+replace metarang/shared => ../../shared

@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"metargb/training-service/internal/models"
+	"metarang/training-service/internal/models"
 )
 
 // VideoRepositoryInterface defines the interface for video repository operations

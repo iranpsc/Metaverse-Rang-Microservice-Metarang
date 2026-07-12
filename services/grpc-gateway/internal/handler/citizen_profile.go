@@ -3,7 +3,7 @@ package handler
 import (
 	"encoding/json"
 
-	pb "metargb/shared/pb/auth"
+	pb "metarang/shared/pb/auth"
 )
 
 // buildCitizenProfileHTTPResponse maps gRPC CitizenProfileResponse to Laravel PersonalInfo JSON.

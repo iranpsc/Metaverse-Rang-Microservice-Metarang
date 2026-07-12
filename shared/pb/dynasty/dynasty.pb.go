@@ -7,12 +7,13 @@
 package dynasty
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	common "metargb/shared/pb/common"
+	common "metarang/shared/pb/common"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -2396,7 +2397,7 @@ const file_dynasty_proto_rawDesc = "" +
 	"\tGetPrizes\x12\x19.dynasty.GetPrizesRequest\x1a\x17.dynasty.PrizesResponse\x12<\n" +
 	"\bGetPrize\x12\x18.dynasty.GetPrizeRequest\x1a\x16.dynasty.PrizeResponse\x127\n" +
 	"\n" +
-	"ClaimPrize\x12\x1a.dynasty.ClaimPrizeRequest\x1a\r.common.EmptyB\x1bZ\x19metargb/shared/pb/dynastyb\x06proto3"
+	"ClaimPrize\x12\x1a.dynasty.ClaimPrizeRequest\x1a\r.common.EmptyB\x1bZ\x19metarang/shared/pb/dynastyb\x06proto3"
 
 var (
 	file_dynasty_proto_rawDescOnce sync.Once

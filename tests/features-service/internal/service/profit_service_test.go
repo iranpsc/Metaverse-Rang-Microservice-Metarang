@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"metargb/features-service/internal/repository"
-	"metargb/features-service/internal/service"
-	"metargb/features-service/tests/internal/testutil"
-	"metargb/shared/pkg/logger"
+	"metarang/features-service/internal/repository"
+	"metarang/features-service/internal/service"
+	"metarang/features-service/tests/internal/testutil"
+	"metarang/shared/pkg/logger"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

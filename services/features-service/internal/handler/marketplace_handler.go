@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"metargb/features-service/internal/models"
-	pb "metargb/shared/pb/features"
-	"metargb/shared/pkg/helpers"
+	"metarang/features-service/internal/models"
+	pb "metarang/shared/pb/features"
+	"metarang/shared/pkg/helpers"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

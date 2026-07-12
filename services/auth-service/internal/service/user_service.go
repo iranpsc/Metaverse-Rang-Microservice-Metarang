@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"fmt"
 
-	"metargb/auth-service/internal/models"
-	"metargb/auth-service/internal/repository"
-	"metargb/shared/pkg/helpers"
+	"metarang/auth-service/internal/models"
+	"metarang/auth-service/internal/repository"
+	"metarang/shared/pkg/helpers"
 )
 
 type UserService interface {

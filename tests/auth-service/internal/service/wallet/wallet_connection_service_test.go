@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"metargb/auth-service/internal/models"
-	"metargb/auth-service/internal/repository"
-	"metargb/auth-service/internal/service"
+	"metarang/auth-service/internal/models"
+	"metarang/auth-service/internal/repository"
+	"metarang/auth-service/internal/service"
 )
 
 type fakeWalletCacheRepo struct {

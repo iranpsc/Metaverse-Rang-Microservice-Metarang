@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	pb "metargb/shared/pb/features"
+	pb "metarang/shared/pb/features"
 )
 
 type BuildingRepository struct {
@@ -50,7 +50,7 @@ func (r *BuildingRepository) FindBuildingModelByModelID(ctx context.Context, mod
 	// Try to parse as uint64 for database query (database stores as int)
 	var dbModelID uint64
 	var err error
-	
+
 	// First try parsing as numeric
 	if _, parseErr := fmt.Sscanf(modelID, "%d", &dbModelID); parseErr != nil {
 		// If not numeric, we need to handle alphanumeric model_id

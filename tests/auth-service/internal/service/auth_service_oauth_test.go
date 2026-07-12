@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"metargb/auth-service/internal/models"
-	"metargb/auth-service/internal/repository"
+	"metarang/auth-service/internal/models"
+	"metarang/auth-service/internal/repository"
 )
 
 func TestRegister(t *testing.T) {

@@ -7,12 +7,13 @@
 package levels
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	_ "metargb/shared/pb/common"
+	_ "metarang/shared/pb/common"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -3448,7 +3449,7 @@ const file_levels_proto_rawDesc = "" +
 	"\vGetQuestion\x12\x1a.levels.GetQuestionRequest\x1a\x18.levels.QuestionResponse\x12I\n" +
 	"\fSubmitAnswer\x12\x1b.levels.SubmitAnswerRequest\x1a\x1c.levels.AnswerResultResponse\x12@\n" +
 	"\n" +
-	"GetTimings\x12\x19.levels.GetTimingsRequest\x1a\x17.levels.TimingsResponseB\x1aZ\x18metargb/shared/pb/levelsb\x06proto3"
+	"GetTimings\x12\x19.levels.GetTimingsRequest\x1a\x17.levels.TimingsResponseB\x1aZ\x18metarang/shared/pb/levelsb\x06proto3"
 
 var (
 	file_levels_proto_rawDescOnce sync.Once

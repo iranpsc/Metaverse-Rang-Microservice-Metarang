@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"metargb/commercial-service/internal/models"
-	pb "metargb/shared/pb/commercial"
+	"metarang/commercial-service/internal/models"
+	pb "metarang/shared/pb/commercial"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

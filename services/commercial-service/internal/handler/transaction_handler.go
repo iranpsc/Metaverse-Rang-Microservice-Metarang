@@ -9,9 +9,9 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"metargb/commercial-service/internal/models"
-	"metargb/commercial-service/internal/service"
-	pb "metargb/shared/pb/commercial"
+	"metarang/commercial-service/internal/models"
+	"metarang/commercial-service/internal/service"
+	pb "metarang/shared/pb/commercial"
 )
 
 type TransactionHandler struct {

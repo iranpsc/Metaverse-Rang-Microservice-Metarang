@@ -7,10 +7,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	featurespb "metargb/shared/pb/features"
+	featurespb "metarang/shared/pb/features"
 
-	"metargb/grpc-gateway/internal/handler"
-	"metargb/grpc-gateway/internal/testutil"
+	"metarang/grpc-gateway/internal/handler"
+	"metarang/grpc-gateway/internal/testutil"
 )
 
 func TestGetSingleProfit_LaravelResourceShape(t *testing.T) {

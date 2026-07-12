@@ -1,4 +1,4 @@
-module metargb/commercial-service
+module metarang/commercial-service
 
 go 1.25.0
 
@@ -7,10 +7,10 @@ require (
 	github.com/shopspring/decimal v1.3.1
 	google.golang.org/grpc v1.79.3
 	google.golang.org/protobuf v1.36.11
-	metargb/shared v0.0.0
+	metarang/shared v0.0.0
 )
 
-replace metargb/shared => ../../shared
+replace metarang/shared => ../../shared
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect

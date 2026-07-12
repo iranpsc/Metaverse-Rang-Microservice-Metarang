@@ -1,4 +1,4 @@
-# Route registry for MetaRGB REST API (Laravel-compatible paths via grpc-gateway).
+# Route registry for metarang REST API (Laravel-compatible paths via grpc-gateway).
 # Path and query parameters are auto-discovered from grpc-gateway handlers.
 # Run `make openapi` to regenerate openapi/openapi.yaml from this file + handler discovery.
 

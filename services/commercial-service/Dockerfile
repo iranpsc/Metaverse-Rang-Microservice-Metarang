@@ -10,32 +10,26 @@ RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11 && \
 
 WORKDIR /workspace
 
-RUN mkdir -p /workspace/metargb/commercial-service /workspace/metargb/shared
+RUN mkdir -p /workspace/metarang/commercial-service /workspace/metarang/shared
 
-COPY ./shared/proto/ /workspace/metargb/shared/proto/
+COPY ./shared/proto/ /workspace/metarang/shared/proto/
+COPY ./scripts/docker/generate-all-protos.sh /tmp/generate-all-protos.sh
 
 ENV PATH="${PATH}:/root/go/bin"
-RUN mkdir -p /workspace/metargb/shared/pb/commercial && \
-    protoc --go_out=/workspace/metargb/shared/pb/commercial --go_opt=paths=source_relative \
-        --go-grpc_out=/workspace/metargb/shared/pb/commercial --go-grpc_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/commercial.proto && \
-    mkdir -p /workspace/metargb/shared/pb/auth && \
-    protoc --go_out=/workspace/metargb/shared/pb/auth --go_opt=paths=source_relative \
-        --go-grpc_out=/workspace/metargb/shared/pb/auth --go-grpc_opt=paths=source_relative \
-        -I=/workspace/metargb/shared/proto /workspace/metargb/shared/proto/auth.proto
+RUN sed -i 's/\r$//' /tmp/generate-all-protos.sh && sh /tmp/generate-all-protos.sh /workspace/metarang/shared
 
-COPY ./shared/go.mod /workspace/metargb/shared/
-COPY ./shared/pkg/ /workspace/metargb/shared/pkg/
+COPY ./shared/go.mod ./shared/go.sum /workspace/metarang/shared/
+COPY ./shared/pkg/ /workspace/metarang/shared/pkg/
 
-COPY ./services/commercial-service/go.mod ./services/commercial-service/go.sum* /workspace/metargb/commercial-service/
-COPY ./services/commercial-service/ /workspace/metargb/commercial-service/
+COPY ./services/commercial-service/go.mod ./services/commercial-service/go.sum* /workspace/metarang/commercial-service/
+COPY ./services/commercial-service/ /workspace/metarang/commercial-service/
 
 WORKDIR /workspace
 RUN echo 'go 1.25.0' > go.work && \
-    printf '\nuse (\n\t./metargb/commercial-service\n\t./metargb/shared\n)\n' >> go.work
+    printf '\nuse (\n\t./metarang/commercial-service\n\t./metarang/shared\n)\n' >> go.work
 
-WORKDIR /workspace/metargb/commercial-service
-RUN sed -i 's|replace metargb/shared => ../../shared|replace metargb/shared => /workspace/metargb/shared|g' go.mod && \
+WORKDIR /workspace/metarang/commercial-service
+RUN sed -i 's|replace metarang/shared => ../../shared|replace metarang/shared => /workspace/metarang/shared|g' go.mod && \
     go mod download
 
 ENV GOWORK=/workspace/go.work
@@ -50,7 +44,6 @@ RUN apk add --no-cache ca-certificates tzdata netcat-openbsd && \
 WORKDIR /app
 
 COPY --from=builder --chown=appuser:appuser /app/commercial-service .
-COPY --chown=appuser:appuser ./services/commercial-service/config.env.sample ./config.env
 
 USER appuser
 

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"metargb/dynasty-service/internal/models"
-	"metargb/dynasty-service/internal/repository"
+	"metarang/dynasty-service/internal/models"
+	"metarang/dynasty-service/internal/repository"
 )
 
 type DynastyService struct {

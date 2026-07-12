@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
-	"metargb/support-service/internal/models"
-	"metargb/support-service/internal/repository"
+	"metarang/support-service/internal/models"
+	"metarang/support-service/internal/repository"
 	"time"
+
+	pbNotification "metarang/shared/pb/notifications"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	pbNotification "metargb/shared/pb/notifications"
 )
 
 type TicketService interface {

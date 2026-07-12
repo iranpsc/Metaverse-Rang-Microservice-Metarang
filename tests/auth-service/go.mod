@@ -1,4 +1,4 @@
-module metargb/auth-service/tests
+module metarang/auth-service/tests
 
 go 1.25.0
 
@@ -9,8 +9,8 @@ require (
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/crypto v0.53.0
 	google.golang.org/grpc v1.79.3
-	metargb/auth-service v0.0.0
-	metargb/shared v0.0.0
+	metarang/auth-service v0.0.0
+	metarang/shared v0.0.0
 )
 
 require (
@@ -34,6 +34,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace metargb/auth-service => ../../services/auth-service
+replace metarang/auth-service => ../../services/auth-service
 
-replace metargb/shared => ../../shared
+replace metarang/shared => ../../shared

@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 
-	"metargb/features-service/internal/models"
-	"metargb/features-service/internal/repository"
-	pb "metargb/shared/pb/features"
-	"metargb/shared/pkg/helpers"
+	"metarang/features-service/internal/models"
+	"metarang/features-service/internal/repository"
+	pb "metarang/shared/pb/features"
+	"metarang/shared/pkg/helpers"
 )
 
 // MapServiceInterface defines the interface for map service operations

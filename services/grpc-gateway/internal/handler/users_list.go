@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 
-	pb "metargb/shared/pb/auth"
+	pb "metarang/shared/pb/auth"
 )
 
 const listUsersPerPage int32 = 20

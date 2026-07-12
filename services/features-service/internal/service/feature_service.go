@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"metargb/features-service/internal/models"
-	"metargb/features-service/internal/repository"
-	pb "metargb/shared/pb/features"
+	"metarang/features-service/internal/models"
+	"metarang/features-service/internal/repository"
+	pb "metarang/shared/pb/features"
 )
 
 type FeatureService struct {
@@ -313,11 +313,17 @@ func (s *FeatureService) ListMyFeatures(ctx context.Context, userID uint64, page
 	features, propertiesList, err := s.featureRepo.FindByOwnerPaginated(ctx, userID, int(page))
 	// #region agent log
 	logEntry2 := map[string]interface{}{
-		"id":           fmt.Sprintf("log_%d_%s", time.Now().UnixNano(), "service_error"),
-		"timestamp":    time.Now().UnixMilli(),
-		"location":     "feature_service.go:282",
-		"message":      "Repository call result",
-		"data":         map[string]interface{}{"error": func() string { if err != nil { return err.Error() } else { return "nil" } }(), "featureCount": len(features)},
+		"id":        fmt.Sprintf("log_%d_%s", time.Now().UnixNano(), "service_error"),
+		"timestamp": time.Now().UnixMilli(),
+		"location":  "feature_service.go:282",
+		"message":   "Repository call result",
+		"data": map[string]interface{}{"error": func() string {
+			if err != nil {
+				return err.Error()
+			} else {
+				return "nil"
+			}
+		}(), "featureCount": len(features)},
 		"sessionId":    "debug-session",
 		"runId":        "run1",
 		"hypothesisId": "A",

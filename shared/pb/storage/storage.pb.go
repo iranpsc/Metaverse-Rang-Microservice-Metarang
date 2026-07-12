@@ -7,12 +7,13 @@
 package storage
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	common "metargb/shared/pb/common"
+	common "metarang/shared/pb/common"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -1184,7 +1185,7 @@ const file_storage_proto_rawDesc = "" +
 	"\fImageService\x12B\n" +
 	"\vCreateImage\x12\x1b.storage.CreateImageRequest\x1a\x16.storage.ImageResponse\x12?\n" +
 	"\tGetImages\x12\x19.storage.GetImagesRequest\x1a\x17.storage.ImagesResponse\x129\n" +
-	"\vDeleteImage\x12\x1b.storage.DeleteImageRequest\x1a\r.common.EmptyB\x1bZ\x19metargb/shared/pb/storageb\x06proto3"
+	"\vDeleteImage\x12\x1b.storage.DeleteImageRequest\x1a\r.common.EmptyB\x1bZ\x19metarang/shared/pb/storageb\x06proto3"
 
 var (
 	file_storage_proto_rawDescOnce sync.Once

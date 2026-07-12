@@ -3,7 +3,7 @@ package policy
 import (
 	"context"
 
-	"metargb/dynasty-service/internal/models"
+	"metarang/dynasty-service/internal/models"
 )
 
 // JoinRequestPolicy enforces join request authorization rules

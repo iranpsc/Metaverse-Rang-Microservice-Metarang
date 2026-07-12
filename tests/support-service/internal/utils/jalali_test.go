@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"metargb/support-service/internal/utils"
+	"metarang/support-service/internal/utils"
 )
 
 func TestFormatJalaliDate(t *testing.T) {

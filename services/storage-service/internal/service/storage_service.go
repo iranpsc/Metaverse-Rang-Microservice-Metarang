@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"metargb/storage-service/internal/ftp"
+	"metarang/storage-service/internal/ftp"
 )
 
 type StorageService struct {

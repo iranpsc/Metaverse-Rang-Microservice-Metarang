@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  DOCKER_REGISTRY: metargb
+  DOCKER_REGISTRY: metarang
   GO_VERSION: '1.21'
 
 permissions:

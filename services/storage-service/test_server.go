@@ -4,9 +4,9 @@ import (
 	"log"
 	"os"
 
-	"metargb/storage-service/internal/ftp"
-	"metargb/storage-service/internal/handler"
-	"metargb/storage-service/internal/service"
+	"metarang/storage-service/internal/ftp"
+	"metarang/storage-service/internal/handler"
+	"metarang/storage-service/internal/service"
 )
 
 func main() {

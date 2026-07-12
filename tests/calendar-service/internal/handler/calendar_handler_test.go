@@ -9,13 +9,13 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	calendarpb "metargb/shared/pb/calendar"
-	commonpb "metargb/shared/pb/common"
+	calendarpb "metarang/shared/pb/calendar"
+	commonpb "metarang/shared/pb/common"
 
-	"metargb/calendar-service/internal/handler"
-	"metargb/calendar-service/internal/models"
-	"metargb/calendar-service/internal/service"
-	"metargb/calendar-service/internal/testutil"
+	"metarang/calendar-service/internal/handler"
+	"metarang/calendar-service/internal/models"
+	"metarang/calendar-service/internal/service"
+	"metarang/calendar-service/internal/testutil"
 )
 
 func TestGetEvents_DefaultPagination(t *testing.T) {

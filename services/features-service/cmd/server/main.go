@@ -11,19 +11,19 @@ import (
 	"syscall"
 	"time"
 
-	"metargb/features-service/internal/client"
-	"metargb/features-service/internal/events"
-	"metargb/features-service/internal/handler"
-	"metargb/features-service/internal/metrics"
-	"metargb/features-service/internal/repository"
-	"metargb/features-service/internal/service"
-	"metargb/features-service/pkg/threed_client"
-	pb "metargb/shared/pb/features"
-	"metargb/shared/pkg/auth"
-	"metargb/shared/pkg/db"
-	"metargb/shared/pkg/logger"
-	sharedmetrics "metargb/shared/pkg/metrics"
-	"metargb/shared/pkg/sentry"
+	"metarang/features-service/internal/client"
+	"metarang/features-service/internal/events"
+	"metarang/features-service/internal/handler"
+	"metarang/features-service/internal/metrics"
+	"metarang/features-service/internal/repository"
+	"metarang/features-service/internal/service"
+	"metarang/features-service/pkg/threed_client"
+	pb "metarang/shared/pb/features"
+	"metarang/shared/pkg/auth"
+	"metarang/shared/pkg/db"
+	"metarang/shared/pkg/logger"
+	sharedmetrics "metarang/shared/pkg/metrics"
+	"metarang/shared/pkg/sentry"
 
 	_ "github.com/go-sql-driver/mysql"
 	"google.golang.org/grpc"
@@ -44,11 +44,11 @@ func main() {
 	// Load configuration from environment
 	// Construct DSN from individual environment variables
 	dbDSN := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&charset=utf8mb4&collation=utf8mb4_unicode_ci",
-		getEnv("DB_USER", "metargb_user"),
-		getEnv("DB_PASSWORD", "metargb_password"),
+		getEnv("DB_USER", "metarang_user"),
+		getEnv("DB_PASSWORD", "metarang_password"),
 		getEnv("DB_HOST", "mysql"),
 		getEnv("DB_PORT", "3306"),
-		getEnv("DB_DATABASE", "metargb_db"),
+		getEnv("DB_DATABASE", "metarang_db"),
 	)
 	port := getEnv("GRPC_PORT", "50053")
 	metricsPort := getEnv("METRICS_PORT", "9090")

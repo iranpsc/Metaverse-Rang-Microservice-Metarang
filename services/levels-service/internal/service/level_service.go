@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"metargb/levels-service/internal/client"
-	pb "metargb/shared/pb/levels"
+	"metarang/levels-service/internal/client"
+	pb "metarang/shared/pb/levels"
 )
 
 type levelRepository interface {

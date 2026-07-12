@@ -9,15 +9,15 @@ import (
 	"syscall"
 	"time"
 
-	"metargb/levels-service/internal/client"
-	"metargb/levels-service/internal/handler"
-	"metargb/levels-service/internal/repository"
-	"metargb/levels-service/internal/service"
-	pb "metargb/shared/pb/levels"
-	"metargb/shared/pkg/db"
-	"metargb/shared/pkg/logger"
-	"metargb/shared/pkg/metrics"
-	"metargb/shared/pkg/sentry"
+	"metarang/levels-service/internal/client"
+	"metarang/levels-service/internal/handler"
+	"metarang/levels-service/internal/repository"
+	"metarang/levels-service/internal/service"
+	pb "metarang/shared/pb/levels"
+	"metarang/shared/pkg/db"
+	"metarang/shared/pkg/logger"
+	"metarang/shared/pkg/metrics"
+	"metarang/shared/pkg/sentry"
 
 	"github.com/joho/godotenv"
 
@@ -53,11 +53,11 @@ func main() {
 	// Load configuration from environment
 	// Construct DSN from individual environment variables
 	dbDSN := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&charset=utf8mb4&collation=utf8mb4_unicode_ci",
-		getEnv("DB_USER", "metargb_user"),
-		getEnv("DB_PASSWORD", "metargb_password"),
+		getEnv("DB_USER", "metarang_user"),
+		getEnv("DB_PASSWORD", "metarang_password"),
 		getEnv("DB_HOST", "mysql"),
 		getEnv("DB_PORT", "3306"),
-		getEnv("DB_DATABASE", "metargb_db"),
+		getEnv("DB_DATABASE", "metarang_db"),
 	)
 	port := getEnv("GRPC_PORT", "50054")
 	metricsPort := getEnv("METRICS_PORT", "9090")

@@ -11,9 +11,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"metargb/levels-service/internal/repository"
-	"metargb/levels-service/internal/service"
-	pb "metargb/shared/pb/levels"
+	"metarang/levels-service/internal/repository"
+	"metarang/levels-service/internal/service"
+	pb "metarang/shared/pb/levels"
 )
 
 func TestLevelHandler_GetAllLevels(t *testing.T) {

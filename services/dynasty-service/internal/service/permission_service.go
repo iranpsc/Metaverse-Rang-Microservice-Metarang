@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"metargb/dynasty-service/internal/models"
-	"metargb/dynasty-service/internal/repository"
+	"metarang/dynasty-service/internal/models"
+	"metarang/dynasty-service/internal/repository"
 )
 
 // PermissionService manages children permissions
 type PermissionService struct {
-	permissionRepo *repository.PermissionRepository
+	permissionRepo  *repository.PermissionRepository
 	joinRequestRepo *repository.JoinRequestRepository
 	familyRepo      *repository.FamilyRepository
 	dynastyRepo     *repository.DynastyRepository
@@ -23,7 +23,7 @@ func NewPermissionService(
 	dynastyRepo *repository.DynastyRepository,
 ) *PermissionService {
 	return &PermissionService{
-		permissionRepo: permissionRepo,
+		permissionRepo:  permissionRepo,
 		joinRequestRepo: joinRequestRepo,
 		familyRepo:      familyRepo,
 		dynastyRepo:     dynastyRepo,

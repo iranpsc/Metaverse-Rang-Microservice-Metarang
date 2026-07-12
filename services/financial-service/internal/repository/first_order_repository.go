@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"metargb/financial-service/internal/models"
+	"metarang/financial-service/internal/models"
 )
 
 type FirstOrderRepository interface {

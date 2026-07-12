@@ -4,7 +4,7 @@ package dynasty;
 
 import "common.proto";
 
-option go_package = "metargb/shared/pb/dynasty";
+option go_package = "metarang/shared/pb/dynasty";
 
 // DynastyService handles dynasty management
 service DynastyService {

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	commercialpb "metargb/shared/pb/commercial"
-	notificationpb "metargb/shared/pb/notifications"
+	commercialpb "metarang/shared/pb/commercial"
+	notificationpb "metarang/shared/pb/notifications"
 )
 
 // WalletAdapter calls commercial-service WalletService.AddBalance (non-fatal errors are logged, nil returned).

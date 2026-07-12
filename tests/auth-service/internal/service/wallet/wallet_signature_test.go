@@ -9,7 +9,7 @@ import (
 	"github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
 	"golang.org/x/crypto/sha3"
 
-	"metargb/auth-service/internal/service"
+	"metarang/auth-service/internal/service"
 )
 
 func TestIsValidWalletSignatureAcceptsPersonalSign(t *testing.T) {

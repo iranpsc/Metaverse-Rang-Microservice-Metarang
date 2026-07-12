@@ -638,27 +638,27 @@
       },
       "targets": [
         {
-          "expr": "rate(metargb_auth_service_requests_total[5m])",
+          "expr": "rate(metarang_auth_service_requests_total[5m])",
           "legendFormat": "Auth Service",
           "refId": "A"
         },
         {
-          "expr": "rate(metargb_commercial_service_requests_total[5m])",
+          "expr": "rate(metarang_commercial_service_requests_total[5m])",
           "legendFormat": "Commercial Service",
           "refId": "B"
         },
         {
-          "expr": "rate(metargb_features_service_requests_total[5m])",
+          "expr": "rate(metarang_features_service_requests_total[5m])",
           "legendFormat": "Features Service",
           "refId": "C"
         },
         {
-          "expr": "rate(metargb_levels_service_requests_total[5m])",
+          "expr": "rate(metarang_levels_service_requests_total[5m])",
           "legendFormat": "Levels Service",
           "refId": "D"
         },
         {
-          "expr": "rate(metargb_dynasty_service_requests_total[5m])",
+          "expr": "rate(metarang_dynasty_service_requests_total[5m])",
           "legendFormat": "Dynasty Service",
           "refId": "E"
         }
@@ -671,7 +671,7 @@
   "schemaVersion": 27,
   "style": "dark",
   "tags": [
-    "metargb",
+    "metarang",
     "kong",
     "gateway"
   ],

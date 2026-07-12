@@ -9,10 +9,10 @@ import (
 	"net/url"
 	"strconv"
 
-	"metargb/financial-service/internal/models"
-	"metargb/financial-service/internal/repository"
-	"metargb/financial-service/internal/sadad"
-	commercialpb "metargb/shared/pb/commercial"
+	"metarang/financial-service/internal/models"
+	"metarang/financial-service/internal/repository"
+	"metarang/financial-service/internal/sadad"
+	commercialpb "metarang/shared/pb/commercial"
 	"strings"
 )
 

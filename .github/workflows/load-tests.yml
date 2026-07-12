@@ -45,7 +45,7 @@ jobs:
       - name: Get service endpoints
         id: endpoints
         run: |
-          KONG_URL=$(kubectl get svc kong-proxy -n metargb -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          KONG_URL=$(kubectl get svc kong-proxy -n metarang -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
           echo "kong_url=http://${KONG_URL}" >> $GITHUB_OUTPUT
 
       - name: Run auth service load test

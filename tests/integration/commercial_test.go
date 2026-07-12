@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	pb "metargb/shared/pb/commercial"
+	pb "metarang/shared/pb/commercial"
 )
 
 const commercialServiceAddr = "localhost:50052"
@@ -111,7 +111,7 @@ func TestTransactionOperations(t *testing.T) {
 		}
 
 		t.Logf("Found %d transactions", len(resp.Transactions))
-		
+
 		for i, tx := range resp.Transactions {
 			if i >= 3 { // Log only first 3
 				break

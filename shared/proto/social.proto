@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package social;
 
-option go_package = "metargb/shared/pb/social";
+option go_package = "metarang/shared/pb/social";
 
 import "google/protobuf/empty.proto";
 

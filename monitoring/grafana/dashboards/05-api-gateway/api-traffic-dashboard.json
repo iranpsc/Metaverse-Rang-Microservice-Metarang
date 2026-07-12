@@ -1270,7 +1270,7 @@
   "schemaVersion": 27,
   "style": "dark",
   "tags": [
-    "metargb",
+    "metarang",
     "api",
     "kong",
     "traffic",
@@ -1297,7 +1297,7 @@
     ]
   },
   "timezone": "",
-  "title": "MetaRGB API Traffic Dashboard",
-  "uid": "metargb-api-traffic",
+  "title": "metarang API Traffic Dashboard",
+  "uid": "metarang-api-traffic",
   "version": 1
 }

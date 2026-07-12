@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"metargb/financial-service/internal/repository"
+	"metarang/financial-service/internal/repository"
 )
 
 var (

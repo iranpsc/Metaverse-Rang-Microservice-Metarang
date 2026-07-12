@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"metargb/commercial-service/internal/repository"
+	"metarang/commercial-service/internal/repository"
 )
 
 type OrderPolicy interface {

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"metargb/features-service/internal/constants"
-	"metargb/features-service/internal/models"
+	"metarang/features-service/internal/constants"
+	"metarang/features-service/internal/models"
 )
 
 type HourlyProfitRepository struct {

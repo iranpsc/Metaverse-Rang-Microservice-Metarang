@@ -12,11 +12,11 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"metargb/auth-service/internal/lang"
-	"metargb/auth-service/internal/repository"
-	"metargb/auth-service/internal/service"
-	pb "metargb/shared/pb/auth"
-	"metargb/shared/pkg/helpers"
+	"metarang/auth-service/internal/lang"
+	"metarang/auth-service/internal/repository"
+	"metarang/auth-service/internal/service"
+	pb "metarang/shared/pb/auth"
+	"metarang/shared/pkg/helpers"
 )
 
 type authHandler struct {

@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"strings"
 
-	"metargb/auth-service/internal/models"
-	"metargb/auth-service/internal/repository"
-	"metargb/shared/pkg/helpers"
-	"metargb/shared/pkg/jalali"
+	"metarang/auth-service/internal/models"
+	"metarang/auth-service/internal/repository"
+	"metarang/shared/pkg/helpers"
+	"metarang/shared/pkg/jalali"
 )
 
 var (
@@ -160,18 +160,18 @@ func (s *kycService) UpdateKYC(ctx context.Context, userID uint64, fname, lname,
 
 	// Create new KYC
 	kyc := &models.KYC{
-		UserID:    userID,
-		Fname:     strings.TrimSpace(fname),
-		Lname:     strings.TrimSpace(lname),
-		MelliCode: strings.TrimSpace(melliCode),
-		Province:  strings.TrimSpace(province),
-		MelliCard: melliCard,
-		Status:      0, // Pending
-		Birthdate:   sql.NullTime{Time: parsedDate, Valid: true},
-		Errors:      sql.NullString{},
-		Video:       sql.NullString{String: videoURL, Valid: true},
+		UserID:       userID,
+		Fname:        strings.TrimSpace(fname),
+		Lname:        strings.TrimSpace(lname),
+		MelliCode:    strings.TrimSpace(melliCode),
+		Province:     strings.TrimSpace(province),
+		MelliCard:    melliCard,
+		Status:       0, // Pending
+		Birthdate:    sql.NullTime{Time: parsedDate, Valid: true},
+		Errors:       sql.NullString{},
+		Video:        sql.NullString{String: videoURL, Valid: true},
 		VerifyTextID: sql.NullInt64{Int64: int64(verifyTextID), Valid: true},
-		Gender:      sql.NullString{String: gender, Valid: true},
+		Gender:       sql.NullString{String: gender, Valid: true},
 	}
 
 	if err := s.kycRepo.Create(ctx, kyc); err != nil {

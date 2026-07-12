@@ -8,11 +8,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb "metargb/shared/pb/social"
-	"metargb/social-service/internal/handler"
-	"metargb/social-service/internal/models"
-	"metargb/social-service/internal/service"
-	"metargb/social-service/internal/testutil"
+	pb "metarang/shared/pb/social"
+	"metarang/social-service/internal/handler"
+	"metarang/social-service/internal/models"
+	"metarang/social-service/internal/service"
+	"metarang/social-service/internal/testutil"
 )
 
 type stubFollowSvc struct {

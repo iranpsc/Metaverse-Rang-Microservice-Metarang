@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"metargb/storage-service/internal/ftp"
-	"metargb/storage-service/internal/service"
+	"metarang/storage-service/internal/ftp"
+	"metarang/storage-service/internal/service"
 )
 
 func TestHandleChunkUploadProfilePath(t *testing.T) {

@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"metargb/grpc-gateway/internal/middleware"
-	pb "metargb/shared/pb/auth"
-	featurespb "metargb/shared/pb/features"
+	"metarang/grpc-gateway/internal/middleware"
+	pb "metarang/shared/pb/auth"
+	featurespb "metarang/shared/pb/features"
 )
 
 // ListMyFeatures handles GET /api/my-features

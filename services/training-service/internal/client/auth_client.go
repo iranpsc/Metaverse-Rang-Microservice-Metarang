@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	pb "metargb/shared/pb/auth"
+	pb "metarang/shared/pb/auth"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

@@ -10,13 +10,13 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pbCommon "metargb/shared/pb/common"
-	pb "metargb/shared/pb/notifications"
+	pbCommon "metarang/shared/pb/common"
+	pb "metarang/shared/pb/notifications"
 
-	"metargb/notifications-service/internal/errs"
-	"metargb/notifications-service/internal/models"
-	"metargb/notifications-service/internal/service"
-	"metargb/shared/pkg/helpers"
+	"metarang/notifications-service/internal/errs"
+	"metarang/notifications-service/internal/models"
+	"metarang/notifications-service/internal/service"
+	"metarang/shared/pkg/helpers"
 )
 
 // NotificationHandler implements the gRPC NotificationService.
