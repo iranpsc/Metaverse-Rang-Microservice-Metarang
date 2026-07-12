@@ -147,7 +147,7 @@ services:
       
       - name: payment-callback
         paths:
-          - /api/payment/callback
+          - /api/order/callback
         methods:
           - POST
           - GET

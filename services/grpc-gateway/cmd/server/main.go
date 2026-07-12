@@ -707,11 +707,18 @@ func main() {
 		})))
 	}
 
-	// Financial routes
+	// Financial routes — register callback paths before /api/order (more specific first).
 	if financialHandler != nil {
+		callbackHandler := http.HandlerFunc(financialHandler.HandleCallback)
+		registerExactAndTrailingSlash(mux, callbackHandler,
+			"/api/order/callback",
+			"/api/payment/callback", // legacy Sadad ReturnUrl
+		)
 		mux.Handle("/api/order", authMiddleware(http.HandlerFunc(financialHandler.CreateOrder)))
-		mux.Handle("/api/payment/callback", http.HandlerFunc(financialHandler.HandleCallback)) // Callback doesn't require auth
 		mux.Handle("/api/store", optionalAuthMiddleware(http.HandlerFunc(financialHandler.GetStorePackages)))
+		log.Printf("✅ Registered financial routes: POST /api/order, GET|POST /api/order/callback, GET|POST /api/payment/callback, POST /api/store")
+	} else {
+		log.Printf("⚠️  Financial routes NOT registered - financialHandler is nil (check FINANCIAL_SERVICE_ADDR)")
 	}
 
 	// Commercial routes (wallet + transactions for authenticated user)
@@ -1109,4 +1116,15 @@ func main() {
 	}
 
 	log.Println("Server exited")
+}
+
+// registerExactAndTrailingSlash registers a handler for each path and its trailing-slash variant.
+// Go 1.22+ ServeMux matches exact paths only unless the pattern ends with "/".
+func registerExactAndTrailingSlash(mux *http.ServeMux, handler http.Handler, paths ...string) {
+	for _, path := range paths {
+		mux.Handle(path, handler)
+		if !strings.HasSuffix(path, "/") {
+			mux.Handle(path+"/", handler)
+		}
+	}
 }

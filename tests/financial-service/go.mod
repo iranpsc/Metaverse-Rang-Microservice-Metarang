@@ -1,4 +1,4 @@
-module metarang/financial-service-tests
+module metarang/financial-service/tests
 
 go 1.25.0
 

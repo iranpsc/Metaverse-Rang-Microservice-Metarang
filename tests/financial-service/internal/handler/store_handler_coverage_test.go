@@ -1,4 +1,4 @@
-package handler
+package handler_test
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 
 	"google.golang.org/grpc"
 
+	"metarang/financial-service/internal/handler"
 	"metarang/financial-service/internal/service"
 	pb "metarang/shared/pb/financial"
 )
@@ -19,8 +20,18 @@ func (stubStoreSvc) GetStorePackages(ctx context.Context, codes []string) ([]*se
 	}, nil
 }
 
+type stubOrderSvc struct{}
+
+func (stubOrderSvc) CreateOrder(ctx context.Context, userID uint64, amount int32, asset string) (string, error) {
+	return "https://pay.example", nil
+}
+
+func (stubOrderSvc) HandleCallback(ctx context.Context, orderID uint64, token string, resCode string, additionalParams map[string]string) (string, error) {
+	return "https://example.com/verify", nil
+}
+
 func TestStoreHandler_GetStorePackages_ok(t *testing.T) {
-	h := NewStoreHandler(stubStoreSvc{})
+	h := handler.NewStoreHandler(stubStoreSvc{})
 	req := &pb.GetStorePackagesRequest{Codes: []string{"PK1", "PK2"}}
 	resp, err := h.GetStorePackages(context.Background(), req)
 	if err != nil {
@@ -33,16 +44,6 @@ func TestStoreHandler_GetStorePackages_ok(t *testing.T) {
 
 func TestRegisterStoreOrderHandlers_noPanic(t *testing.T) {
 	s := grpc.NewServer()
-	RegisterStoreHandler(s, stubStoreSvc{})
-	RegisterOrderHandler(s, &stubOrderSvc{})
-}
-
-type stubOrderSvc struct{}
-
-func (stubOrderSvc) CreateOrder(ctx context.Context, userID uint64, amount int32, asset string) (string, error) {
-	return "https://pay.example", nil
-}
-
-func (stubOrderSvc) HandleCallback(ctx context.Context, orderID uint64, token string, resCode string, additionalParams map[string]string) (string, error) {
-	return "https://example.com/verify", nil
+	handler.RegisterStoreHandler(s, stubStoreSvc{})
+	handler.RegisterOrderHandler(s, &stubOrderSvc{})
 }

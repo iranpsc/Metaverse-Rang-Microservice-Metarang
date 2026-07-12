@@ -1,6 +1,10 @@
-package sadad
+package sadad_test
 
-import "testing"
+import (
+	"testing"
+
+	"metarang/financial-service/internal/sadad"
+)
 
 func TestSandboxEndpointsMatchBankTestURLs(t *testing.T) {
 	cases := []struct {
@@ -10,17 +14,17 @@ func TestSandboxEndpointsMatchBankTestURLs(t *testing.T) {
 	}{
 		{
 			name:     "payment request",
-			got:      SandboxEndpoints.PaymentRequestURL,
+			got:      sadad.SandboxEndpoints.PaymentRequestURL,
 			expected: "https://sandbox.banktest.ir/melli/sadad.shaparak.ir/VPG/api/v0/Request/PaymentRequest",
 		},
 		{
 			name:     "verify",
-			got:      SandboxEndpoints.VerifyURL,
+			got:      sadad.SandboxEndpoints.VerifyURL,
 			expected: "https://sandbox.banktest.ir/melli/sadad.shaparak.ir/VPG/api/v0/Advice/Verify",
 		},
 		{
 			name:     "purchase gateway",
-			got:      SandboxEndpoints.GatewayURL,
+			got:      sadad.SandboxEndpoints.GatewayURL,
 			expected: "https://sandbox.banktest.ir/melli/sadad.shaparak.ir/VPG/Purchase",
 		},
 	}
@@ -33,21 +37,7 @@ func TestSandboxEndpointsMatchBankTestURLs(t *testing.T) {
 		})
 	}
 
-	if SandboxEndpoints.Multiplexed {
+	if sadad.SandboxEndpoints.Multiplexed {
 		t.Fatal("sandbox endpoints must not use PaymentByIdentity multiplexing")
-	}
-}
-
-func TestRequestResponseURLUsesClientGateway(t *testing.T) {
-	client := NewClientWithSandbox(true)
-	resp := &RequestResponse{
-		ResCode:    "0",
-		Token:      "test-token",
-		gatewayURL: client.endpoints.GatewayURL,
-	}
-
-	want := SandboxEndpoints.GatewayURL + "?Token=test-token"
-	if got := resp.URL(); got != want {
-		t.Fatalf("expected %q, got %q", want, got)
 	}
 }

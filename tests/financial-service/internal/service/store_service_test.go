@@ -1,10 +1,11 @@
-package service
+package service_test
 
 import (
 	"context"
 	"testing"
 
 	"metarang/financial-service/internal/models"
+	"metarang/financial-service/internal/service"
 )
 
 type mockOptionRepo struct {
@@ -79,7 +80,7 @@ func TestStoreService_GetStorePackages(t *testing.T) {
 				"psc": 1000.0,
 			},
 			expectError: false,
-			expectedLen: 1, // Only PACK1 found
+			expectedLen: 1,
 		},
 	}
 
@@ -89,10 +90,10 @@ func TestStoreService_GetStorePackages(t *testing.T) {
 			variableRepo := &mockVariableRepo{rates: tt.rates}
 			imageRepo := &mockImageRepo{images: tt.images}
 
-			service := NewStoreService(optionRepo, variableRepo, imageRepo)
+			svc := service.NewStoreService(optionRepo, variableRepo, imageRepo)
 
 			ctx := context.Background()
-			packages, err := service.GetStorePackages(ctx, tt.codes)
+			packages, err := svc.GetStorePackages(ctx, tt.codes)
 
 			if tt.expectError {
 				if err == nil {

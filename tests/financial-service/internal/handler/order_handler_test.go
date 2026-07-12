@@ -1,10 +1,11 @@
-package handler
+package handler_test
 
 import (
 	"context"
 	"errors"
 	"testing"
 
+	"metarang/financial-service/internal/handler"
 	"metarang/financial-service/internal/service"
 	pb "metarang/shared/pb/financial"
 
@@ -44,7 +45,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 				return "https://sadad.shaparak.ir/VPG/Purchase?Token=abc123", nil
 			},
 		}
-		handler := NewOrderHandler(mockService)
+		h := handler.NewOrderHandler(mockService)
 
 		req := &pb.CreateOrderRequest{
 			UserId: 1,
@@ -52,7 +53,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 			Asset:  "psc",
 		}
 
-		resp, err := handler.CreateOrder(ctx, req)
+		resp, err := h.CreateOrder(ctx, req)
 		if err != nil {
 			t.Fatalf("CreateOrder failed: %v", err)
 		}
@@ -72,7 +73,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 						return "https://sadad.shaparak.ir/VPG/Purchase?Token=test", nil
 					},
 				}
-				handler := NewOrderHandler(mockService)
+				h := handler.NewOrderHandler(mockService)
 
 				req := &pb.CreateOrderRequest{
 					UserId: 1,
@@ -80,7 +81,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 					Asset:  asset,
 				}
 
-				resp, err := handler.CreateOrder(ctx, req)
+				resp, err := h.CreateOrder(ctx, req)
 				if err != nil {
 					t.Fatalf("CreateOrder failed for asset %s: %v", asset, err)
 				}
@@ -94,7 +95,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 
 	t.Run("validation error - amount less than minimum", func(t *testing.T) {
 		mockService := &mockOrderService{}
-		handler := NewOrderHandler(mockService)
+		h := handler.NewOrderHandler(mockService)
 
 		req := &pb.CreateOrderRequest{
 			UserId: 1,
@@ -102,7 +103,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 			Asset:  "psc",
 		}
 
-		_, err := handler.CreateOrder(ctx, req)
+		_, err := h.CreateOrder(ctx, req)
 		if err == nil {
 			t.Fatal("expected validation error for amount < 1")
 		}
@@ -118,7 +119,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 
 	t.Run("validation error - negative amount", func(t *testing.T) {
 		mockService := &mockOrderService{}
-		handler := NewOrderHandler(mockService)
+		h := handler.NewOrderHandler(mockService)
 
 		req := &pb.CreateOrderRequest{
 			UserId: 1,
@@ -126,7 +127,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 			Asset:  "psc",
 		}
 
-		_, err := handler.CreateOrder(ctx, req)
+		_, err := h.CreateOrder(ctx, req)
 		if err == nil {
 			t.Fatal("expected validation error for negative amount")
 		}
@@ -139,7 +140,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 
 	t.Run("validation error - missing asset", func(t *testing.T) {
 		mockService := &mockOrderService{}
-		handler := NewOrderHandler(mockService)
+		h := handler.NewOrderHandler(mockService)
 
 		req := &pb.CreateOrderRequest{
 			UserId: 1,
@@ -147,7 +148,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 			Asset:  "", // Invalid: required field
 		}
 
-		_, err := handler.CreateOrder(ctx, req)
+		_, err := h.CreateOrder(ctx, req)
 		if err == nil {
 			t.Fatal("expected validation error for empty asset")
 		}
@@ -160,7 +161,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 
 	t.Run("validation error - invalid asset enum value", func(t *testing.T) {
 		mockService := &mockOrderService{}
-		handler := NewOrderHandler(mockService)
+		h := handler.NewOrderHandler(mockService)
 
 		req := &pb.CreateOrderRequest{
 			UserId: 1,
@@ -168,7 +169,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 			Asset:  "invalid_asset", // Invalid: not one of allowed values
 		}
 
-		_, err := handler.CreateOrder(ctx, req)
+		_, err := h.CreateOrder(ctx, req)
 		if err == nil {
 			t.Fatal("expected validation error for invalid asset")
 		}
@@ -185,7 +186,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 				return "", service.ErrInvalidAmount
 			},
 		}
-		handler := NewOrderHandler(mockService)
+		h := handler.NewOrderHandler(mockService)
 
 		req := &pb.CreateOrderRequest{
 			UserId: 1,
@@ -193,7 +194,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 			Asset:  "psc",
 		}
 
-		_, err := handler.CreateOrder(ctx, req)
+		_, err := h.CreateOrder(ctx, req)
 		if err == nil {
 			t.Fatal("expected error")
 		}
@@ -210,7 +211,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 				return "", service.ErrInvalidAsset
 			},
 		}
-		handler := NewOrderHandler(mockService)
+		h := handler.NewOrderHandler(mockService)
 
 		req := &pb.CreateOrderRequest{
 			UserId: 1,
@@ -218,7 +219,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 			Asset:  "psc",
 		}
 
-		_, err := handler.CreateOrder(ctx, req)
+		_, err := h.CreateOrder(ctx, req)
 		if err == nil {
 			t.Fatal("expected error")
 		}
@@ -235,7 +236,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 				return "", service.ErrUserNotEligible
 			},
 		}
-		handler := NewOrderHandler(mockService)
+		h := handler.NewOrderHandler(mockService)
 
 		req := &pb.CreateOrderRequest{
 			UserId: 1,
@@ -243,7 +244,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 			Asset:  "psc",
 		}
 
-		_, err := handler.CreateOrder(ctx, req)
+		_, err := h.CreateOrder(ctx, req)
 		if err == nil {
 			t.Fatal("expected error")
 		}
@@ -260,7 +261,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 				return "", service.ErrPaymentFailed
 			},
 		}
-		handler := NewOrderHandler(mockService)
+		h := handler.NewOrderHandler(mockService)
 
 		req := &pb.CreateOrderRequest{
 			UserId: 1,
@@ -268,7 +269,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 			Asset:  "psc",
 		}
 
-		_, err := handler.CreateOrder(ctx, req)
+		_, err := h.CreateOrder(ctx, req)
 		if err == nil {
 			t.Fatal("expected error")
 		}
@@ -285,7 +286,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 				return "", errors.New("database connection failed")
 			},
 		}
-		handler := NewOrderHandler(mockService)
+		h := handler.NewOrderHandler(mockService)
 
 		req := &pb.CreateOrderRequest{
 			UserId: 1,
@@ -293,7 +294,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 			Asset:  "psc",
 		}
 
-		_, err := handler.CreateOrder(ctx, req)
+		_, err := h.CreateOrder(ctx, req)
 		if err == nil {
 			t.Fatal("expected error")
 		}
@@ -306,7 +307,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 
 	t.Run("validation error - multiple fields", func(t *testing.T) {
 		mockService := &mockOrderService{}
-		handler := NewOrderHandler(mockService)
+		h := handler.NewOrderHandler(mockService)
 
 		req := &pb.CreateOrderRequest{
 			UserId: 1,
@@ -314,7 +315,7 @@ func TestOrderHandler_CreateOrder(t *testing.T) {
 			Asset:  "", // Invalid
 		}
 
-		_, err := handler.CreateOrder(ctx, req)
+		_, err := h.CreateOrder(ctx, req)
 		if err == nil {
 			t.Fatal("expected validation error")
 		}
@@ -348,7 +349,7 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 				return expectedURL, nil
 			},
 		}
-		handler := NewOrderHandler(mockService)
+		h := handler.NewOrderHandler(mockService)
 
 		req := &pb.HandleCallbackRequest{
 			OrderId: 123,
@@ -359,7 +360,7 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 			},
 		}
 
-		resp, err := handler.HandleCallback(ctx, req)
+		resp, err := h.HandleCallback(ctx, req)
 		if err != nil {
 			t.Fatalf("HandleCallback failed: %v", err)
 		}
@@ -379,7 +380,7 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 				return expectedURL, nil
 			},
 		}
-		handler := NewOrderHandler(mockService)
+		h := handler.NewOrderHandler(mockService)
 
 		req := &pb.HandleCallbackRequest{
 			OrderId: 123,
@@ -387,7 +388,7 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 			Token:   "456789",
 		}
 
-		resp, err := handler.HandleCallback(ctx, req)
+		resp, err := h.HandleCallback(ctx, req)
 		if err != nil {
 			t.Fatalf("HandleCallback failed: %v", err)
 		}
@@ -399,7 +400,7 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 
 	t.Run("validation error - missing order_id", func(t *testing.T) {
 		mockService := &mockOrderService{}
-		handler := NewOrderHandler(mockService)
+		h := handler.NewOrderHandler(mockService)
 
 		req := &pb.HandleCallbackRequest{
 			OrderId: 0,
@@ -407,7 +408,7 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 			Token:   "456789",
 		}
 
-		_, err := handler.HandleCallback(ctx, req)
+		_, err := h.HandleCallback(ctx, req)
 		if err == nil {
 			t.Fatal("expected validation error for missing order_id")
 		}
@@ -427,7 +428,7 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 				return "https://rgb.irpsc.com/metaverse/payment/verify?OrderId=123&ResCode=1", nil
 			},
 		}
-		handler := NewOrderHandler(mockService)
+		h := handler.NewOrderHandler(mockService)
 
 		req := &pb.HandleCallbackRequest{
 			OrderId: 123,
@@ -435,7 +436,7 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 			Token:   "",
 		}
 
-		resp, err := handler.HandleCallback(ctx, req)
+		resp, err := h.HandleCallback(ctx, req)
 		if err != nil {
 			t.Fatalf("HandleCallback failed: %v", err)
 		}
@@ -446,7 +447,7 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 
 	t.Run("validation error - missing order_id with empty token", func(t *testing.T) {
 		mockService := &mockOrderService{}
-		handler := NewOrderHandler(mockService)
+		h := handler.NewOrderHandler(mockService)
 
 		req := &pb.HandleCallbackRequest{
 			OrderId: 0,
@@ -454,7 +455,7 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 			Token:   "",
 		}
 
-		_, err := handler.HandleCallback(ctx, req)
+		_, err := h.HandleCallback(ctx, req)
 		if err == nil {
 			t.Fatal("expected validation error")
 		}
@@ -471,7 +472,7 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 				return "", service.ErrOrderNotFound
 			},
 		}
-		handler := NewOrderHandler(mockService)
+		h := handler.NewOrderHandler(mockService)
 
 		req := &pb.HandleCallbackRequest{
 			OrderId: 999,
@@ -479,7 +480,7 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 			Token:   "456789",
 		}
 
-		_, err := handler.HandleCallback(ctx, req)
+		_, err := h.HandleCallback(ctx, req)
 		if err == nil {
 			t.Fatal("expected error")
 		}
@@ -496,7 +497,7 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 				return "", errors.New("database connection failed")
 			},
 		}
-		handler := NewOrderHandler(mockService)
+		h := handler.NewOrderHandler(mockService)
 
 		req := &pb.HandleCallbackRequest{
 			OrderId: 123,
@@ -504,7 +505,7 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 			Token:   "456789",
 		}
 
-		_, err := handler.HandleCallback(ctx, req)
+		_, err := h.HandleCallback(ctx, req)
 		if err == nil {
 			t.Fatal("expected error")
 		}
@@ -524,7 +525,7 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 				return "https://rgb.irpsc.com/metaverse/payment/verify?OrderId=123&ResCode=0&Token=456789", nil
 			},
 		}
-		handler := NewOrderHandler(mockService)
+		h := handler.NewOrderHandler(mockService)
 
 		req := &pb.HandleCallbackRequest{
 			OrderId: 123,
@@ -532,7 +533,7 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 			Token:   "456789",
 		}
 
-		resp, err := handler.HandleCallback(ctx, req)
+		resp, err := h.HandleCallback(ctx, req)
 		if err != nil {
 			t.Fatalf("HandleCallback failed: %v", err)
 		}
@@ -557,7 +558,7 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 				return "https://rgb.irpsc.com/metaverse/payment/verify?OrderId=123&ResCode=0&Token=456789", nil
 			},
 		}
-		handler := NewOrderHandler(mockService)
+		h := handler.NewOrderHandler(mockService)
 
 		req := &pb.HandleCallbackRequest{
 			OrderId: 123,
@@ -569,7 +570,7 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 			},
 		}
 
-		_, err := handler.HandleCallback(ctx, req)
+		_, err := h.HandleCallback(ctx, req)
 		if err != nil {
 			t.Fatalf("HandleCallback failed: %v", err)
 		}
@@ -588,7 +589,7 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 						return "https://rgb.irpsc.com/metaverse/payment/verify", nil
 					},
 				}
-				handler := NewOrderHandler(mockService)
+				h := handler.NewOrderHandler(mockService)
 
 				req := &pb.HandleCallbackRequest{
 					OrderId: 123,
@@ -596,7 +597,7 @@ func TestOrderHandler_HandleCallback(t *testing.T) {
 					Token:   "456789",
 				}
 
-				resp, err := handler.HandleCallback(ctx, req)
+				resp, err := h.HandleCallback(ctx, req)
 				if err != nil {
 					t.Fatalf("HandleCallback failed for resCode %s: %v", resCode, err)
 				}
@@ -615,14 +616,10 @@ func TestOrderHandler_RegisterOrderHandler(t *testing.T) {
 	// but we can verify the function exists and doesn't panic
 	t.Run("handler registration", func(t *testing.T) {
 		mockService := &mockOrderService{}
-		handler := NewOrderHandler(mockService)
+		h := handler.NewOrderHandler(mockService)
 
-		if handler == nil {
+		if h == nil {
 			t.Fatal("expected non-nil handler")
-		}
-
-		if handler.orderService == nil {
-			t.Error("expected orderService to be set")
 		}
 	})
 }

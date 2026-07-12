@@ -1,4 +1,4 @@
-package service
+package service_test
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 
 	"metarang/financial-service/internal/models"
 	"metarang/financial-service/internal/sadad"
+	"metarang/financial-service/internal/service"
 	commercialpb "metarang/shared/pb/commercial"
 
 	"google.golang.org/grpc"
@@ -201,7 +202,7 @@ func TestOrderService_CreateOrder(t *testing.T) {
 			asset:       "psc",
 			canBuy:      true,
 			expectError: true,
-			errorType:   ErrInvalidAmount,
+			errorType:   service.ErrInvalidAmount,
 		},
 		{
 			name:        "invalid asset",
@@ -210,7 +211,7 @@ func TestOrderService_CreateOrder(t *testing.T) {
 			asset:       "invalid",
 			canBuy:      true,
 			expectError: true,
-			errorType:   ErrInvalidAsset,
+			errorType:   service.ErrInvalidAsset,
 		},
 		{
 			name:        "user not eligible",
@@ -219,7 +220,7 @@ func TestOrderService_CreateOrder(t *testing.T) {
 			asset:       "psc",
 			canBuy:      false,
 			expectError: true,
-			errorType:   ErrUserNotEligible,
+			errorType:   service.ErrUserNotEligible,
 		},
 	}
 
@@ -241,17 +242,17 @@ func TestOrderService_CreateOrder(t *testing.T) {
 			orderPolicy := &mockOrderPolicy{canBuy: tt.canBuy}
 			jalaliConverter := &mockJalaliConverter{}
 
-			config := OrderConfig{
+			config := service.OrderConfig{
 				SadadMerchantID:             "test_merchant",
 				SadadTerminalID:             "test_terminal",
 				SadadTransactionKey:         "dGVzdC10cmFuc2FjdGlvbi1rZXk=",
 				SadadPaymentIdentityRial:    "rial_identity",
 				SadadPaymentIdentityNonRial: "non_rial_identity",
-				SadadCallbackURL:            "http://localhost/api/payment/callback",
-				FrontendURL:                 "http://localhost",
+				SadadCallbackURL:            "http://localhost/api/order/callback",
+				FrontendURL:                 "http://localhost:5173",
 			}
 
-			service := NewOrderService(
+			svc := service.NewOrderService(
 				orderRepo,
 				transactionRepo,
 				paymentRepo,
@@ -265,7 +266,7 @@ func TestOrderService_CreateOrder(t *testing.T) {
 			)
 
 			ctx := context.Background()
-			link, err := service.CreateOrder(ctx, tt.userID, tt.amount, tt.asset)
+			link, err := svc.CreateOrder(ctx, tt.userID, tt.amount, tt.asset)
 
 			if tt.expectError {
 				if err == nil {
@@ -281,7 +282,7 @@ func TestOrderService_CreateOrder(t *testing.T) {
 				if link == "" {
 					t.Errorf("expected payment link but got empty")
 				}
-				if !strings.Contains(sadadClient.lastRequest.ReturnURL, "/api/payment/callback") {
+				if !strings.Contains(sadadClient.lastRequest.ReturnURL, "/api/order/callback") {
 					t.Errorf("expected Sadad ReturnURL to use API callback, got %q", sadadClient.lastRequest.ReturnURL)
 				}
 				if strings.Contains(sadadClient.lastRequest.ReturnURL, "/payment/verify") {
@@ -355,7 +356,7 @@ func TestOrderService_HandleCallback(t *testing.T) {
 		},
 	}
 
-	service := NewOrderService(
+	svc := service.NewOrderService(
 		orderRepo,
 		transactionRepo,
 		&mockPaymentRepo{},
@@ -365,15 +366,16 @@ func TestOrderService_HandleCallback(t *testing.T) {
 		&mockOrderPolicy{canBuy: true, canGetBonus: false},
 		&mockJalaliConverter{},
 		walletClient,
-		OrderConfig{
+		service.OrderConfig{
 			SadadTransactionKey: "dGVzdC10cmFuc2FjdGlvbi1rZXk=",
-			SadadCallbackURL:    "http://localhost:8000/api/payment/callback",
+			SadadCallbackURL:    "http://localhost:8000/api/order/callback",
 			FrontendURL:         "http://localhost:5173",
 		},
 	)
 
-	redirectURL, err := service.HandleCallback(ctx, order.ID, "123456", "0", map[string]string{
+	redirectURL, err := svc.HandleCallback(ctx, order.ID, "123456", "0", map[string]string{
 		"PrimaryAccNo": "1234****5678",
+		"order_id":     "1",
 	})
 	if err != nil {
 		t.Fatalf("HandleCallback failed: %v", err)
@@ -382,8 +384,11 @@ func TestOrderService_HandleCallback(t *testing.T) {
 	if !strings.HasPrefix(redirectURL, "http://localhost:5173/payment/verify?") {
 		t.Fatalf("expected frontend verify redirect, got %q", redirectURL)
 	}
-	if strings.Contains(redirectURL, "/api/payment/callback") {
+	if strings.Contains(redirectURL, "/api/order/callback") {
 		t.Fatalf("frontend redirect must not point to API callback, got %q", redirectURL)
+	}
+	if strings.Contains(redirectURL, "order_id=") {
+		t.Fatalf("redirect must contain only canonical OrderId, got %q", redirectURL)
 	}
 	if len(walletClient.addBalanceCalls) != 1 {
 		t.Fatalf("expected wallet credit after verification, got %d calls", len(walletClient.addBalanceCalls))
@@ -402,7 +407,7 @@ func TestOrderService_HandleCallback(t *testing.T) {
 }
 
 func TestOrderService_CreateOrder_rejectsFrontendVerifyCallbackURL(t *testing.T) {
-	service := NewOrderService(
+	svc := service.NewOrderService(
 		&mockOrderRepo{},
 		&mockTransactionRepo{},
 		&mockPaymentRepo{},
@@ -414,7 +419,7 @@ func TestOrderService_CreateOrder_rejectsFrontendVerifyCallbackURL(t *testing.T)
 		&mockOrderPolicy{canBuy: true},
 		&mockJalaliConverter{},
 		nil,
-		OrderConfig{
+		service.OrderConfig{
 			SadadMerchantID:             "test_merchant",
 			SadadTerminalID:             "test_terminal",
 			SadadTransactionKey:         "dGVzdC10cmFuc2FjdGlvbi1rZXk=",
@@ -424,11 +429,11 @@ func TestOrderService_CreateOrder_rejectsFrontendVerifyCallbackURL(t *testing.T)
 		},
 	)
 
-	_, err := service.CreateOrder(context.Background(), 1, 10, "psc")
+	_, err := svc.CreateOrder(context.Background(), 1, 10, "psc")
 	if err == nil {
 		t.Fatal("expected error for frontend verify callback URL")
 	}
-	if !errors.Is(err, ErrPaymentFailed) {
+	if !errors.Is(err, service.ErrPaymentFailed) {
 		t.Fatalf("expected ErrPaymentFailed, got %v", err)
 	}
 }

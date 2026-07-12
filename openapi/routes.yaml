@@ -403,7 +403,7 @@ routes:
     tag: Financial
     summary: Create payment order
     security: bearer
-  - path: /api/payment/callback
+  - path: /api/order/callback
     methods: [get, post]
     tag: Financial
     summary: Payment gateway callback

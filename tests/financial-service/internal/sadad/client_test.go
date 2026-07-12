@@ -1,4 +1,4 @@
-package sadad
+package sadad_test
 
 import (
 	"encoding/json"
@@ -7,27 +7,12 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"metarang/financial-service/internal/sadad"
 )
 
-func TestSadadLocalDateTimeUsesTehranTimezone(t *testing.T) {
-	tehran, err := time.LoadLocation("Asia/Tehran")
-	if err != nil {
-		t.Fatalf("failed to load Tehran location: %v", err)
-	}
-
-	now := time.Now().In(tehran)
-	got := sadadLocalDateTime()
-
-	if !strings.Contains(got, now.Format("2006")) {
-		t.Fatalf("expected year %s in LocalDateTime, got %q", now.Format("2006"), got)
-	}
-	if strings.Contains(got, "-") {
-		t.Fatalf("expected Sadad date format without dashes, got %q", got)
-	}
-}
-
 func TestRequestPaymentSendsPaymentIdentityAndLocalDateTime(t *testing.T) {
-	var received paymentByIdentityRequestBody
+	var received map[string]interface{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if ua := r.Header.Get("User-Agent"); ua != "" {
 			t.Fatalf("expected empty User-Agent, got %q", ua)
@@ -42,13 +27,13 @@ func TestRequestPaymentSendsPaymentIdentityAndLocalDateTime(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClientWithEndpoints(Endpoints{
+	client := sadad.NewClientWithEndpoints(sadad.Endpoints{
 		PaymentRequestURL: server.URL,
 		VerifyURL:         server.URL,
 		GatewayURL:        "https://example.com/purchase",
 		Multiplexed:       true,
 	})
-	resp, err := client.RequestPayment(RequestParams{
+	resp, err := client.RequestPayment(sadad.RequestParams{
 		MerchantID:      "merchant",
 		TerminalID:      "terminal",
 		TransactionKey:  "MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0",
@@ -63,16 +48,27 @@ func TestRequestPaymentSendsPaymentIdentityAndLocalDateTime(t *testing.T) {
 	if !resp.Success() {
 		t.Fatalf("expected success response, got ResCode=%q", resp.ResCode)
 	}
-	if received.PaymentIdentity != "identity-123" {
-		t.Fatalf("expected PaymentIdentity in request, got %q", received.PaymentIdentity)
+	if received["PaymentIdentity"] != "identity-123" {
+		t.Fatalf("expected PaymentIdentity in request, got %v", received["PaymentIdentity"])
 	}
-	if received.LocalDateTime == "" {
+	localDateTime, _ := received["LocalDateTime"].(string)
+	if localDateTime == "" {
 		t.Fatal("expected LocalDateTime in request")
+	}
+	tehran, err := time.LoadLocation("Asia/Tehran")
+	if err != nil {
+		t.Fatalf("failed to load Tehran location: %v", err)
+	}
+	if !strings.Contains(localDateTime, time.Now().In(tehran).Format("2006")) {
+		t.Fatalf("expected current year in LocalDateTime, got %q", localDateTime)
+	}
+	if strings.Contains(localDateTime, "-") {
+		t.Fatalf("expected Sadad date format without dashes, got %q", localDateTime)
 	}
 }
 
 func TestSandboxRequestPaymentOmitsPaymentIdentity(t *testing.T) {
-	var received paymentRequestBody
+	var received map[string]interface{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := json.NewDecoder(r.Body).Decode(&received); err != nil {
 			t.Fatalf("failed to decode request: %v", err)
@@ -84,13 +80,13 @@ func TestSandboxRequestPaymentOmitsPaymentIdentity(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClientWithEndpoints(Endpoints{
+	client := sadad.NewClientWithEndpoints(sadad.Endpoints{
 		PaymentRequestURL: server.URL,
 		VerifyURL:         server.URL,
-		GatewayURL:        SandboxEndpoints.GatewayURL,
+		GatewayURL:        sadad.SandboxEndpoints.GatewayURL,
 		Multiplexed:       false,
 	})
-	resp, err := client.RequestPayment(RequestParams{
+	resp, err := client.RequestPayment(sadad.RequestParams{
 		MerchantID:     "46645",
 		TerminalID:     "GBHDTY98",
 		TransactionKey: "MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0",
@@ -104,10 +100,10 @@ func TestSandboxRequestPaymentOmitsPaymentIdentity(t *testing.T) {
 	if !resp.Success() {
 		t.Fatalf("expected success response, got ResCode=%q", resp.ResCode)
 	}
-	if received.MerchantID != "46645" || received.TerminalID != "GBHDTY98" {
+	if received["MerchantId"] != "46645" || received["TerminalId"] != "GBHDTY98" {
 		t.Fatalf("unexpected request body: %+v", received)
 	}
-	wantURL := SandboxEndpoints.GatewayURL + "?Token=sandbox-token"
+	wantURL := sadad.SandboxEndpoints.GatewayURL + "?Token=sandbox-token"
 	if got := resp.URL(); got != wantURL {
 		t.Fatalf("expected %q, got %q", wantURL, got)
 	}

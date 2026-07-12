@@ -1,11 +1,11 @@
-package handler
+package handler_test
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	handlerpkg "metarang/financial-service/internal/handler"
+	"metarang/financial-service/internal/handler"
 	"metarang/financial-service/internal/service"
 	pb "metarang/shared/pb/financial"
 
@@ -51,13 +51,13 @@ func TestStoreHandler_GetStorePackages(t *testing.T) {
 			packages: packages,
 			err:      nil,
 		}
-		handler := handlerpkg.NewStoreHandler(mockService)
+		h := handler.NewStoreHandler(mockService)
 
 		req := &pb.GetStorePackagesRequest{
 			Codes: []string{"PACK1", "PACK2"},
 		}
 
-		resp, err := handler.GetStorePackages(ctx, req)
+		resp, err := h.GetStorePackages(ctx, req)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -124,13 +124,13 @@ func TestStoreHandler_GetStorePackages(t *testing.T) {
 			packages: packages,
 			err:      nil,
 		}
-		handler := handlerpkg.NewStoreHandler(mockService)
+		h := handler.NewStoreHandler(mockService)
 
 		req := &pb.GetStorePackagesRequest{
 			Codes: []string{"PACK1", "PACK2"},
 		}
 
-		resp, err := handler.GetStorePackages(ctx, req)
+		resp, err := h.GetStorePackages(ctx, req)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -173,13 +173,13 @@ func TestStoreHandler_GetStorePackages(t *testing.T) {
 			packages: packages,
 			err:      nil,
 		}
-		handler := handlerpkg.NewStoreHandler(mockService)
+		h := handler.NewStoreHandler(mockService)
 
 		req := &pb.GetStorePackagesRequest{
 			Codes: []string{"PACK1", "PACK2"},
 		}
 
-		resp, err := handler.GetStorePackages(ctx, req)
+		resp, err := h.GetStorePackages(ctx, req)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -207,13 +207,13 @@ func TestStoreHandler_GetStorePackages(t *testing.T) {
 			packages: packages,
 			err:      nil,
 		}
-		handler := handlerpkg.NewStoreHandler(mockService)
+		h := handler.NewStoreHandler(mockService)
 
 		req := &pb.GetStorePackagesRequest{
 			Codes: []string{"INVALID1", "INVALID2"},
 		}
 
-		resp, err := handler.GetStorePackages(ctx, req)
+		resp, err := h.GetStorePackages(ctx, req)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -225,13 +225,13 @@ func TestStoreHandler_GetStorePackages(t *testing.T) {
 
 	t.Run("validation error: empty codes array", func(t *testing.T) {
 		mockService := &mockStoreService{}
-		handler := handlerpkg.NewStoreHandler(mockService)
+		h := handler.NewStoreHandler(mockService)
 
 		req := &pb.GetStorePackagesRequest{
 			Codes: []string{},
 		}
 
-		resp, err := handler.GetStorePackages(ctx, req)
+		resp, err := h.GetStorePackages(ctx, req)
 		if err == nil {
 			t.Fatal("expected validation error for empty codes array")
 		}
@@ -251,13 +251,13 @@ func TestStoreHandler_GetStorePackages(t *testing.T) {
 
 	t.Run("validation error: single code (less than 2)", func(t *testing.T) {
 		mockService := &mockStoreService{}
-		handler := handlerpkg.NewStoreHandler(mockService)
+		h := handler.NewStoreHandler(mockService)
 
 		req := &pb.GetStorePackagesRequest{
 			Codes: []string{"PACK1"},
 		}
 
-		resp, err := handler.GetStorePackages(ctx, req)
+		resp, err := h.GetStorePackages(ctx, req)
 		if err == nil {
 			t.Fatal("expected validation error for single code")
 		}
@@ -277,13 +277,13 @@ func TestStoreHandler_GetStorePackages(t *testing.T) {
 
 	t.Run("validation error: code with length less than 2", func(t *testing.T) {
 		mockService := &mockStoreService{}
-		handler := handlerpkg.NewStoreHandler(mockService)
+		h := handler.NewStoreHandler(mockService)
 
 		req := &pb.GetStorePackagesRequest{
 			Codes: []string{"P", "PACK2"},
 		}
 
-		resp, err := handler.GetStorePackages(ctx, req)
+		resp, err := h.GetStorePackages(ctx, req)
 		if err == nil {
 			t.Fatal("expected validation error for code with length < 2")
 		}
@@ -303,13 +303,13 @@ func TestStoreHandler_GetStorePackages(t *testing.T) {
 
 	t.Run("validation error: multiple codes with length less than 2", func(t *testing.T) {
 		mockService := &mockStoreService{}
-		handler := handlerpkg.NewStoreHandler(mockService)
+		h := handler.NewStoreHandler(mockService)
 
 		req := &pb.GetStorePackagesRequest{
 			Codes: []string{"A", "B"},
 		}
 
-		resp, err := handler.GetStorePackages(ctx, req)
+		resp, err := h.GetStorePackages(ctx, req)
 		if err == nil {
 			t.Fatal("expected validation error for codes with length < 2")
 		}
@@ -329,13 +329,13 @@ func TestStoreHandler_GetStorePackages(t *testing.T) {
 
 	t.Run("validation error: empty string code", func(t *testing.T) {
 		mockService := &mockStoreService{}
-		handler := handlerpkg.NewStoreHandler(mockService)
+		h := handler.NewStoreHandler(mockService)
 
 		req := &pb.GetStorePackagesRequest{
 			Codes: []string{"", "PACK2"},
 		}
 
-		resp, err := handler.GetStorePackages(ctx, req)
+		resp, err := h.GetStorePackages(ctx, req)
 		if err == nil {
 			t.Fatal("expected validation error for empty string code")
 		}
@@ -358,13 +358,13 @@ func TestStoreHandler_GetStorePackages(t *testing.T) {
 			packages: nil,
 			err:      service.ErrInvalidCodes,
 		}
-		handler := handlerpkg.NewStoreHandler(mockService)
+		h := handler.NewStoreHandler(mockService)
 
 		req := &pb.GetStorePackagesRequest{
 			Codes: []string{"PACK1", "PACK2"},
 		}
 
-		resp, err := handler.GetStorePackages(ctx, req)
+		resp, err := h.GetStorePackages(ctx, req)
 		if err == nil {
 			t.Fatal("expected error from service")
 		}
@@ -387,13 +387,13 @@ func TestStoreHandler_GetStorePackages(t *testing.T) {
 			packages: nil,
 			err:      service.ErrInvalidCodeLength,
 		}
-		handler := handlerpkg.NewStoreHandler(mockService)
+		h := handler.NewStoreHandler(mockService)
 
 		req := &pb.GetStorePackagesRequest{
 			Codes: []string{"PACK1", "PACK2"},
 		}
 
-		resp, err := handler.GetStorePackages(ctx, req)
+		resp, err := h.GetStorePackages(ctx, req)
 		if err == nil {
 			t.Fatal("expected error from service")
 		}
@@ -416,13 +416,13 @@ func TestStoreHandler_GetStorePackages(t *testing.T) {
 			packages: nil,
 			err:      errors.New("database connection failed"),
 		}
-		handler := handlerpkg.NewStoreHandler(mockService)
+		h := handler.NewStoreHandler(mockService)
 
 		req := &pb.GetStorePackagesRequest{
 			Codes: []string{"PACK1", "PACK2"},
 		}
 
-		resp, err := handler.GetStorePackages(ctx, req)
+		resp, err := h.GetStorePackages(ctx, req)
 		if err == nil {
 			t.Fatal("expected error from service")
 		}
@@ -457,7 +457,7 @@ func TestStoreHandler_GetStorePackages(t *testing.T) {
 			packages: packages,
 			err:      nil,
 		}
-		handler := handlerpkg.NewStoreHandler(mockService)
+		h := handler.NewStoreHandler(mockService)
 
 		codes := make([]string, 10)
 		for i := 0; i < 10; i++ {
@@ -468,7 +468,7 @@ func TestStoreHandler_GetStorePackages(t *testing.T) {
 			Codes: codes,
 		}
 
-		resp, err := handler.GetStorePackages(ctx, req)
+		resp, err := h.GetStorePackages(ctx, req)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -509,13 +509,13 @@ func TestStoreHandler_GetStorePackages(t *testing.T) {
 			packages: packages,
 			err:      nil,
 		}
-		handler := handlerpkg.NewStoreHandler(mockService)
+		h := handler.NewStoreHandler(mockService)
 
 		req := &pb.GetStorePackagesRequest{
 			Codes: []string{"PACK1", "PACK2"},
 		}
 
-		resp, err := handler.GetStorePackages(ctx, req)
+		resp, err := h.GetStorePackages(ctx, req)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -549,13 +549,13 @@ func TestStoreHandler_GetStorePackages(t *testing.T) {
 			packages: packages,
 			err:      nil,
 		}
-		handler := handlerpkg.NewStoreHandler(mockService)
+		h := handler.NewStoreHandler(mockService)
 
 		req := &pb.GetStorePackagesRequest{
 			Codes: []string{"AB", "CD"},
 		}
 
-		resp, err := handler.GetStorePackages(ctx, req)
+		resp, err := h.GetStorePackages(ctx, req)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -582,13 +582,13 @@ func TestStoreHandler_GetStorePackages(t *testing.T) {
 			packages: packages,
 			err:      nil,
 		}
-		handler := handlerpkg.NewStoreHandler(mockService)
+		h := handler.NewStoreHandler(mockService)
 
 		req := &pb.GetStorePackagesRequest{
 			Codes: []string{"PACK1", "PACK2"},
 		}
 
-		resp, err := handler.GetStorePackages(ctx, req)
+		resp, err := h.GetStorePackages(ctx, req)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -614,15 +614,15 @@ func TestStoreHandler_GetStorePackages(t *testing.T) {
 
 func TestStoreHandler_NewStoreHandler(t *testing.T) {
 	mockService := &mockStoreService{}
-	handler := handlerpkg.NewStoreHandler(mockService)
+	h := handler.NewStoreHandler(mockService)
 
-	if handler == nil {
+	if h == nil {
 		t.Fatal("expected non-nil handler")
 	}
 
 	// Verify handler can be used (we can't check private fields)
 	// Test that it doesn't panic when created
-	_ = handler
+	_ = h
 }
 
 func TestStoreHandler_RegisterStoreHandler(t *testing.T) {
@@ -632,8 +632,8 @@ func TestStoreHandler_RegisterStoreHandler(t *testing.T) {
 
 	// We can't easily test the registration without a real server,
 	// but we can verify the function exists and the handler is created
-	handler := handlerpkg.NewStoreHandler(mockService)
-	if handler == nil {
+	h := handler.NewStoreHandler(mockService)
+	if h == nil {
 		t.Fatal("expected non-nil handler")
 	}
 }

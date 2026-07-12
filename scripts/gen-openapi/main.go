@@ -403,7 +403,7 @@ func inferSecurityFromPath(path string) string {
 		"/api/auth/callback",
 		"/api/auth/validate",
 		"/api/citizen/",
-		"/api/payment/callback",
+		"/api/order/callback",
 		"/api/upload",
 		"/api/levels",
 		"/api/maps",

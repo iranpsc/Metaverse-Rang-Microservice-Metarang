@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -18,6 +17,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"metarang/financial-service/internal/config"
 	"metarang/financial-service/internal/handler"
 	"metarang/financial-service/internal/repository"
 	"metarang/financial-service/internal/sadad"
@@ -120,9 +120,9 @@ func main() {
 		log.Println("Sadad payment gateway: production mode")
 	}
 
-	sadadCallbackURL := resolveSadadCallbackURL()
+	sadadCallbackURL := config.ResolveSadadCallbackURL()
 	log.Printf("Sadad callback URL: %s", sadadCallbackURL)
-	frontendURL := resolveFrontendURL()
+	frontendURL := config.ResolveFrontendURL()
 	log.Printf("Frontend URL: %s", frontendURL)
 
 	// Initialize order policy
@@ -206,69 +206,6 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
-}
-
-const paymentCallbackPath = "/api/payment/callback"
-
-// resolveSadadCallbackURL returns the Sadad ReturnUrl base (without order_id query param).
-// The gateway must redirect users to the API callback endpoint, never the frontend verify page.
-// Supports ${PROJECT_URL} expansion in config.env (e.g. SADAD_CALLBACK_URL=${PROJECT_URL}/api/payment/callback).
-func resolveSadadCallbackURL() string {
-	for _, key := range []string{"SADAD_CALLBACK_URL", "PAYMENT_CALLBACK_URL"} {
-		if raw := strings.TrimSpace(os.Getenv(key)); raw != "" {
-			if expanded := strings.TrimSpace(os.ExpandEnv(raw)); expanded != "" {
-				if normalized, ok := normalizePaymentCallbackURL(expanded); ok {
-					return normalized
-				}
-				log.Printf("Warning: %s=%q is not a valid API callback URL; falling back to PROJECT_URL", key, expanded)
-			}
-		}
-	}
-
-	projectURL := strings.TrimSpace(os.ExpandEnv(getEnv("PROJECT_URL", "http://localhost:8000")))
-	return strings.TrimSuffix(projectURL, "/") + paymentCallbackPath
-}
-
-func normalizePaymentCallbackURL(raw string) (string, bool) {
-	if strings.Contains(raw, "/payment/verify") {
-		return "", false
-	}
-
-	parsed, err := url.Parse(raw)
-	if err != nil {
-		return "", false
-	}
-
-	path := strings.TrimSuffix(parsed.Path, "/")
-	if path == paymentCallbackPath {
-		return strings.TrimSuffix(raw, "/"), true
-	}
-
-	if path == "" || path == "/" {
-		parsed.Path = paymentCallbackPath
-		return strings.TrimSuffix(parsed.String(), "/"), true
-	}
-
-	return "", false
-}
-
-func resolveFrontendURL() string {
-	raw := strings.TrimSpace(os.Getenv("FRONTEND_URL"))
-	if raw == "" {
-		return ""
-	}
-	expanded := strings.TrimSpace(os.ExpandEnv(raw))
-	return strings.TrimSuffix(normalizeURLScheme(expanded), "/")
-}
-
-func normalizeURLScheme(rawURL string) string {
-	if rawURL == "" {
-		return rawURL
-	}
-	if strings.Contains(rawURL, "://") {
-		return rawURL
-	}
-	return "http://" + rawURL
 }
 
 func parseBoolEnv(key string, defaultValue bool) bool {

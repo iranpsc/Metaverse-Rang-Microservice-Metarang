@@ -136,6 +136,8 @@ services:
         condition: service_started
       commercial-service:
         condition: service_started
+      financial-service:
+        condition: service_started
       training-service:
         condition: service_started
       storage-service:
@@ -551,6 +553,7 @@ services:
       DB_USER: metarang_user
       DB_PASSWORD: metarang_password
       PROJECT_URL: ${PROJECT_URL:-http://localhost:8000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       <<: *sentry-environment
     depends_on:
       mysql:

@@ -147,10 +147,12 @@ func (h *FinancialHandler) HandleCallback(w http.ResponseWriter, r *http.Request
 	// Collect all additional parameters
 	additionalParams := make(map[string]string)
 	for k, v := range r.Form {
-		if k != "Token" && k != "token" && k != "ResCode" && k != "resCode" {
-			if len(v) > 0 {
-				additionalParams[k] = v[0]
-			}
+		switch k {
+		case "Token", "token", "ResCode", "resCode", "OrderId", "order_id":
+			continue
+		}
+		if len(v) > 0 {
+			additionalParams[k] = v[0]
 		}
 	}
 
@@ -167,7 +169,7 @@ func (h *FinancialHandler) HandleCallback(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Redirect to frontend URL
+	// Redirect to the project payment verification page.
 	http.Redirect(w, r, resp.RedirectUrl, http.StatusFound)
 }
 
