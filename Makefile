@@ -106,7 +106,7 @@ docs: openapi docs-up
 	@echo ""
 	@echo "📚 API documentation available at:"
 	@echo "  Swagger UI (direct):  http://localhost:8081"
-	@echo "  Swagger UI (Kong):    http://localhost:8000/docs"
+	@echo "  Swagger UI (Kong):    http://localhost:8000/"
 	@echo "  OpenAPI spec:         http://localhost:8081/openapi/openapi.yaml"
 
 docs-up:
@@ -265,7 +265,7 @@ up: init-storage-uploads
 	@echo ""
 	@echo "Services available at:"
 	@echo "  Kong API Gateway: http://localhost:8000"
-	@echo "  API Docs:         http://localhost:8000/docs"
+	@echo "  API Docs:         http://localhost:8000/"
 	@echo "  Swagger UI:       http://localhost:8081"
 	@echo "  Kong Admin:       http://localhost:8001"
 	@echo "  WebSocket:        http://localhost:3002"

@@ -686,11 +686,14 @@ services:
   swagger-ui:
     image: swaggerapi/swagger-ui:v5.18.2
     container_name: metarang-swagger-ui
+    environment:
+      APP_URL: ${APP_URL:-http://localhost:8000}
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
     ports:
       - "8081:8080"
     volumes:
-      - ./openapi:/usr/share/nginx/html/openapi:ro
-      - ./openapi/swagger-initializer.js:/usr/share/nginx/html/swagger-initializer.js:ro
+      - ./openapi:/openapi-src:ro
+      - ./scripts/swagger-ui-entrypoint.sh:/entrypoint.sh:ro
     networks:
       - metarang-network
     restart: unless-stopped

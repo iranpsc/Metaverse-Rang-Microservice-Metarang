@@ -71,7 +71,8 @@ func main() {
 	}
 
 	augmentedRoutes := augmentRoutesFromDiscovery(routes.Routes, discovered)
-	spec := buildSpec(augmentedRoutes, discovered)
+	appURL := loadAppURL(root)
+	spec := buildSpec(augmentedRoutes, discovered, appURL)
 	out, err := yaml.Marshal(spec)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "marshal spec: %v\n", err)
@@ -104,7 +105,55 @@ func findRepoRoot() string {
 	return "."
 }
 
-func buildSpec(routes []routeDef, discovered map[string]discoveredEndpoint) openAPISpec {
+func loadAppURL(root string) string {
+	if v := strings.TrimSpace(os.Getenv("APP_URL")); v != "" {
+		return strings.TrimSuffix(v, "/")
+	}
+
+	envPath := filepath.Join(root, ".env")
+	data, err := os.ReadFile(envPath)
+	if err != nil {
+		return "http://localhost:8000"
+	}
+
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		key, value, ok := strings.Cut(line, "=")
+		if !ok || strings.TrimSpace(key) != "APP_URL" {
+			continue
+		}
+		value = strings.TrimSpace(value)
+		value = strings.Trim(value, `"'`)
+		if value != "" {
+			return strings.TrimSuffix(value, "/")
+		}
+	}
+
+	return "http://localhost:8000"
+}
+
+func buildServers(appURL string) []map[string]string {
+	description := "API Gateway"
+	if appURL == "http://localhost:8000" {
+		description = "Kong API Gateway (local)"
+	}
+
+	servers := []map[string]string{
+		{"url": appURL, "description": description},
+	}
+	if appURL == "http://localhost:8000" {
+		servers = append(servers, map[string]string{
+			"url":         "http://localhost:8080",
+			"description": "grpc-gateway direct (dev)",
+		})
+	}
+	return servers
+}
+
+func buildSpec(routes []routeDef, discovered map[string]discoveredEndpoint, appURL string) openAPISpec {
 	tagSet := map[string]struct{}{}
 	paths := map[string]interface{}{}
 
@@ -187,12 +236,9 @@ func buildSpec(routes []routeDef, discovered map[string]discoveredEndpoint) open
 				"name": "metarang",
 			},
 		},
-		Servers: []map[string]string{
-			{"url": "http://localhost:8000", "description": "Kong API Gateway (local)"},
-			{"url": "http://localhost:8080", "description": "grpc-gateway direct (dev)"},
-		},
-		Tags:  tags,
-		Paths: paths,
+		Servers: buildServers(appURL),
+		Tags:    tags,
+		Paths:   paths,
 		Components: map[string]interface{}{
 			"securitySchemes": map[string]interface{}{
 				"BearerAuth": map[string]interface{}{

@@ -4108,9 +4108,9 @@ paths:
             summary: Create payment order
             tags:
                 - Financial
-    /api/payment/callback:
+    /api/order/callback:
         get:
-            operationId: get_payment_callback
+            operationId: get_order_callback
             responses:
                 "200":
                     description: Successful response
@@ -4130,7 +4130,7 @@ paths:
             tags:
                 - Financial
         post:
-            operationId: post_payment_callback
+            operationId: post_order_callback
             parameters:
                 - description: OrderId query parameter
                   in: query
