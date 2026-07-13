@@ -39,8 +39,9 @@ func (r *citizenRepository) GetCitizenByCode(ctx context.Context, code string) (
 
 	user := &models.CitizenProfile{}
 	var emailVerifiedAt sql.NullTime
+	var name, email, phone sql.NullString
 	err := r.db.QueryRowContext(ctx, query, code).Scan(
-		&user.ID, &user.Name, &user.Email, &user.Phone, &user.Code, &user.Score, &emailVerifiedAt,
+		&user.ID, &name, &email, &phone, &user.Code, &user.Score, &emailVerifiedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -48,6 +49,9 @@ func (r *citizenRepository) GetCitizenByCode(ctx context.Context, code string) (
 	if err != nil {
 		return nil, fmt.Errorf("failed to find citizen by code: %w", err)
 	}
+	user.Name = name.String
+	user.Email = email.String
+	user.Phone = phone.String
 	if emailVerifiedAt.Valid {
 		user.EmailVerifiedAt = emailVerifiedAt.Time
 	}
