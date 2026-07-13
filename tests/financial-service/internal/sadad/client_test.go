@@ -11,7 +11,7 @@ import (
 	"metarang/financial-service/internal/sadad"
 )
 
-func TestRequestPaymentSendsPaymentIdentityAndLocalDateTime(t *testing.T) {
+func TestRequestPaymentSendsMultiplexingDataAndLocalDateTime(t *testing.T) {
 	var received map[string]interface{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if ua := r.Header.Get("User-Agent"); ua != "" {
@@ -34,13 +34,13 @@ func TestRequestPaymentSendsPaymentIdentityAndLocalDateTime(t *testing.T) {
 		Multiplexed:       true,
 	})
 	resp, err := client.RequestPayment(sadad.RequestParams{
-		MerchantID:      "merchant",
-		TerminalID:      "terminal",
-		TransactionKey:  "MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0",
-		OrderID:         "42",
-		Amount:          1000,
-		ReturnURL:       "https://example.com/callback",
-		PaymentIdentity: "identity-123",
+		MerchantID:       "merchant",
+		TerminalID:       "terminal",
+		TransactionKey:   "MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0",
+		OrderID:          "42",
+		Amount:           1000,
+		ReturnURL:        "https://example.com/callback",
+		MultiplexingData: sadad.MultiplexingDataForAmount("iban-123", 1000),
 	})
 	if err != nil {
 		t.Fatalf("RequestPayment failed: %v", err)
@@ -48,9 +48,32 @@ func TestRequestPaymentSendsPaymentIdentityAndLocalDateTime(t *testing.T) {
 	if !resp.Success() {
 		t.Fatalf("expected success response, got ResCode=%q", resp.ResCode)
 	}
-	if received["PaymentIdentity"] != "identity-123" {
-		t.Fatalf("expected PaymentIdentity in request, got %v", received["PaymentIdentity"])
+
+	multiplexingData, ok := received["MultiplexingData"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected MultiplexingData in request, got %v", received["MultiplexingData"])
 	}
+	if multiplexingData["Type"] != "Amount" {
+		t.Fatalf("expected Type Amount, got %v", multiplexingData["Type"])
+	}
+	rows, ok := multiplexingData["MultiplexingRows"].([]interface{})
+	if !ok || len(rows) != 1 {
+		t.Fatalf("expected one MultiplexingRows entry, got %v", multiplexingData["MultiplexingRows"])
+	}
+	row, ok := rows[0].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected row object, got %v", rows[0])
+	}
+	if row["IbanNumber"] != "iban-123" {
+		t.Fatalf("expected IbanNumber iban-123, got %v", row["IbanNumber"])
+	}
+	if row["Value"] != float64(1000) {
+		t.Fatalf("expected Value 1000, got %v", row["Value"])
+	}
+	if received["PaymentIdentity"] != nil {
+		t.Fatalf("expected PaymentIdentity to be omitted, got %v", received["PaymentIdentity"])
+	}
+
 	localDateTime, _ := received["LocalDateTime"].(string)
 	if localDateTime == "" {
 		t.Fatal("expected LocalDateTime in request")
@@ -67,7 +90,7 @@ func TestRequestPaymentSendsPaymentIdentityAndLocalDateTime(t *testing.T) {
 	}
 }
 
-func TestSandboxRequestPaymentOmitsPaymentIdentity(t *testing.T) {
+func TestSandboxRequestPaymentOmitsMultiplexingData(t *testing.T) {
 	var received map[string]interface{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := json.NewDecoder(r.Body).Decode(&received); err != nil {
@@ -103,8 +126,24 @@ func TestSandboxRequestPaymentOmitsPaymentIdentity(t *testing.T) {
 	if received["MerchantId"] != "46645" || received["TerminalId"] != "GBHDTY98" {
 		t.Fatalf("unexpected request body: %+v", received)
 	}
+	if received["MultiplexingData"] != nil {
+		t.Fatalf("expected MultiplexingData to be omitted in sandbox, got %v", received["MultiplexingData"])
+	}
 	wantURL := sadad.SandboxEndpoints.GatewayURL + "?Token=sandbox-token"
 	if got := resp.URL(); got != wantURL {
 		t.Fatalf("expected %q, got %q", wantURL, got)
+	}
+}
+
+func TestMultiplexingDataForAmount(t *testing.T) {
+	data := sadad.MultiplexingDataForAmount("IR123", 5000)
+	if data.Type != "Amount" {
+		t.Fatalf("expected Type Amount, got %q", data.Type)
+	}
+	if len(data.MultiplexingRows) != 1 {
+		t.Fatalf("expected 1 row, got %d", len(data.MultiplexingRows))
+	}
+	if data.MultiplexingRows[0].IbanNumber != "IR123" || data.MultiplexingRows[0].Value != 5000 {
+		t.Fatalf("unexpected row: %+v", data.MultiplexingRows[0])
 	}
 }

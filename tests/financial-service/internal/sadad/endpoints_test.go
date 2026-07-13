@@ -38,6 +38,15 @@ func TestSandboxEndpointsMatchBankTestURLs(t *testing.T) {
 	}
 
 	if sadad.SandboxEndpoints.Multiplexed {
-		t.Fatal("sandbox endpoints must not use PaymentByIdentity multiplexing")
+		t.Fatal("sandbox endpoints must not send MultiplexingData")
+	}
+}
+
+func TestProductionEndpointsUsePaymentRequestWithMultiplexing(t *testing.T) {
+	if sadad.ProductionEndpoints.PaymentRequestURL != "https://sadad.shaparak.ir/api/v0/Request/PaymentRequest" {
+		t.Fatalf("unexpected production payment request URL: %q", sadad.ProductionEndpoints.PaymentRequestURL)
+	}
+	if !sadad.ProductionEndpoints.Multiplexed {
+		t.Fatal("production endpoints must send MultiplexingData")
 	}
 }

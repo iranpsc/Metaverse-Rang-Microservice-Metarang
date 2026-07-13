@@ -14,9 +14,9 @@ import (
 )
 
 func (s *orderService) requestSadadPayment(orderID uint64, amount int32, asset string, rate float64) (string, string, error) {
-	paymentIdentity := s.getPaymentIdentity(asset)
-	if paymentIdentity == "" && !s.sadadConfig.SadadSandbox {
-		return "", "", fmt.Errorf("%w: payment identity not configured for asset %s", ErrPaymentFailed, asset)
+	ibanNumber := s.getMultiplexingIbanNumber(asset)
+	if ibanNumber == "" && !s.sadadConfig.SadadSandbox {
+		return "", "", fmt.Errorf("%w: multiplexing IBAN not configured for asset %s", ErrPaymentFailed, asset)
 	}
 
 	returnURL, err := s.sadadCallbackReturnURL()
@@ -24,14 +24,20 @@ func (s *orderService) requestSadadPayment(orderID uint64, amount int32, asset s
 		return "", "", err
 	}
 
+	amountRials := amountInRials(amount, rate)
+	var multiplexingData *sadad.MultiplexingData
+	if ibanNumber != "" {
+		multiplexingData = sadad.MultiplexingDataForAmount(ibanNumber, amountRials)
+	}
+
 	response, err := s.sadadClient.RequestPayment(sadad.RequestParams{
-		MerchantID:      s.sadadConfig.SadadMerchantID,
-		TerminalID:      s.sadadConfig.SadadTerminalID,
-		TransactionKey:  s.sadadConfig.SadadTransactionKey,
-		OrderID:         fmt.Sprintf("%d", orderID),
-		Amount:          amountInRials(amount, rate),
-		ReturnURL:       returnURL,
-		PaymentIdentity: paymentIdentity,
+		MerchantID:       s.sadadConfig.SadadMerchantID,
+		TerminalID:       s.sadadConfig.SadadTerminalID,
+		TransactionKey:   s.sadadConfig.SadadTransactionKey,
+		OrderID:          fmt.Sprintf("%d", orderID),
+		Amount:           amountRials,
+		ReturnURL:        returnURL,
+		MultiplexingData: multiplexingData,
 	})
 	if err != nil {
 		return "", "", fmt.Errorf("failed to request payment: %w", err)
@@ -66,7 +72,7 @@ func (s *orderService) storeTransactionToken(ctx context.Context, transaction *m
 	}
 }
 
-func (s *orderService) getPaymentIdentity(asset string) string {
+func (s *orderService) getMultiplexingIbanNumber(asset string) string {
 	if asset == "irr" {
 		return s.sadadConfig.SadadPaymentIdentityRial
 	}
