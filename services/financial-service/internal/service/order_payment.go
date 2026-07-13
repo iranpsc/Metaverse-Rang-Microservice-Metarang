@@ -30,6 +30,12 @@ func (s *orderService) requestSadadPayment(orderID uint64, amount int32, asset s
 		multiplexingData = sadad.MultiplexingDataForAmount(ibanNumber, amountRials)
 	}
 
+	// Log Sadad payment request parameters for monitoring
+	fmt.Printf(
+		"requestSadadPayment called: orderID=%d, amount=%d, asset=%s, rate=%.4f, returnURL=%s, amountRials=%d, ibanNumber=%s, multiplexingData=%+v\n",
+		orderID, amount, asset, rate, returnURL, amountRials, ibanNumber, multiplexingData,
+	)
+
 	response, err := s.sadadClient.RequestPayment(sadad.RequestParams{
 		MerchantID:       s.sadadConfig.SadadMerchantID,
 		TerminalID:       s.sadadConfig.SadadTerminalID,
