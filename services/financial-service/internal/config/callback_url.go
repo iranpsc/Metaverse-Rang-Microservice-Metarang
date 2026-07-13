@@ -2,8 +2,10 @@ package config
 
 import (
 	"log"
+	"net"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -16,12 +18,13 @@ const (
 // ResolveSadadCallbackURL returns the Sadad ReturnUrl base (without order_id query param).
 // The gateway must redirect users to the API callback endpoint, never the frontend verify page.
 // Supports ${PROJECT_URL} expansion in config.env (e.g. SADAD_CALLBACK_URL=${PROJECT_URL}/api/order/callback).
+// When SADAD_CALLBACK_PORT is set, its value replaces the port on the resolved callback URL host.
 func ResolveSadadCallbackURL() string {
 	for _, key := range []string{"SADAD_CALLBACK_URL", "PAYMENT_CALLBACK_URL"} {
 		if raw := strings.TrimSpace(os.Getenv(key)); raw != "" {
 			if expanded := strings.TrimSpace(os.ExpandEnv(raw)); expanded != "" {
 				if normalized, ok := NormalizePaymentCallbackURL(expanded); ok {
-					return normalized
+					return applySadadCallbackPort(normalized)
 				}
 				log.Printf("Warning: %s=%q is not a valid API callback URL; falling back to PROJECT_URL", key, expanded)
 			}
@@ -29,7 +32,33 @@ func ResolveSadadCallbackURL() string {
 	}
 
 	projectURL := strings.TrimSpace(os.ExpandEnv(getEnv("PROJECT_URL", defaultProjectURL)))
-	return strings.TrimSuffix(projectURL, "/") + OrderCallbackPath
+	return applySadadCallbackPort(strings.TrimSuffix(projectURL, "/") + OrderCallbackPath)
+}
+
+func applySadadCallbackPort(rawURL string) string {
+	portStr := strings.TrimSpace(os.Getenv("SADAD_CALLBACK_PORT"))
+	if portStr == "" {
+		return rawURL
+	}
+
+	port, err := strconv.Atoi(portStr)
+	if err != nil || port <= 0 || port > 65535 {
+		log.Printf("Warning: invalid SADAD_CALLBACK_PORT=%q; callback URL port unchanged", portStr)
+		return rawURL
+	}
+
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+
+	hostname := parsed.Hostname()
+	if hostname == "" {
+		return rawURL
+	}
+
+	parsed.Host = net.JoinHostPort(hostname, strconv.Itoa(port))
+	return strings.TrimSuffix(parsed.String(), "/")
 }
 
 // NormalizePaymentCallbackURL validates and normalizes Sadad callback URLs.
