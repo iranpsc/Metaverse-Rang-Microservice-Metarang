@@ -181,6 +181,7 @@ func (h *AuthHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 			"title":       resp.Level.Title,
 			"description": resp.Level.Description,
 			"score":       resp.Level.Score,
+			"slug":        resp.Level.Slug,
 			"fbx_file":    "",
 		}
 

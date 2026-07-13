@@ -40,7 +40,7 @@ func NewChallengeRepository(db *sql.DB) *ChallengeRepository {
 func (r *ChallengeRepository) GetRandomUnansweredQuestion(ctx context.Context, userID uint64) (*pb.Question, error) {
 	// Try to find a random unanswered question
 	query := `
-		SELECT q.id, q.text, q.prize, q.views, q.participants
+		SELECT q.id, q.title, q.prize, q.views, q.participants
 		FROM questions q
 		WHERE q.id NOT IN (
 			SELECT question_id FROM user_question_answers WHERE user_id = ?
@@ -81,7 +81,7 @@ func (r *ChallengeRepository) GetRandomUnansweredQuestion(ctx context.Context, u
 // Implements Laravel: $question->load('answers')
 func (r *ChallengeRepository) GetAnswersForQuestion(ctx context.Context, questionID uint64) ([]*pb.Answer, error) {
 	query := `
-		SELECT id, question_id, text
+		SELECT id, question_id, title
 		FROM answers
 		WHERE question_id = ?
 	`
@@ -168,7 +168,7 @@ func (r *ChallengeRepository) CheckAnswer(ctx context.Context, answerID, questio
 // Implements Laravel: Question::findOrFail($id)->load('answers')
 func (r *ChallengeRepository) GetQuestionByID(ctx context.Context, questionID uint64) (*pb.Question, error) {
 	query := `
-		SELECT id, text, prize, views, participants
+		SELECT id, title, prize, views, participants
 		FROM questions
 		WHERE id = ?
 	`

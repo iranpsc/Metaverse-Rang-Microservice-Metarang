@@ -6,7 +6,7 @@ import "time"
 // Maps to Laravel: App\Models\Challenge\Question
 type Question struct {
 	ID           uint64    `json:"id" db:"id"`
-	Text         string    `json:"text" db:"text"`
+	Text         string    `json:"text" db:"title"`
 	Prize        string    `json:"prize" db:"prize"` // PSC amount as string
 	Views        int32     `json:"views" db:"views"`
 	Participants int32     `json:"participants" db:"participants"`
@@ -19,7 +19,7 @@ type Question struct {
 type Answer struct {
 	ID         uint64    `json:"id" db:"id"`
 	QuestionID uint64    `json:"question_id" db:"question_id"`
-	Text       string    `json:"text" db:"text"`
+	Text       string    `json:"text" db:"title"`
 	IsCorrect  bool      `json:"is_correct" db:"is_correct"`
 	CreatedAt  time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at" db:"updated_at"`
