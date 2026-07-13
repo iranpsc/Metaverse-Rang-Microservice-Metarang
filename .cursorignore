@@ -12,3 +12,4 @@ services/**/config.env
 api-docs/
 uploads/
 docs/
+scripts/schema.sql
