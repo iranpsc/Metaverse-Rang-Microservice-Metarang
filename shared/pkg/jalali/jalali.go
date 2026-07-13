@@ -30,7 +30,24 @@ func JalaliToCarbon(jalaliDate string) (time.Time, error) {
 		return time.Time{}, fmt.Errorf("invalid day: %w", err)
 	}
 
-	return jalaliToGregorian(year, month, day)
+	return gregorianFromJalali(year, month, day)
+}
+
+// gregorianFromJalali finds the Gregorian date that maps to the given Jalali date
+// using gregorianToJalali, keeping JalaliToCarbon consistent with CarbonToJalali.
+func gregorianFromJalali(jy, jm, jd int) (time.Time, error) {
+	approxYear := jy + 621
+	start := time.Date(approxYear-1, 1, 1, 0, 0, 0, 0, time.UTC)
+	end := time.Date(approxYear+1, 12, 31, 0, 0, 0, 0, time.UTC)
+
+	for current := start; !current.After(end); current = current.AddDate(0, 0, 1) {
+		gotYear, gotMonth, gotDay := gregorianToJalali(current.Year(), int(current.Month()), current.Day())
+		if gotYear == jy && gotMonth == jm && gotDay == jd {
+			return current, nil
+		}
+	}
+
+	return time.Time{}, fmt.Errorf("invalid jalali date: %d/%02d/%02d", jy, jm, jd)
 }
 
 // CarbonToJalali converts time.Time to Jalali date string
@@ -50,7 +67,7 @@ func CarbonToJalaliDateTime(t time.Time) string {
 // gregorianToJalali converts Gregorian date to Jalali date
 func gregorianToJalali(gy, gm, gd int) (jy, jm, jd int) {
 	var g_d_m = []int{0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334}
-	
+
 	if gy > 1600 {
 		jy = 979
 		gy -= 1600
@@ -97,80 +114,3 @@ func gregorianToJalali(gy, gm, gd int) (jy, jm, jd int) {
 
 	return
 }
-
-// jalaliToGregorian converts Jalali date to Gregorian date
-func jalaliToGregorian(jy, jm, jd int) (time.Time, error) {
-	var sal_a = []int{
-		// -61, 9, 38, 199, 426, 686, 756, 818, 1111, 1181, 1210,
-		// 1635, 2060, 2097, 2192, 2262, 2324, 2394, 2456, 3178,
-		-61, 9, 38, 199, 426, 686, 756, 818, 1111, 1181, 1210,
-		1635, 2060, 2097, 2192, 2262, 2324, 2394, 2456, 3178,
-	}
-
-	gy := jy + 621
-	var leap int = -14
-
-	jp := sal_a[0]
-	for i := 1; i < len(sal_a); i++ {
-		j := sal_a[i]
-		leap = leap + (j-jp)/33*8 + ((j-jp)%33)/4
-		if jy < j {
-			break
-		}
-		jp = j
-	}
-
-	n := jy - jp
-	if n < 0 {
-		n = -n
-	}
-
-	leap = leap + n/33*8 + (n%33+3)/4
-	if (jy%33+1)%4 == 0 {
-		leap++
-	}
-
-	if jm < 7 {
-		n = 31*jm - 31
-	} else {
-		n = 30*jm - 30
-	}
-
-	n = n + jd + leap + 79
-
-	gy2 := gy
-	if (gy2%4 == 0 && gy2%100 != 0) || (gy2%400 == 0) {
-		leap = 1
-	} else {
-		leap = 0
-	}
-
-	if n > 366+leap {
-		gy++
-		n = n - (366 + leap)
-	}
-
-	var gm int
-	var g_d_m = []int{0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334}
-
-	if leap == 1 {
-		g_d_m[2] = 60
-	}
-
-	for i := 0; i < 12; i++ {
-		v := g_d_m[i]
-		if n <= v {
-			gm = i
-			break
-		}
-		gm = i + 1
-	}
-
-	gd := n
-	if gm > 0 {
-		gd = n - g_d_m[gm-1]
-	}
-
-	return time.Date(gy, time.Month(gm), gd, 0, 0, 0, 0, time.UTC), nil
-}
-
