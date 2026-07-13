@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -25,22 +24,10 @@ func (s *orderService) requestSadadPayment(orderID uint64, amount int32, asset s
 	}
 
 	amountRials := amountInRials(amount, rate)
-	var multiplexingData json.RawMessage
+	var multiplexingData *sadad.MultiplexingData
 	if ibanNumber != "" {
-		var marshalErr error
-		multiplexingData, marshalErr = sadad.MarshalMultiplexingData(
-			sadad.MultiplexingDataForAmount(ibanNumber, amountRials),
-		)
-		if marshalErr != nil {
-			return "", "", fmt.Errorf("failed to marshal multiplexing data: %w", marshalErr)
-		}
+		multiplexingData = sadad.MultiplexingDataForAmount(ibanNumber, amountRials)
 	}
-
-	// Log Sadad payment request parameters for monitoring
-	fmt.Printf(
-		"requestSadadPayment called: orderID=%d, amount=%d, asset=%s, rate=%.4f, returnURL=%s, amountRials=%d, ibanNumber=%s, multiplexingData=%s\n",
-		orderID, amount, asset, rate, returnURL, amountRials, ibanNumber, multiplexingData,
-	)
 
 	response, err := s.sadadClient.RequestPayment(sadad.RequestParams{
 		MerchantID:       s.sadadConfig.SadadMerchantID,

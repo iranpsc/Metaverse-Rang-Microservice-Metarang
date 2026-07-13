@@ -105,19 +105,11 @@ type MultiplexingData struct {
 // MultiplexingDataForAmount builds amount-based multiplexing for a single IBAN.
 func MultiplexingDataForAmount(ibanNumber string, amount int64) *MultiplexingData {
 	return &MultiplexingData{
-		Type: "Percentage",
+		Type: "Amount",
 		MultiplexingRows: []MultiplexingRow{
-			{IbanNumber: ibanNumber, Value: 100},
+			{IbanNumber: ibanNumber, Value: amount},
 		},
 	}
-}
-
-// MarshalMultiplexingData serializes multiplexing data as JSON for Sadad IPG requests.
-func MarshalMultiplexingData(data *MultiplexingData) (json.RawMessage, error) {
-	if data == nil {
-		return nil, fmt.Errorf("multiplexing data is nil")
-	}
-	return json.Marshal(data)
 }
 
 // RequestParams for Sadad payment token request.
@@ -128,7 +120,7 @@ type RequestParams struct {
 	OrderID          string
 	Amount           int64 // Rials
 	ReturnURL        string
-	MultiplexingData json.RawMessage // JSON-encoded MultiplexingData object
+	MultiplexingData *MultiplexingData
 }
 
 // RequestResponse is the response from Sadad payment request.
@@ -155,14 +147,14 @@ type VerificationResponse struct {
 }
 
 type paymentRequestBody struct {
-	TerminalID       string          `json:"TerminalId"`
-	MerchantID       string          `json:"MerchantId"`
-	Amount           int64           `json:"Amount"`
-	OrderID          string          `json:"OrderId"`
-	LocalDateTime    string          `json:"LocalDateTime"`
-	ReturnURL        string          `json:"ReturnUrl"`
-	SignData         string          `json:"SignData"`
-	MultiplexingData json.RawMessage `json:"MultiplexingData,omitempty"`
+	TerminalID       string            `json:"TerminalId"`
+	MerchantID       string            `json:"MerchantId"`
+	Amount           int64             `json:"Amount"`
+	OrderID          string            `json:"OrderId"`
+	LocalDateTime    string            `json:"LocalDateTime"`
+	ReturnURL        string            `json:"ReturnUrl"`
+	SignData         string            `json:"SignData"`
+	MultiplexingData *MultiplexingData `json:"MultiplexingData,omitempty"`
 }
 
 type paymentRequestAPIResponse struct {
@@ -187,7 +179,7 @@ type verifyAPIResponse struct {
 // RequestPayment initiates a payment request and returns a token.
 // Production includes MultiplexingData; BankTest sandbox omits it.
 func (c *Client) RequestPayment(params RequestParams) (*RequestResponse, error) {
-	if c.endpoints.Multiplexed && len(params.MultiplexingData) == 0 {
+	if c.endpoints.Multiplexed && params.MultiplexingData == nil {
 		return nil, fmt.Errorf("multiplexing data is required for multiplexed payments")
 	}
 

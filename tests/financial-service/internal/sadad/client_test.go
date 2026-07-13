@@ -40,7 +40,7 @@ func TestRequestPaymentSendsMultiplexingDataAndLocalDateTime(t *testing.T) {
 		OrderID:          "42",
 		Amount:           1000,
 		ReturnURL:        "https://example.com/callback",
-		MultiplexingData: mustMarshalMultiplexingData(t, sadad.MultiplexingDataForAmount("iban-123", 1000)),
+		MultiplexingData: sadad.MultiplexingDataForAmount("iban-123", 1000),
 	})
 	if err != nil {
 		t.Fatalf("RequestPayment failed: %v", err)
@@ -146,26 +146,4 @@ func TestMultiplexingDataForAmount(t *testing.T) {
 	if data.MultiplexingRows[0].IbanNumber != "IR123" || data.MultiplexingRows[0].Value != 5000 {
 		t.Fatalf("unexpected row: %+v", data.MultiplexingRows[0])
 	}
-}
-
-func TestMarshalMultiplexingData(t *testing.T) {
-	raw, err := sadad.MarshalMultiplexingData(sadad.MultiplexingDataForAmount("IR123", 5000))
-	if err != nil {
-		t.Fatalf("MarshalMultiplexingData failed: %v", err)
-	}
-	if !strings.Contains(string(raw), `"Type":"Amount"`) {
-		t.Fatalf("unexpected JSON: %s", raw)
-	}
-	if !strings.Contains(string(raw), `"IbanNumber":"IR123"`) {
-		t.Fatalf("unexpected JSON: %s", raw)
-	}
-}
-
-func mustMarshalMultiplexingData(t *testing.T, data *sadad.MultiplexingData) json.RawMessage {
-	t.Helper()
-	raw, err := sadad.MarshalMultiplexingData(data)
-	if err != nil {
-		t.Fatalf("MarshalMultiplexingData failed: %v", err)
-	}
-	return raw
 }
