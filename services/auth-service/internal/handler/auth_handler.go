@@ -119,14 +119,18 @@ func (h *authHandler) GetMe(ctx context.Context, req *pb.GetMeRequest) (*pb.User
 		HourlyProfitTimePercentage: userDetails.HourlyProfitTimePercentage,
 		VerifiedKyc:                userDetails.VerifiedKYC,
 		Birthdate:                  userDetails.Birthdate,
+		HasWallet:                  userDetails.HasWallet,
+		WalletAddress:              userDetails.WalletAddress,
 		// Token and AccessToken are omitted to match Laravel AuthenticatedUserResource structure
 	}
 
 	if userDetails.Level != nil {
 		response.Level = &pb.Level{
-			Id:    userDetails.Level.ID,
-			Title: userDetails.Level.Title,
-			Score: userDetails.Level.Score,
+			Id:          userDetails.Level.ID,
+			Title:       userDetails.Level.Title,
+			Description: userDetails.Level.Description,
+			Score:       userDetails.Level.Score,
+			Slug:        userDetails.Level.Slug,
 		}
 	}
 

@@ -74,6 +74,8 @@ type UserDetails struct {
 	HourlyProfitTimePercentage float64
 	VerifiedKYC                bool
 	Birthdate                  string
+	HasWallet                  bool
+	WalletAddress              string
 }
 
 type LevelInfo struct {
@@ -81,6 +83,7 @@ type LevelInfo struct {
 	Title       string
 	Description string
 	Score       int32
+	Slug        string
 }
 
 var (
@@ -415,6 +418,11 @@ func (s *authService) GetMe(ctx context.Context, token string) (*UserDetails, er
 
 	if user.AccessToken.Valid {
 		details.AccessToken = user.AccessToken.String
+	}
+
+	if user.WalletAddress.Valid && user.WalletAddress.String != "" {
+		details.HasWallet = true
+		details.WalletAddress = user.WalletAddress.String
 	}
 
 	if kyc != nil && kyc.Status == 1 {

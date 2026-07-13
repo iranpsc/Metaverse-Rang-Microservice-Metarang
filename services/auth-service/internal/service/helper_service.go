@@ -295,6 +295,7 @@ func (s *helperService) GetUserLevel(ctx context.Context, userID uint64) (*Level
 		ID:    resp.LatestLevel.Id,
 		Title: resp.LatestLevel.Name, // Note: proto uses "name", but we map to "Title"
 		Score: resp.LatestLevel.Score,
+		Slug:  resp.LatestLevel.Slug,
 	}
 
 	// Get description from general_info if available

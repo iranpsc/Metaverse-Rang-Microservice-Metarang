@@ -77,7 +77,7 @@ func (r *tokenRepository) ValidateToken(ctx context.Context, token string) (*mod
 		SELECT pat.id, pat.tokenable_id, pat.expires_at, pat.last_used_at,
 			   u.id, u.name, u.email, u.phone, u.password, u.code, u.referrer_id, u.score, u.ip,
 			   u.last_seen, u.email_verified_at, u.phone_verified_at, u.access_token,
-			   u.refresh_token, u.token_type, u.expires_in, u.created_at, u.updated_at
+			   u.refresh_token, u.token_type, u.expires_in, u.wallet_address, u.created_at, u.updated_at
 		FROM personal_access_tokens pat
 		INNER JOIN users u ON pat.tokenable_id = u.id AND pat.tokenable_type = 'App\\Models\\User'
 		WHERE pat.token = ?
@@ -94,7 +94,7 @@ func (r *tokenRepository) ValidateToken(ctx context.Context, token string) (*mod
 		&user.ID, &user.Name, &user.Email, &user.Phone, &user.Password,
 		&user.Code, &user.ReferrerID, &user.Score, &user.IP, &user.LastSeen,
 		&user.EmailVerifiedAt, &user.PhoneVerifiedAt, &user.AccessToken,
-		&user.RefreshToken, &user.TokenType, &user.ExpiresIn,
+		&user.RefreshToken, &user.TokenType, &user.ExpiresIn, &user.WalletAddress,
 		&user.CreatedAt, &user.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {

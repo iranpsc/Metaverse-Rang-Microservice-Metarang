@@ -213,6 +213,8 @@ message UserResponse {
   double hourly_profit_time_percentage = 12;
   bool verified_kyc = 13;
   string birthdate = 14;
+  bool has_wallet = 15;
+  string wallet_address = 16;
 }
 
 message LogoutRequest {

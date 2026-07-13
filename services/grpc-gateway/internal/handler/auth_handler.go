@@ -158,6 +158,11 @@ func (h *AuthHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var walletAddress interface{}
+	if resp.HasWallet {
+		walletAddress = resp.WalletAddress
+	}
+
 	response := map[string]interface{}{
 		"data": map[string]interface{}{
 			"id":                             resp.Id,
@@ -172,6 +177,8 @@ func (h *AuthHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 			"hourly_profit_time_percentage":  resp.HourlyProfitTimePercentage,
 			"verified_kyc":                   resp.VerifiedKyc,
 			"birthdate":                      resp.Birthdate,
+			"has_wallet":                     resp.HasWallet,
+			"wallet_address":                 walletAddress,
 		},
 	}
 
