@@ -118,57 +118,7 @@ func (h *SupportHandler) ListTickets(w http.ResponseWriter, r *http.Request) {
 	// Convert to Laravel-compatible format
 	tickets := make([]map[string]interface{}, 0, len(resp.Tickets))
 	for _, ticket := range resp.Tickets {
-		dateStr, timeStr := splitJalaliDateTime(ticket.UpdatedAt)
-		ticketMap := map[string]interface{}{
-			"id":      ticket.Id,
-			"title":   ticket.Title,
-			"content": ticket.Content,
-			"code":    ticket.Code,
-			"status":  ticket.Status,
-			"date":    dateStr,
-			"time":    timeStr,
-		}
-
-		if ticket.Sender != nil {
-			ticketMap["sender"] = map[string]interface{}{
-				"name":          ticket.Sender.Name,
-				"code":          ticket.Sender.Code,
-				"profile-photo": ticket.Sender.ProfilePhoto,
-			}
-		}
-
-		if ticket.Receiver != nil {
-			ticketMap["reciever"] = map[string]interface{}{
-				"name":          ticket.Receiver.Name,
-				"code":          ticket.Receiver.Code,
-				"profile-photo": ticket.Receiver.ProfilePhoto,
-			}
-		}
-
-		if ticket.Department != "" {
-			ticketMap["department"] = ticket.Department
-		}
-
-		if ticket.Attachment != "" {
-			ticketMap["attachment"] = ticket.Attachment
-		}
-
-		if len(ticket.Responses) > 0 {
-			responses := make([]map[string]interface{}, 0, len(ticket.Responses))
-			for _, resp := range ticket.Responses {
-				responses = append(responses, map[string]interface{}{
-					"id":             resp.Id,
-					"response":       resp.Response,
-					"attachment":     resp.Attachment,
-					"responser_name": resp.ResponserName,
-					"responser_id":   resp.ResponserId,
-					"created_at":     resp.CreatedAt,
-				})
-			}
-			ticketMap["responses"] = responses
-		}
-
-		tickets = append(tickets, ticketMap)
+		tickets = append(tickets, formatTicketResource(ticket, false))
 	}
 
 	// Simple pagination response (matching Laravel simplePaginate)
@@ -296,53 +246,7 @@ func (h *SupportHandler) GetTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dateStr, timeStr := splitJalaliDateTime(resp.UpdatedAt)
-	ticketMap := map[string]interface{}{
-		"id":      resp.Id,
-		"title":   resp.Title,
-		"content": resp.Content,
-		"code":    resp.Code,
-		"status":  resp.Status,
-		"date":    dateStr,
-		"time":    timeStr,
-	}
-
-	if resp.Sender != nil {
-		ticketMap["sender"] = map[string]interface{}{
-			"name":          resp.Sender.Name,
-			"code":          resp.Sender.Code,
-			"profile-photo": resp.Sender.ProfilePhoto,
-		}
-	}
-
-	if resp.Receiver != nil {
-		ticketMap["reciever"] = map[string]interface{}{
-			"name":          resp.Receiver.Name,
-			"code":          resp.Receiver.Code,
-			"profile-photo": resp.Receiver.ProfilePhoto,
-		}
-	}
-
-	if resp.Department != "" {
-		ticketMap["department"] = resp.Department
-	}
-
-	if len(resp.Responses) > 0 {
-		responses := make([]map[string]interface{}, 0, len(resp.Responses))
-		for _, resp := range resp.Responses {
-			responses = append(responses, map[string]interface{}{
-				"id":             resp.Id,
-				"response":       resp.Response,
-				"attachment":     resp.Attachment,
-				"responser_name": resp.ResponserName,
-				"responser_id":   resp.ResponserId,
-				"created_at":     resp.CreatedAt,
-			})
-		}
-		ticketMap["responses"] = responses
-	}
-
-	writeJSON(w, http.StatusOK, ticketMap)
+	writeJSON(w, http.StatusOK, formatTicketResource(resp, true))
 }
 
 // UpdateTicket handles PUT/PATCH /api/tickets/{ticket}
@@ -500,22 +404,19 @@ func (h *SupportHandler) AddTicketResponse(w http.ResponseWriter, r *http.Reques
 	writeJSON(w, http.StatusOK, formatTicketResponse(resp))
 }
 
-// formatTicketResponse converts a proto ticket to Laravel TicketResource-compatible JSON.
-func formatTicketResponse(resp *pbSupport.TicketResponse) map[string]interface{} {
-	dateStr, timeStr := splitJalaliDateTime(resp.CreatedAt)
+// formatTicketResource converts a proto ticket to Laravel TicketResource-compatible JSON.
+// includeResponses mirrors Laravel's whenLoaded('responses') on the show endpoint.
+func formatTicketResource(resp *pbSupport.TicketResponse, includeResponses bool) map[string]interface{} {
+	dateStr, timeStr := splitJalaliDateTime(resp.UpdatedAt)
 	ticketMap := map[string]interface{}{
-		"id":      resp.Id,
-		"title":   resp.Title,
-		"content": resp.Content,
-		"code":    resp.Code,
-		"status":  resp.Status,
-		"date":    dateStr,
-		"time":    timeStr,
-	}
-
-	if resp.CreatedAt != "" && resp.UpdatedAt == "" {
-		ticketMap["date"] = resp.CreatedAt
-		ticketMap["time"] = resp.CreatedAt
+		"id":         resp.Id,
+		"title":      resp.Title,
+		"content":    resp.Content,
+		"code":       resp.Code,
+		"status":     resp.Status,
+		"attachment": resp.Attachment,
+		"date":       dateStr,
+		"time":       timeStr,
 	}
 
 	if resp.Sender != nil {
@@ -538,26 +439,33 @@ func formatTicketResponse(resp *pbSupport.TicketResponse) map[string]interface{}
 		ticketMap["department"] = resp.Department
 	}
 
-	if resp.Attachment != "" {
-		ticketMap["attachment"] = resp.Attachment
-	}
-
-	if len(resp.Responses) > 0 {
-		responses := make([]map[string]interface{}, 0, len(resp.Responses))
-		for _, item := range resp.Responses {
-			responses = append(responses, map[string]interface{}{
-				"id":             item.Id,
-				"response":       item.Response,
-				"attachment":     item.Attachment,
-				"responser_name": item.ResponserName,
-				"responser_id":   item.ResponserId,
-				"created_at":     item.CreatedAt,
-			})
-		}
-		ticketMap["responses"] = responses
+	if includeResponses {
+		ticketMap["responses"] = formatTicketResponseItems(resp.Responses)
 	}
 
 	return ticketMap
+}
+
+func formatTicketResponse(resp *pbSupport.TicketResponse) map[string]interface{} {
+	return formatTicketResource(resp, false)
+}
+
+func formatTicketResponseItems(items []*pbSupport.TicketResponseItem) []map[string]interface{} {
+	responses := make([]map[string]interface{}, 0, len(items))
+	for _, item := range items {
+		dateStr, timeStr := splitJalaliDateTime(item.CreatedAt)
+		responses = append(responses, map[string]interface{}{
+			"id":             item.Id,
+			"ticket_id":      strconv.FormatUint(item.TicketId, 10),
+			"response":       item.Response,
+			"attachment":     item.Attachment,
+			"responser_id":   item.ResponserId,
+			"responser_name": item.ResponserName,
+			"date":           dateStr,
+			"time":           timeStr,
+		})
+	}
+	return responses
 }
 
 // CloseTicket handles GET /api/tickets/close/{ticket}
@@ -596,18 +504,7 @@ func (h *SupportHandler) CloseTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dateStr, timeStr := splitJalaliDateTime(resp.UpdatedAt)
-	ticketMap := map[string]interface{}{
-		"id":      resp.Id,
-		"title":   resp.Title,
-		"content": resp.Content,
-		"code":    resp.Code,
-		"status":  resp.Status,
-		"date":    dateStr,
-		"time":    timeStr,
-	}
-
-	writeJSON(w, http.StatusOK, ticketMap)
+	writeJSON(w, http.StatusOK, formatTicketResource(resp, false))
 }
 
 // ============================================================================

@@ -248,11 +248,5 @@ func splitJalaliDateTime(value string) (string, string) {
 		return parts[0], ""
 	}
 
-	timeValue := parts[1]
-	if strings.Count(timeValue, ":") >= 2 {
-		timeParts := strings.Split(timeValue, ":")
-		timeValue = timeParts[0] + ":" + timeParts[1]
-	}
-
-	return parts[0], timeValue
+	return parts[0], parts[1]
 }
