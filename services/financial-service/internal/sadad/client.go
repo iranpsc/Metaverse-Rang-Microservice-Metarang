@@ -112,6 +112,14 @@ func MultiplexingDataForAmount(ibanNumber string, amount int64) *MultiplexingDat
 	}
 }
 
+// MarshalMultiplexingData serializes multiplexing data as JSON for Sadad IPG requests.
+func MarshalMultiplexingData(data *MultiplexingData) (json.RawMessage, error) {
+	if data == nil {
+		return nil, fmt.Errorf("multiplexing data is nil")
+	}
+	return json.Marshal(data)
+}
+
 // RequestParams for Sadad payment token request.
 type RequestParams struct {
 	MerchantID       string
@@ -120,7 +128,7 @@ type RequestParams struct {
 	OrderID          string
 	Amount           int64 // Rials
 	ReturnURL        string
-	MultiplexingData *MultiplexingData
+	MultiplexingData json.RawMessage // JSON-encoded MultiplexingData object
 }
 
 // RequestResponse is the response from Sadad payment request.
@@ -147,14 +155,14 @@ type VerificationResponse struct {
 }
 
 type paymentRequestBody struct {
-	TerminalID       string            `json:"TerminalId"`
-	MerchantID       string            `json:"MerchantId"`
-	Amount           int64             `json:"Amount"`
-	OrderID          string            `json:"OrderId"`
-	LocalDateTime    string            `json:"LocalDateTime"`
-	ReturnURL        string            `json:"ReturnUrl"`
-	SignData         string            `json:"SignData"`
-	MultiplexingData *MultiplexingData `json:"MultiplexingData,omitempty"`
+	TerminalID       string          `json:"TerminalId"`
+	MerchantID       string          `json:"MerchantId"`
+	Amount           int64           `json:"Amount"`
+	OrderID          string          `json:"OrderId"`
+	LocalDateTime    string          `json:"LocalDateTime"`
+	ReturnURL        string          `json:"ReturnUrl"`
+	SignData         string          `json:"SignData"`
+	MultiplexingData json.RawMessage `json:"MultiplexingData,omitempty"`
 }
 
 type paymentRequestAPIResponse struct {
@@ -179,7 +187,7 @@ type verifyAPIResponse struct {
 // RequestPayment initiates a payment request and returns a token.
 // Production includes MultiplexingData; BankTest sandbox omits it.
 func (c *Client) RequestPayment(params RequestParams) (*RequestResponse, error) {
-	if c.endpoints.Multiplexed && !hasMultiplexingIban(params.MultiplexingData) {
+	if c.endpoints.Multiplexed && len(params.MultiplexingData) == 0 {
 		return nil, fmt.Errorf("multiplexing data is required for multiplexed payments")
 	}
 
@@ -370,13 +378,6 @@ func parseResCode(raw json.RawMessage) string {
 
 func isSuccessResCode(code string) bool {
 	return code == "0"
-}
-
-func hasMultiplexingIban(data *MultiplexingData) bool {
-	if data == nil || len(data.MultiplexingRows) == 0 {
-		return false
-	}
-	return data.MultiplexingRows[0].IbanNumber != ""
 }
 
 // sadadLocalDateTime returns the timestamp Sadad expects (Iran local time).

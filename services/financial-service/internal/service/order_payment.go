@@ -2,12 +2,12 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
 
-	"metarang/financial-service/internal/config"
 	"metarang/financial-service/internal/models"
 	"metarang/financial-service/internal/sadad"
 	commercialpb "metarang/shared/pb/commercial"
@@ -25,14 +25,20 @@ func (s *orderService) requestSadadPayment(orderID uint64, amount int32, asset s
 	}
 
 	amountRials := amountInRials(amount, rate)
-	var multiplexingData *sadad.MultiplexingData
+	var multiplexingData json.RawMessage
 	if ibanNumber != "" {
-		multiplexingData = sadad.MultiplexingDataForAmount(ibanNumber, amountRials)
+		var marshalErr error
+		multiplexingData, marshalErr = sadad.MarshalMultiplexingData(
+			sadad.MultiplexingDataForAmount(ibanNumber, amountRials),
+		)
+		if marshalErr != nil {
+			return "", "", fmt.Errorf("failed to marshal multiplexing data: %w", marshalErr)
+		}
 	}
 
 	// Log Sadad payment request parameters for monitoring
 	fmt.Printf(
-		"requestSadadPayment called: orderID=%d, amount=%d, asset=%s, rate=%.4f, returnURL=%s, amountRials=%d, ibanNumber=%s, multiplexingData=%+v\n",
+		"requestSadadPayment called: orderID=%d, amount=%d, asset=%s, rate=%.4f, returnURL=%s, amountRials=%d, ibanNumber=%s, multiplexingData=%s\n",
 		orderID, amount, asset, rate, returnURL, amountRials, ibanNumber, multiplexingData,
 	)
 
@@ -264,7 +270,7 @@ func parseInt64OrDefault(value string, defaultValue int64) int64 {
 }
 
 func (s *orderService) sadadCallbackReturnURL() (string, error) {
-	callbackURL := strings.TrimSpace(config.ResolveSadadCallbackURL())
+	callbackURL := strings.TrimSpace(s.sadadConfig.SadadCallbackURL)
 	if callbackURL == "" {
 		return "", fmt.Errorf("%w: SADAD_CALLBACK_URL is not configured", ErrPaymentFailed)
 	}
