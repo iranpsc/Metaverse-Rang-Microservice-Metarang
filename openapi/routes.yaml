@@ -496,6 +496,11 @@ routes:
     tag: Social
     summary: Get challenge timings
     security: bearer
+  - path: /api/advertisement
+    methods: [get]
+    tag: Social
+    summary: Get advertisement
+    security: optional
   - path: /api/challenge/question
     methods: [get]
     tag: Social
