@@ -113,6 +113,30 @@ paths:
             summary: Verify account security code
             tags:
                 - Account Security
+    /api/advertisement:
+        get:
+            operationId: get_advertisement
+            responses:
+                "200":
+                    description: Successful response
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: Unauthenticated
+                "422":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ValidationError'
+                    description: Validation error
+            security:
+                - {}
+                - BearerAuth: []
+            summary: Get advertisement
+            tags:
+                - Social
     /api/auth/callback:
         get:
             operationId: get_auth_callback
@@ -1161,6 +1185,29 @@ paths:
             summary: Get latest calendar version
             tags:
                 - Calendar
+    /api/challenge/advertisment:
+        get:
+            operationId: get_challenge_advertisment
+            responses:
+                "200":
+                    description: Successful response
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: Unauthenticated
+                "422":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ValidationError'
+                    description: Validation error
+            security:
+                - BearerAuth: []
+            summary: GetAdvertisement
+            tags:
+                - Challenge
     /api/challenge/answer:
         post:
             operationId: post_challenge_answer
