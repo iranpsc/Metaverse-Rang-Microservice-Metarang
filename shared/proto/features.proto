@@ -20,6 +20,8 @@ service FeatureService {
   rpc AddMyFeatureImages(AddMyFeatureImagesRequest) returns (FeatureResponse);
   rpc RemoveMyFeatureImage(RemoveMyFeatureImageRequest) returns (google.protobuf.Empty);
   rpc UpdateMyFeature(UpdateMyFeatureRequest) returns (google.protobuf.Empty);
+  // Trade history for a feature (owner-only)
+  rpc GetFeatureTradeHistory(GetFeatureTradeHistoryRequest) returns (GetFeatureTradeHistoryResponse);
 }
 
 // FeatureMarketplaceService handles buying/selling features
@@ -107,6 +109,54 @@ message UpdateMyFeatureRequest {
   uint64 user_id = 1; // User ID from path (for scoped binding)
   uint64 feature_id = 2; // Feature ID (must belong to user_id)
   int32 minimum_price_percentage = 3; // Required, min:80 (min:110 if user is under 18)
+}
+
+// Feature trade history (GET /api/features/{feature}/trade-history)
+message GetFeatureTradeHistoryRequest {
+  uint64 feature_id = 1;
+  int32 page = 2; // default 1
+}
+
+message GetFeatureTradeHistoryResponse {
+  repeated FeatureTradeHistoryItem data = 1;
+  PaginationLinks links = 2;
+  FeatureTradeHistoryPaginationMeta meta = 3;
+}
+
+message FeatureTradeHistoryItem {
+  optional uint64 id = 1; // null for genesis
+  string type = 2; // trade | genesis
+  optional string participant_code = 3;
+  string participant_label = 4;
+  FeatureTradeHistoryDateTime date_time = 5;
+  FeatureTradeHistoryPrice price = 6;
+}
+
+message FeatureTradeHistoryDateTime {
+  string date = 1; // Y/m/d
+  string month_name = 2;
+  int32 year = 3;
+  string time = 4; // H:i:s
+  string formatted = 5;
+}
+
+message FeatureTradeHistoryPrice {
+  string type = 1; // currency | color
+  optional int64 price_psc = 2;
+  optional int64 price_irr = 3;
+  optional string color = 4;
+  optional string color_name = 5;
+  optional int64 color_amount = 6;
+}
+
+message FeatureTradeHistoryPaginationMeta {
+  int32 current_page = 1;
+  optional int32 from = 2;
+  int32 last_page = 3;
+  string path = 4;
+  int32 per_page = 5;
+  optional int32 to = 6;
+  int32 total = 7;
 }
 
 // Pagination messages (simple pagination - no total counts)

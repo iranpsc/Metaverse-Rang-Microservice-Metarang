@@ -19,12 +19,14 @@ type pbEmpty = emptypb.Empty
 
 type FeatureHandler struct {
 	pb.UnimplementedFeatureServiceServer
-	service FeatureServicePort
+	service      FeatureServicePort
+	tradeHistory TradeHistoryServicePort
 }
 
-func NewFeatureHandler(service FeatureServicePort) *FeatureHandler {
+func NewFeatureHandler(service FeatureServicePort, tradeHistory TradeHistoryServicePort) *FeatureHandler {
 	return &FeatureHandler{
-		service: service,
+		service:      service,
+		tradeHistory: tradeHistory,
 	}
 }
 

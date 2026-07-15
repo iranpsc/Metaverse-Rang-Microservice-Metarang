@@ -21,6 +21,11 @@ type FeatureServicePort interface {
 	UpdateMyFeature(ctx context.Context, userID, featureID uint64, minimumPricePercentage int32) error
 }
 
+// TradeHistoryServicePort is implemented by *service.FeatureTradeHistoryService.
+type TradeHistoryServicePort interface {
+	Paginate(ctx context.Context, featureID, requesterID uint64, page int) (*models.TradeHistoryPage, error)
+}
+
 // MarketplaceServicePort is implemented by *service.MarketplaceService.
 type MarketplaceServicePort interface {
 	BuyFeature(ctx context.Context, featureID, buyerID uint64) (*pb.Feature, error)

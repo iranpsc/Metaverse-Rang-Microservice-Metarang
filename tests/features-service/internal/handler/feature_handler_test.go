@@ -105,7 +105,7 @@ func bboxPoints() []string {
 
 func TestFeatureHandler_ListFeatures_Validation(t *testing.T) {
 	ctx := context.Background()
-	h := handler.NewFeatureHandler(&mockFeaturePort{})
+	h := handler.NewFeatureHandler(&mockFeaturePort{}, nil)
 	_, err := h.ListFeatures(ctx, &pb.ListFeaturesRequest{Points: []string{"a", "b"}})
 	require.Error(t, err)
 	st, _ := status.FromError(err)
@@ -114,7 +114,7 @@ func TestFeatureHandler_ListFeatures_Validation(t *testing.T) {
 
 func TestFeatureHandler_ListFeatures_InvalidCoordinate(t *testing.T) {
 	ctx := context.Background()
-	h := handler.NewFeatureHandler(&mockFeaturePort{})
+	h := handler.NewFeatureHandler(&mockFeaturePort{}, nil)
 	pts := []string{"0,0", "1,0", "1,1", "x,y"}
 	_, err := h.ListFeatures(ctx, &pb.ListFeaturesRequest{Points: pts})
 	require.Error(t, err)
@@ -128,7 +128,7 @@ func TestFeatureHandler_ListFeatures_Success(t *testing.T) {
 	m.listFeatures = func(ctx context.Context, points []string, loadBuildings bool, userFeaturesLocation bool, authUserID uint64) ([]*pb.Feature, error) {
 		return []*pb.Feature{{Id: 1}}, nil
 	}
-	h := handler.NewFeatureHandler(m)
+	h := handler.NewFeatureHandler(m, nil)
 	resp, err := h.ListFeatures(ctx, &pb.ListFeaturesRequest{Points: bboxPoints()})
 	require.NoError(t, err)
 	require.Len(t, resp.Features, 1)
@@ -140,7 +140,7 @@ func TestFeatureHandler_GetFeature(t *testing.T) {
 	m.getFeature = func(ctx context.Context, featureID uint64) (*pb.Feature, error) {
 		return &pb.Feature{Id: featureID}, nil
 	}
-	h := handler.NewFeatureHandler(m)
+	h := handler.NewFeatureHandler(m, nil)
 	resp, err := h.GetFeature(ctx, &pb.GetFeatureRequest{FeatureId: 42})
 	require.NoError(t, err)
 	assert.Equal(t, uint64(42), resp.Feature.Id)
@@ -148,7 +148,7 @@ func TestFeatureHandler_GetFeature(t *testing.T) {
 
 func TestFeatureHandler_GetFeature_MissingId(t *testing.T) {
 	ctx := context.Background()
-	h := handler.NewFeatureHandler(&mockFeaturePort{})
+	h := handler.NewFeatureHandler(&mockFeaturePort{}, nil)
 	_, err := h.GetFeature(ctx, &pb.GetFeatureRequest{FeatureId: 0})
 	st, _ := status.FromError(err)
 	assert.Equal(t, codes.InvalidArgument, st.Code())
@@ -160,7 +160,7 @@ func TestFeatureHandler_GetFeature_NotFound(t *testing.T) {
 	m.getFeature = func(ctx context.Context, featureID uint64) (*pb.Feature, error) {
 		return nil, fmt.Errorf("feature not found: %w", sql.ErrNoRows)
 	}
-	h := handler.NewFeatureHandler(m)
+	h := handler.NewFeatureHandler(m, nil)
 	_, err := h.GetFeature(ctx, &pb.GetFeatureRequest{FeatureId: 99})
 	st, _ := status.FromError(err)
 	assert.Equal(t, codes.NotFound, st.Code())
@@ -172,7 +172,7 @@ func TestFeatureHandler_GetFeature_InternalError(t *testing.T) {
 	m.getFeature = func(ctx context.Context, featureID uint64) (*pb.Feature, error) {
 		return nil, errors.New("database timeout")
 	}
-	h := handler.NewFeatureHandler(m)
+	h := handler.NewFeatureHandler(m, nil)
 	_, err := h.GetFeature(ctx, &pb.GetFeatureRequest{FeatureId: 99})
 	st, _ := status.FromError(err)
 	assert.Equal(t, codes.Internal, st.Code())
@@ -184,7 +184,7 @@ func TestFeatureHandler_ListFeatures_ServiceError(t *testing.T) {
 	m.listFeatures = func(ctx context.Context, points []string, loadBuildings bool, userFeaturesLocation bool, authUserID uint64) ([]*pb.Feature, error) {
 		return nil, errors.New("db down")
 	}
-	h := handler.NewFeatureHandler(m)
+	h := handler.NewFeatureHandler(m, nil)
 	_, err := h.ListFeatures(ctx, &pb.ListFeaturesRequest{Points: bboxPoints()})
 	st, _ := status.FromError(err)
 	assert.Equal(t, codes.Internal, st.Code())
@@ -196,7 +196,7 @@ func TestFeatureHandler_UpdateFeature(t *testing.T) {
 	m.updateFeature = func(ctx context.Context, featureID uint64, properties *pb.FeatureProperties) (*pb.Feature, error) {
 		return &pb.Feature{Id: featureID}, nil
 	}
-	h := handler.NewFeatureHandler(m)
+	h := handler.NewFeatureHandler(m, nil)
 	resp, err := h.UpdateFeature(ctx, &pb.UpdateFeatureRequest{FeatureId: 3, Properties: &pb.FeatureProperties{}})
 	require.NoError(t, err)
 	assert.Equal(t, uint64(3), resp.Feature.Id)
@@ -208,7 +208,7 @@ func TestFeatureHandler_AddFeatureImages(t *testing.T) {
 	m.addImages = func(ctx context.Context, featureID uint64, imageURLs []string) (*pb.Feature, error) {
 		return &pb.Feature{Id: featureID}, nil
 	}
-	h := handler.NewFeatureHandler(m)
+	h := handler.NewFeatureHandler(m, nil)
 	resp, err := h.AddFeatureImages(ctx, &pb.AddFeatureImagesRequest{FeatureId: 5, ImageUrls: []string{"http://x/y.jpg"}})
 	require.NoError(t, err)
 	assert.Equal(t, uint64(5), resp.Feature.Id)
@@ -216,7 +216,7 @@ func TestFeatureHandler_AddFeatureImages(t *testing.T) {
 
 func TestFeatureHandler_AddFeatureImages_NoUrls(t *testing.T) {
 	ctx := context.Background()
-	h := handler.NewFeatureHandler(&mockFeaturePort{})
+	h := handler.NewFeatureHandler(&mockFeaturePort{}, nil)
 	_, err := h.AddFeatureImages(ctx, &pb.AddFeatureImagesRequest{FeatureId: 5, ImageUrls: nil})
 	st, _ := status.FromError(err)
 	assert.Equal(t, codes.InvalidArgument, st.Code())
@@ -228,7 +228,7 @@ func TestFeatureHandler_GetMyFeatures(t *testing.T) {
 	m.getMyFeatures = func(ctx context.Context, userID uint64) ([]*pb.Feature, error) {
 		return []*pb.Feature{{Id: 7}}, nil
 	}
-	h := handler.NewFeatureHandler(m)
+	h := handler.NewFeatureHandler(m, nil)
 	resp, err := h.GetMyFeatures(ctx, &pb.GetMyFeaturesRequest{UserId: 99})
 	require.NoError(t, err)
 	require.Len(t, resp.Features, 1)
@@ -240,7 +240,7 @@ func TestFeatureHandler_GetMyFeatures_Error(t *testing.T) {
 	m.getMyFeatures = func(ctx context.Context, userID uint64) ([]*pb.Feature, error) {
 		return nil, errors.New("db")
 	}
-	h := handler.NewFeatureHandler(m)
+	h := handler.NewFeatureHandler(m, nil)
 	_, err := h.GetMyFeatures(ctx, &pb.GetMyFeaturesRequest{UserId: 1})
 	st, _ := status.FromError(err)
 	assert.Equal(t, codes.Internal, st.Code())
@@ -252,7 +252,7 @@ func TestFeatureHandler_UpdateFeature_Error(t *testing.T) {
 	m.updateFeature = func(ctx context.Context, featureID uint64, properties *pb.FeatureProperties) (*pb.Feature, error) {
 		return nil, errors.New("failed")
 	}
-	h := handler.NewFeatureHandler(m)
+	h := handler.NewFeatureHandler(m, nil)
 	_, err := h.UpdateFeature(ctx, &pb.UpdateFeatureRequest{FeatureId: 1, Properties: &pb.FeatureProperties{}})
 	st, _ := status.FromError(err)
 	assert.Equal(t, codes.Internal, st.Code())
@@ -264,7 +264,7 @@ func TestFeatureHandler_AddFeatureImages_Error(t *testing.T) {
 	m.addImages = func(ctx context.Context, featureID uint64, imageURLs []string) (*pb.Feature, error) {
 		return nil, errors.New("failed")
 	}
-	h := handler.NewFeatureHandler(m)
+	h := handler.NewFeatureHandler(m, nil)
 	_, err := h.AddFeatureImages(ctx, &pb.AddFeatureImagesRequest{FeatureId: 1, ImageUrls: []string{"http://x"}})
 	st, _ := status.FromError(err)
 	assert.Equal(t, codes.Internal, st.Code())
@@ -272,7 +272,7 @@ func TestFeatureHandler_AddFeatureImages_Error(t *testing.T) {
 
 func TestFeatureHandler_GetMyFeatures_MissingUser(t *testing.T) {
 	ctx := context.Background()
-	h := handler.NewFeatureHandler(&mockFeaturePort{})
+	h := handler.NewFeatureHandler(&mockFeaturePort{}, nil)
 	_, err := h.GetMyFeatures(ctx, &pb.GetMyFeaturesRequest{UserId: 0})
 	st, _ := status.FromError(err)
 	assert.Equal(t, codes.InvalidArgument, st.Code())

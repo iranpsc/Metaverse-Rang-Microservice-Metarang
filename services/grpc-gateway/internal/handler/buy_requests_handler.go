@@ -407,6 +407,15 @@ func (h *FeaturesHandler) HandleFeaturesRoutes(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	if strings.HasSuffix(path, "/trade-history") {
+		if r.Method == http.MethodGet {
+			h.GetFeatureTradeHistory(w, r)
+		} else {
+			http.NotFound(w, r)
+		}
+		return
+	}
+
 	if strings.Contains(path, "/build/package") {
 		if r.Method == http.MethodGet {
 			h.GetBuildPackage(w, r)

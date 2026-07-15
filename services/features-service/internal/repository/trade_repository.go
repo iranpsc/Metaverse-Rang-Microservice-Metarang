@@ -3,8 +3,10 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
+	"metarang/features-service/internal/constants"
 	"metarang/features-service/internal/models"
 )
 
@@ -145,4 +147,116 @@ func (r *TradeRepository) GetTimeRemaining(trade *models.Trade) (hours int, minu
 	hours = int(remaining.Hours())
 	minutes = int(remaining.Minutes()) % 60
 	return hours, minutes
+}
+
+// FindSystemUserID returns the ID of the RGB system user (code = hm-2000000).
+func (r *TradeRepository) FindSystemUserID(ctx context.Context) (uint64, error) {
+	var id uint64
+	err := r.db.QueryRowContext(ctx, "SELECT id FROM users WHERE code = ? LIMIT 1", constants.RGBUserCode).Scan(&id)
+	if err != nil {
+		return 0, fmt.Errorf("find system user: %w", err)
+	}
+	return id, nil
+}
+
+// ListByFeatureWithDetails loads trades for a feature with buyer info and color withdraw transactions.
+// Results are ordered by created_at DESC, id DESC.
+func (r *TradeRepository) ListByFeatureWithDetails(ctx context.Context, featureID uint64) ([]models.TradeHistoryTrade, error) {
+	query := `
+		SELECT
+			t.id, t.feature_id, t.buyer_id, t.seller_id,
+			COALESCE(t.irr_amount, 0), COALESCE(t.psc_amount, 0),
+			t.date, t.created_at,
+			COALESCE(buyer.code, ''), COALESCE(buyer.name, '')
+		FROM trades t
+		LEFT JOIN users buyer ON t.buyer_id = buyer.id
+		WHERE t.feature_id = ?
+		ORDER BY t.created_at DESC, t.id DESC
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, featureID)
+	if err != nil {
+		return nil, fmt.Errorf("list trades for feature %d: %w", featureID, err)
+	}
+	defer rows.Close()
+
+	trades := make([]models.TradeHistoryTrade, 0)
+	tradeIDs := make([]uint64, 0)
+	tradeIndex := make(map[uint64]int)
+
+	for rows.Next() {
+		var trade models.TradeHistoryTrade
+		var date, createdAt sql.NullTime
+		if err := rows.Scan(
+			&trade.ID, &trade.FeatureID, &trade.BuyerID, &trade.SellerID,
+			&trade.IRRAmount, &trade.PSCAmount,
+			&date, &createdAt,
+			&trade.BuyerCode, &trade.BuyerName,
+		); err != nil {
+			return nil, fmt.Errorf("scan trade: %w", err)
+		}
+		trade.Date = date
+		trade.CreatedAt = createdAt
+		trade.Transactions = []models.TradeHistoryTransaction{}
+		tradeIndex[trade.ID] = len(trades)
+		trades = append(trades, trade)
+		tradeIDs = append(tradeIDs, trade.ID)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate trades: %w", err)
+	}
+
+	if len(tradeIDs) == 0 {
+		return trades, nil
+	}
+
+	txQuery := `
+		SELECT payable_id, asset, amount, action
+		FROM transactions
+		WHERE payable_type = ?
+		  AND payable_id IN (` + placeholders(len(tradeIDs)) + `)
+		  AND action = 'withdraw'
+		  AND asset IN ('red', 'blue', 'yellow')
+	`
+	args := make([]interface{}, 0, len(tradeIDs)+1)
+	args = append(args, `App\Models\Trade`)
+	for _, id := range tradeIDs {
+		args = append(args, id)
+	}
+
+	txRows, err := r.db.QueryContext(ctx, txQuery, args...)
+	if err != nil {
+		return nil, fmt.Errorf("list trade transactions: %w", err)
+	}
+	defer txRows.Close()
+
+	for txRows.Next() {
+		var payableID uint64
+		var tx models.TradeHistoryTransaction
+		if err := txRows.Scan(&payableID, &tx.Asset, &tx.Amount, &tx.Action); err != nil {
+			return nil, fmt.Errorf("scan trade transaction: %w", err)
+		}
+		if idx, ok := tradeIndex[payableID]; ok {
+			trades[idx].Transactions = append(trades[idx].Transactions, tx)
+		}
+	}
+	if err := txRows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate trade transactions: %w", err)
+	}
+
+	return trades, nil
+}
+
+func placeholders(n int) string {
+	if n <= 0 {
+		return ""
+	}
+	b := make([]byte, 0, n*2-1)
+	for i := 0; i < n; i++ {
+		if i > 0 {
+			b = append(b, ',')
+		}
+		b = append(b, '?')
+	}
+	return string(b)
 }

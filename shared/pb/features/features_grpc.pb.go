@@ -20,16 +20,17 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	FeatureService_ListFeatures_FullMethodName         = "/features.FeatureService/ListFeatures"
-	FeatureService_GetFeature_FullMethodName           = "/features.FeatureService/GetFeature"
-	FeatureService_UpdateFeature_FullMethodName        = "/features.FeatureService/UpdateFeature"
-	FeatureService_AddFeatureImages_FullMethodName     = "/features.FeatureService/AddFeatureImages"
-	FeatureService_GetMyFeatures_FullMethodName        = "/features.FeatureService/GetMyFeatures"
-	FeatureService_ListMyFeatures_FullMethodName       = "/features.FeatureService/ListMyFeatures"
-	FeatureService_GetMyFeature_FullMethodName         = "/features.FeatureService/GetMyFeature"
-	FeatureService_AddMyFeatureImages_FullMethodName   = "/features.FeatureService/AddMyFeatureImages"
-	FeatureService_RemoveMyFeatureImage_FullMethodName = "/features.FeatureService/RemoveMyFeatureImage"
-	FeatureService_UpdateMyFeature_FullMethodName      = "/features.FeatureService/UpdateMyFeature"
+	FeatureService_ListFeatures_FullMethodName           = "/features.FeatureService/ListFeatures"
+	FeatureService_GetFeature_FullMethodName             = "/features.FeatureService/GetFeature"
+	FeatureService_UpdateFeature_FullMethodName          = "/features.FeatureService/UpdateFeature"
+	FeatureService_AddFeatureImages_FullMethodName       = "/features.FeatureService/AddFeatureImages"
+	FeatureService_GetMyFeatures_FullMethodName          = "/features.FeatureService/GetMyFeatures"
+	FeatureService_ListMyFeatures_FullMethodName         = "/features.FeatureService/ListMyFeatures"
+	FeatureService_GetMyFeature_FullMethodName           = "/features.FeatureService/GetMyFeature"
+	FeatureService_AddMyFeatureImages_FullMethodName     = "/features.FeatureService/AddMyFeatureImages"
+	FeatureService_RemoveMyFeatureImage_FullMethodName   = "/features.FeatureService/RemoveMyFeatureImage"
+	FeatureService_UpdateMyFeature_FullMethodName        = "/features.FeatureService/UpdateMyFeature"
+	FeatureService_GetFeatureTradeHistory_FullMethodName = "/features.FeatureService/GetFeatureTradeHistory"
 )
 
 // FeatureServiceClient is the client API for FeatureService service.
@@ -49,6 +50,8 @@ type FeatureServiceClient interface {
 	AddMyFeatureImages(ctx context.Context, in *AddMyFeatureImagesRequest, opts ...grpc.CallOption) (*FeatureResponse, error)
 	RemoveMyFeatureImage(ctx context.Context, in *RemoveMyFeatureImageRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	UpdateMyFeature(ctx context.Context, in *UpdateMyFeatureRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Trade history for a feature (owner-only)
+	GetFeatureTradeHistory(ctx context.Context, in *GetFeatureTradeHistoryRequest, opts ...grpc.CallOption) (*GetFeatureTradeHistoryResponse, error)
 }
 
 type featureServiceClient struct {
@@ -159,6 +162,16 @@ func (c *featureServiceClient) UpdateMyFeature(ctx context.Context, in *UpdateMy
 	return out, nil
 }
 
+func (c *featureServiceClient) GetFeatureTradeHistory(ctx context.Context, in *GetFeatureTradeHistoryRequest, opts ...grpc.CallOption) (*GetFeatureTradeHistoryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetFeatureTradeHistoryResponse)
+	err := c.cc.Invoke(ctx, FeatureService_GetFeatureTradeHistory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // FeatureServiceServer is the server API for FeatureService service.
 // All implementations must embed UnimplementedFeatureServiceServer
 // for forward compatibility.
@@ -176,6 +189,8 @@ type FeatureServiceServer interface {
 	AddMyFeatureImages(context.Context, *AddMyFeatureImagesRequest) (*FeatureResponse, error)
 	RemoveMyFeatureImage(context.Context, *RemoveMyFeatureImageRequest) (*emptypb.Empty, error)
 	UpdateMyFeature(context.Context, *UpdateMyFeatureRequest) (*emptypb.Empty, error)
+	// Trade history for a feature (owner-only)
+	GetFeatureTradeHistory(context.Context, *GetFeatureTradeHistoryRequest) (*GetFeatureTradeHistoryResponse, error)
 	mustEmbedUnimplementedFeatureServiceServer()
 }
 
@@ -215,6 +230,9 @@ func (UnimplementedFeatureServiceServer) RemoveMyFeatureImage(context.Context, *
 }
 func (UnimplementedFeatureServiceServer) UpdateMyFeature(context.Context, *UpdateMyFeatureRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateMyFeature not implemented")
+}
+func (UnimplementedFeatureServiceServer) GetFeatureTradeHistory(context.Context, *GetFeatureTradeHistoryRequest) (*GetFeatureTradeHistoryResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetFeatureTradeHistory not implemented")
 }
 func (UnimplementedFeatureServiceServer) mustEmbedUnimplementedFeatureServiceServer() {}
 func (UnimplementedFeatureServiceServer) testEmbeddedByValue()                        {}
@@ -417,6 +435,24 @@ func _FeatureService_UpdateMyFeature_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _FeatureService_GetFeatureTradeHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetFeatureTradeHistoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FeatureServiceServer).GetFeatureTradeHistory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FeatureService_GetFeatureTradeHistory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FeatureServiceServer).GetFeatureTradeHistory(ctx, req.(*GetFeatureTradeHistoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // FeatureService_ServiceDesc is the grpc.ServiceDesc for FeatureService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -463,6 +499,10 @@ var FeatureService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateMyFeature",
 			Handler:    _FeatureService_UpdateMyFeature_Handler,
+		},
+		{
+			MethodName: "GetFeatureTradeHistory",
+			Handler:    _FeatureService_GetFeatureTradeHistory_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

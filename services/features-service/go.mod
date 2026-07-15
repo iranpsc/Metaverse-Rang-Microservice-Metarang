@@ -6,6 +6,7 @@ require (
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/prometheus/client_golang v1.17.0
 	github.com/redis/go-redis/v9 v9.16.0
+	github.com/yaa110/go-persian-calendar v1.2.0
 	google.golang.org/grpc v1.79.3
 	google.golang.org/protobuf v1.36.11
 	metarang/shared v0.0.0
@@ -28,7 +29,6 @@ require (
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.11.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/yaa110/go-persian-calendar v1.2.0 // indirect
 	golang.org/x/crypto v0.53.0 // indirect
 	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
