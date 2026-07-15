@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"metarang/features-service/internal/models"
 	pb "metarang/shared/pb/features"
 )
 
@@ -572,4 +573,54 @@ func (r *BuildingRepository) FirstOrCreateIsicCode(ctx context.Context, activity
 	}
 
 	return uint64(insertID), nil
+}
+
+// FindCompleted returns buildings whose construction_end_date is before now (Laravel constructionCompleted scope).
+func (r *BuildingRepository) FindCompleted(ctx context.Context, now time.Time, limit, offset int) ([]models.CompletedBuildingRow, error) {
+	query := `
+		SELECT
+			b.id,
+			b.feature_id,
+			COALESCE(fp.id, '') AS feature_properties_id,
+			COALESCE(bm.attributes, '[]') AS attributes
+		FROM buildings b
+		INNER JOIN building_models bm ON b.model_id = bm.id
+		LEFT JOIN feature_properties fp ON b.feature_id = fp.feature_id
+		WHERE b.construction_end_date < ?
+		ORDER BY b.id ASC
+		LIMIT ? OFFSET ?
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, now, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list completed buildings: %w", err)
+	}
+	defer rows.Close()
+
+	result := make([]models.CompletedBuildingRow, 0)
+	for rows.Next() {
+		var row models.CompletedBuildingRow
+		if err := rows.Scan(&row.ID, &row.FeatureID, &row.FeaturePropertiesID, &row.AttributesJSON); err != nil {
+			return nil, fmt.Errorf("failed to scan completed building: %w", err)
+		}
+		result = append(result, row)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed iterating completed buildings: %w", err)
+	}
+	return result, nil
+}
+
+// CountCompleted counts buildings whose construction_end_date is before now.
+func (r *BuildingRepository) CountCompleted(ctx context.Context, now time.Time) (int, error) {
+	query := `
+		SELECT COUNT(*)
+		FROM buildings b
+		WHERE b.construction_end_date < ?
+	`
+	var count int
+	if err := r.db.QueryRowContext(ctx, query, now).Scan(&count); err != nil {
+		return 0, fmt.Errorf("failed to count completed buildings: %w", err)
+	}
+	return count, nil
 }

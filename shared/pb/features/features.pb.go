@@ -4330,6 +4330,195 @@ func (x *DestroyBuildingRequest) GetBuildingModelId() string {
 	return ""
 }
 
+// Completed buildings (GET /api/features/build/completed)
+type ListCompletedBuildingsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Page          int32                  `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"` // default 1, 10 items per page
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListCompletedBuildingsRequest) Reset() {
+	*x = ListCompletedBuildingsRequest{}
+	mi := &file_features_proto_msgTypes[66]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListCompletedBuildingsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListCompletedBuildingsRequest) ProtoMessage() {}
+
+func (x *ListCompletedBuildingsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_features_proto_msgTypes[66]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListCompletedBuildingsRequest.ProtoReflect.Descriptor instead.
+func (*ListCompletedBuildingsRequest) Descriptor() ([]byte, []int) {
+	return file_features_proto_rawDescGZIP(), []int{66}
+}
+
+func (x *ListCompletedBuildingsRequest) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+type ListCompletedBuildingsResponse struct {
+	state         protoimpl.MessageState             `protogen:"open.v1"`
+	Data          []*CompletedBuilding               `protobuf:"bytes,1,rep,name=data,proto3" json:"data,omitempty"`
+	Links         *PaginationLinks                   `protobuf:"bytes,2,opt,name=links,proto3" json:"links,omitempty"`
+	Meta          *FeatureTradeHistoryPaginationMeta `protobuf:"bytes,3,opt,name=meta,proto3" json:"meta,omitempty"` // full Laravel-style pagination meta
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListCompletedBuildingsResponse) Reset() {
+	*x = ListCompletedBuildingsResponse{}
+	mi := &file_features_proto_msgTypes[67]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListCompletedBuildingsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListCompletedBuildingsResponse) ProtoMessage() {}
+
+func (x *ListCompletedBuildingsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_features_proto_msgTypes[67]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListCompletedBuildingsResponse.ProtoReflect.Descriptor instead.
+func (*ListCompletedBuildingsResponse) Descriptor() ([]byte, []int) {
+	return file_features_proto_rawDescGZIP(), []int{67}
+}
+
+func (x *ListCompletedBuildingsResponse) GetData() []*CompletedBuilding {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+func (x *ListCompletedBuildingsResponse) GetLinks() *PaginationLinks {
+	if x != nil {
+		return x.Links
+	}
+	return nil
+}
+
+func (x *ListCompletedBuildingsResponse) GetMeta() *FeatureTradeHistoryPaginationMeta {
+	if x != nil {
+		return x.Meta
+	}
+	return nil
+}
+
+type CompletedBuilding struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	Id                  uint64                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	FeatureId           uint64                 `protobuf:"varint,2,opt,name=feature_id,json=featureId,proto3" json:"feature_id,omitempty"`
+	FeaturePropertiesId string                 `protobuf:"bytes,3,opt,name=feature_properties_id,json=featurePropertiesId,proto3" json:"feature_properties_id,omitempty"`
+	Name                *string                `protobuf:"bytes,4,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	BuildingTotalArea   *string                `protobuf:"bytes,5,opt,name=building_total_area,json=buildingTotalArea,proto3,oneof" json:"building_total_area,omitempty"`
+	Density             *string                `protobuf:"bytes,6,opt,name=density,proto3,oneof" json:"density,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *CompletedBuilding) Reset() {
+	*x = CompletedBuilding{}
+	mi := &file_features_proto_msgTypes[68]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CompletedBuilding) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CompletedBuilding) ProtoMessage() {}
+
+func (x *CompletedBuilding) ProtoReflect() protoreflect.Message {
+	mi := &file_features_proto_msgTypes[68]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CompletedBuilding.ProtoReflect.Descriptor instead.
+func (*CompletedBuilding) Descriptor() ([]byte, []int) {
+	return file_features_proto_rawDescGZIP(), []int{68}
+}
+
+func (x *CompletedBuilding) GetId() uint64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *CompletedBuilding) GetFeatureId() uint64 {
+	if x != nil {
+		return x.FeatureId
+	}
+	return 0
+}
+
+func (x *CompletedBuilding) GetFeaturePropertiesId() string {
+	if x != nil {
+		return x.FeaturePropertiesId
+	}
+	return ""
+}
+
+func (x *CompletedBuilding) GetName() string {
+	if x != nil && x.Name != nil {
+		return *x.Name
+	}
+	return ""
+}
+
+func (x *CompletedBuilding) GetBuildingTotalArea() string {
+	if x != nil && x.BuildingTotalArea != nil {
+		return *x.BuildingTotalArea
+	}
+	return ""
+}
+
+func (x *CompletedBuilding) GetDensity() string {
+	if x != nil && x.Density != nil {
+		return *x.Density
+	}
+	return ""
+}
+
 type ListMapsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -4338,7 +4527,7 @@ type ListMapsRequest struct {
 
 func (x *ListMapsRequest) Reset() {
 	*x = ListMapsRequest{}
-	mi := &file_features_proto_msgTypes[66]
+	mi := &file_features_proto_msgTypes[69]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4350,7 +4539,7 @@ func (x *ListMapsRequest) String() string {
 func (*ListMapsRequest) ProtoMessage() {}
 
 func (x *ListMapsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_features_proto_msgTypes[66]
+	mi := &file_features_proto_msgTypes[69]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4363,7 +4552,7 @@ func (x *ListMapsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMapsRequest.ProtoReflect.Descriptor instead.
 func (*ListMapsRequest) Descriptor() ([]byte, []int) {
-	return file_features_proto_rawDescGZIP(), []int{66}
+	return file_features_proto_rawDescGZIP(), []int{69}
 }
 
 type GetMapRequest struct {
@@ -4375,7 +4564,7 @@ type GetMapRequest struct {
 
 func (x *GetMapRequest) Reset() {
 	*x = GetMapRequest{}
-	mi := &file_features_proto_msgTypes[67]
+	mi := &file_features_proto_msgTypes[70]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4387,7 +4576,7 @@ func (x *GetMapRequest) String() string {
 func (*GetMapRequest) ProtoMessage() {}
 
 func (x *GetMapRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_features_proto_msgTypes[67]
+	mi := &file_features_proto_msgTypes[70]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4400,7 +4589,7 @@ func (x *GetMapRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMapRequest.ProtoReflect.Descriptor instead.
 func (*GetMapRequest) Descriptor() ([]byte, []int) {
-	return file_features_proto_rawDescGZIP(), []int{67}
+	return file_features_proto_rawDescGZIP(), []int{70}
 }
 
 func (x *GetMapRequest) GetMapId() uint64 {
@@ -4419,7 +4608,7 @@ type ListMapsResponse struct {
 
 func (x *ListMapsResponse) Reset() {
 	*x = ListMapsResponse{}
-	mi := &file_features_proto_msgTypes[68]
+	mi := &file_features_proto_msgTypes[71]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4431,7 +4620,7 @@ func (x *ListMapsResponse) String() string {
 func (*ListMapsResponse) ProtoMessage() {}
 
 func (x *ListMapsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_features_proto_msgTypes[68]
+	mi := &file_features_proto_msgTypes[71]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4444,7 +4633,7 @@ func (x *ListMapsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMapsResponse.ProtoReflect.Descriptor instead.
 func (*ListMapsResponse) Descriptor() ([]byte, []int) {
-	return file_features_proto_rawDescGZIP(), []int{68}
+	return file_features_proto_rawDescGZIP(), []int{71}
 }
 
 func (x *ListMapsResponse) GetMaps() []*Map {
@@ -4463,7 +4652,7 @@ type GetMapResponse struct {
 
 func (x *GetMapResponse) Reset() {
 	*x = GetMapResponse{}
-	mi := &file_features_proto_msgTypes[69]
+	mi := &file_features_proto_msgTypes[72]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4475,7 +4664,7 @@ func (x *GetMapResponse) String() string {
 func (*GetMapResponse) ProtoMessage() {}
 
 func (x *GetMapResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_features_proto_msgTypes[69]
+	mi := &file_features_proto_msgTypes[72]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4488,7 +4677,7 @@ func (x *GetMapResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMapResponse.ProtoReflect.Descriptor instead.
 func (*GetMapResponse) Descriptor() ([]byte, []int) {
-	return file_features_proto_rawDescGZIP(), []int{69}
+	return file_features_proto_rawDescGZIP(), []int{72}
 }
 
 func (x *GetMapResponse) GetMap() *Map {
@@ -4507,7 +4696,7 @@ type GetMapBorderResponse struct {
 
 func (x *GetMapBorderResponse) Reset() {
 	*x = GetMapBorderResponse{}
-	mi := &file_features_proto_msgTypes[70]
+	mi := &file_features_proto_msgTypes[73]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4519,7 +4708,7 @@ func (x *GetMapBorderResponse) String() string {
 func (*GetMapBorderResponse) ProtoMessage() {}
 
 func (x *GetMapBorderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_features_proto_msgTypes[70]
+	mi := &file_features_proto_msgTypes[73]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4532,7 +4721,7 @@ func (x *GetMapBorderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMapBorderResponse.ProtoReflect.Descriptor instead.
 func (*GetMapBorderResponse) Descriptor() ([]byte, []int) {
-	return file_features_proto_rawDescGZIP(), []int{70}
+	return file_features_proto_rawDescGZIP(), []int{73}
 }
 
 func (x *GetMapBorderResponse) GetData() *MapBorderData {
@@ -4551,7 +4740,7 @@ type MapBorderData struct {
 
 func (x *MapBorderData) Reset() {
 	*x = MapBorderData{}
-	mi := &file_features_proto_msgTypes[71]
+	mi := &file_features_proto_msgTypes[74]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4563,7 +4752,7 @@ func (x *MapBorderData) String() string {
 func (*MapBorderData) ProtoMessage() {}
 
 func (x *MapBorderData) ProtoReflect() protoreflect.Message {
-	mi := &file_features_proto_msgTypes[71]
+	mi := &file_features_proto_msgTypes[74]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4576,7 +4765,7 @@ func (x *MapBorderData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MapBorderData.ProtoReflect.Descriptor instead.
 func (*MapBorderData) Descriptor() ([]byte, []int) {
-	return file_features_proto_rawDescGZIP(), []int{71}
+	return file_features_proto_rawDescGZIP(), []int{74}
 }
 
 func (x *MapBorderData) GetBorderCoordinates() string {
@@ -4605,7 +4794,7 @@ type Map struct {
 
 func (x *Map) Reset() {
 	*x = Map{}
-	mi := &file_features_proto_msgTypes[72]
+	mi := &file_features_proto_msgTypes[75]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4617,7 +4806,7 @@ func (x *Map) String() string {
 func (*Map) ProtoMessage() {}
 
 func (x *Map) ProtoReflect() protoreflect.Message {
-	mi := &file_features_proto_msgTypes[72]
+	mi := &file_features_proto_msgTypes[75]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4630,7 +4819,7 @@ func (x *Map) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Map.ProtoReflect.Descriptor instead.
 func (*Map) Descriptor() ([]byte, []int) {
-	return file_features_proto_rawDescGZIP(), []int{72}
+	return file_features_proto_rawDescGZIP(), []int{75}
 }
 
 func (x *Map) GetId() uint64 {
@@ -4714,7 +4903,7 @@ type MapFeatures struct {
 
 func (x *MapFeatures) Reset() {
 	*x = MapFeatures{}
-	mi := &file_features_proto_msgTypes[73]
+	mi := &file_features_proto_msgTypes[76]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4726,7 +4915,7 @@ func (x *MapFeatures) String() string {
 func (*MapFeatures) ProtoMessage() {}
 
 func (x *MapFeatures) ProtoReflect() protoreflect.Message {
-	mi := &file_features_proto_msgTypes[73]
+	mi := &file_features_proto_msgTypes[76]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4739,7 +4928,7 @@ func (x *MapFeatures) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MapFeatures.ProtoReflect.Descriptor instead.
 func (*MapFeatures) Descriptor() ([]byte, []int) {
-	return file_features_proto_rawDescGZIP(), []int{73}
+	return file_features_proto_rawDescGZIP(), []int{76}
 }
 
 func (x *MapFeatures) GetMaskoni() *MapFeatureCount {
@@ -4772,7 +4961,7 @@ type MapFeatureCount struct {
 
 func (x *MapFeatureCount) Reset() {
 	*x = MapFeatureCount{}
-	mi := &file_features_proto_msgTypes[74]
+	mi := &file_features_proto_msgTypes[77]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4784,7 +4973,7 @@ func (x *MapFeatureCount) String() string {
 func (*MapFeatureCount) ProtoMessage() {}
 
 func (x *MapFeatureCount) ProtoReflect() protoreflect.Message {
-	mi := &file_features_proto_msgTypes[74]
+	mi := &file_features_proto_msgTypes[77]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4797,7 +4986,7 @@ func (x *MapFeatureCount) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MapFeatureCount.ProtoReflect.Descriptor instead.
 func (*MapFeatureCount) Descriptor() ([]byte, []int) {
-	return file_features_proto_rawDescGZIP(), []int{74}
+	return file_features_proto_rawDescGZIP(), []int{77}
 }
 
 func (x *MapFeatureCount) GetSold() int32 {
@@ -5174,7 +5363,25 @@ const file_features_proto_rawDesc = "" +
 	"\x16DestroyBuildingRequest\x12\x1d\n" +
 	"\n" +
 	"feature_id\x18\x01 \x01(\x04R\tfeatureId\x12*\n" +
-	"\x11building_model_id\x18\x02 \x01(\tR\x0fbuildingModelId\"\x11\n" +
+	"\x11building_model_id\x18\x02 \x01(\tR\x0fbuildingModelId\"3\n" +
+	"\x1dListCompletedBuildingsRequest\x12\x12\n" +
+	"\x04page\x18\x01 \x01(\x05R\x04page\"\xc3\x01\n" +
+	"\x1eListCompletedBuildingsResponse\x12/\n" +
+	"\x04data\x18\x01 \x03(\v2\x1b.features.CompletedBuildingR\x04data\x12/\n" +
+	"\x05links\x18\x02 \x01(\v2\x19.features.PaginationLinksR\x05links\x12?\n" +
+	"\x04meta\x18\x03 \x01(\v2+.features.FeatureTradeHistoryPaginationMetaR\x04meta\"\x90\x02\n" +
+	"\x11CompletedBuilding\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x1d\n" +
+	"\n" +
+	"feature_id\x18\x02 \x01(\x04R\tfeatureId\x122\n" +
+	"\x15feature_properties_id\x18\x03 \x01(\tR\x13featurePropertiesId\x12\x17\n" +
+	"\x04name\x18\x04 \x01(\tH\x00R\x04name\x88\x01\x01\x123\n" +
+	"\x13building_total_area\x18\x05 \x01(\tH\x01R\x11buildingTotalArea\x88\x01\x01\x12\x1d\n" +
+	"\adensity\x18\x06 \x01(\tH\x02R\adensity\x88\x01\x01B\a\n" +
+	"\x05_nameB\x16\n" +
+	"\x14_building_total_areaB\n" +
+	"\n" +
+	"\b_density\"\x11\n" +
 	"\x0fListMapsRequest\"&\n" +
 	"\rGetMapRequest\x12\x15\n" +
 	"\x06map_id\x18\x01 \x01(\x04R\x05mapId\"5\n" +
@@ -5234,13 +5441,14 @@ const file_features_proto_rawDesc = "" +
 	"\x14FeatureProfitService\x12V\n" +
 	"\x10GetHourlyProfits\x12!.features.GetHourlyProfitsRequest\x1a\x1f.features.HourlyProfitsResponse\x12S\n" +
 	"\x0fGetSingleProfit\x12 .features.GetSingleProfitRequest\x1a\x1e.features.HourlyProfitResponse\x12k\n" +
-	"\x17GetProfitsByApplication\x12(.features.GetProfitsByApplicationRequest\x1a&.features.ProfitsByApplicationResponse2\xa1\x03\n" +
+	"\x17GetProfitsByApplication\x12(.features.GetProfitsByApplicationRequest\x1a&.features.ProfitsByApplicationResponse2\x8e\x04\n" +
 	"\x0fBuildingService\x12S\n" +
 	"\x0fGetBuildPackage\x12 .features.GetBuildPackageRequest\x1a\x1e.features.BuildPackageResponse\x12M\n" +
 	"\fBuildFeature\x12\x1d.features.BuildFeatureRequest\x1a\x1e.features.BuildFeatureResponse\x12J\n" +
 	"\fGetBuildings\x12\x1d.features.GetBuildingsRequest\x1a\x1b.features.BuildingsResponse\x12M\n" +
 	"\x0eUpdateBuilding\x12\x1f.features.UpdateBuildingRequest\x1a\x1a.features.BuildingResponse\x12O\n" +
-	"\x0fDestroyBuilding\x12 .features.DestroyBuildingRequest\x1a\x1a.features.BuildingResponse2\xd6\x01\n" +
+	"\x0fDestroyBuilding\x12 .features.DestroyBuildingRequest\x1a\x1a.features.BuildingResponse\x12k\n" +
+	"\x16ListCompletedBuildings\x12'.features.ListCompletedBuildingsRequest\x1a(.features.ListCompletedBuildingsResponse2\xd6\x01\n" +
 	"\vMapsService\x12A\n" +
 	"\bListMaps\x12\x19.features.ListMapsRequest\x1a\x1a.features.ListMapsResponse\x12;\n" +
 	"\x06GetMap\x12\x17.features.GetMapRequest\x1a\x18.features.GetMapResponse\x12G\n" +
@@ -5258,7 +5466,7 @@ func file_features_proto_rawDescGZIP() []byte {
 	return file_features_proto_rawDescData
 }
 
-var file_features_proto_msgTypes = make([]protoimpl.MessageInfo, 75)
+var file_features_proto_msgTypes = make([]protoimpl.MessageInfo, 78)
 var file_features_proto_goTypes = []any{
 	(*ListFeaturesRequest)(nil),               // 0: features.ListFeaturesRequest
 	(*FeaturesResponse)(nil),                  // 1: features.FeaturesResponse
@@ -5326,16 +5534,19 @@ var file_features_proto_goTypes = []any{
 	(*UpdateBuildingRequest)(nil),             // 63: features.UpdateBuildingRequest
 	(*BuildingResponse)(nil),                  // 64: features.BuildingResponse
 	(*DestroyBuildingRequest)(nil),            // 65: features.DestroyBuildingRequest
-	(*ListMapsRequest)(nil),                   // 66: features.ListMapsRequest
-	(*GetMapRequest)(nil),                     // 67: features.GetMapRequest
-	(*ListMapsResponse)(nil),                  // 68: features.ListMapsResponse
-	(*GetMapResponse)(nil),                    // 69: features.GetMapResponse
-	(*GetMapBorderResponse)(nil),              // 70: features.GetMapBorderResponse
-	(*MapBorderData)(nil),                     // 71: features.MapBorderData
-	(*Map)(nil),                               // 72: features.Map
-	(*MapFeatures)(nil),                       // 73: features.MapFeatures
-	(*MapFeatureCount)(nil),                   // 74: features.MapFeatureCount
-	(*emptypb.Empty)(nil),                     // 75: google.protobuf.Empty
+	(*ListCompletedBuildingsRequest)(nil),     // 66: features.ListCompletedBuildingsRequest
+	(*ListCompletedBuildingsResponse)(nil),    // 67: features.ListCompletedBuildingsResponse
+	(*CompletedBuilding)(nil),                 // 68: features.CompletedBuilding
+	(*ListMapsRequest)(nil),                   // 69: features.ListMapsRequest
+	(*GetMapRequest)(nil),                     // 70: features.GetMapRequest
+	(*ListMapsResponse)(nil),                  // 71: features.ListMapsResponse
+	(*GetMapResponse)(nil),                    // 72: features.GetMapResponse
+	(*GetMapBorderResponse)(nil),              // 73: features.GetMapBorderResponse
+	(*MapBorderData)(nil),                     // 74: features.MapBorderData
+	(*Map)(nil),                               // 75: features.Map
+	(*MapFeatures)(nil),                       // 76: features.MapFeatures
+	(*MapFeatureCount)(nil),                   // 77: features.MapFeatureCount
+	(*emptypb.Empty)(nil),                     // 78: google.protobuf.Empty
 }
 var file_features_proto_depIdxs = []int32{
 	21, // 0: features.FeaturesResponse.features:type_name -> features.Feature
@@ -5373,86 +5584,91 @@ var file_features_proto_depIdxs = []int32{
 	56, // 32: features.Building.model:type_name -> features.BuildingModel
 	58, // 33: features.UpdateBuildingRequest.information:type_name -> features.BuildingInformation
 	62, // 34: features.BuildingResponse.building:type_name -> features.Building
-	72, // 35: features.ListMapsResponse.maps:type_name -> features.Map
-	72, // 36: features.GetMapResponse.map:type_name -> features.Map
-	71, // 37: features.GetMapBorderResponse.data:type_name -> features.MapBorderData
-	73, // 38: features.Map.features:type_name -> features.MapFeatures
-	74, // 39: features.MapFeatures.maskoni:type_name -> features.MapFeatureCount
-	74, // 40: features.MapFeatures.tejari:type_name -> features.MapFeatureCount
-	74, // 41: features.MapFeatures.amoozeshi:type_name -> features.MapFeatureCount
-	0,  // 42: features.FeatureService.ListFeatures:input_type -> features.ListFeaturesRequest
-	2,  // 43: features.FeatureService.GetFeature:input_type -> features.GetFeatureRequest
-	4,  // 44: features.FeatureService.UpdateFeature:input_type -> features.UpdateFeatureRequest
-	5,  // 45: features.FeatureService.AddFeatureImages:input_type -> features.AddFeatureImagesRequest
-	6,  // 46: features.FeatureService.GetMyFeatures:input_type -> features.GetMyFeaturesRequest
-	7,  // 47: features.FeatureService.ListMyFeatures:input_type -> features.ListMyFeaturesRequest
-	9,  // 48: features.FeatureService.GetMyFeature:input_type -> features.GetMyFeatureRequest
-	10, // 49: features.FeatureService.AddMyFeatureImages:input_type -> features.AddMyFeatureImagesRequest
-	11, // 50: features.FeatureService.RemoveMyFeatureImage:input_type -> features.RemoveMyFeatureImageRequest
-	12, // 51: features.FeatureService.UpdateMyFeature:input_type -> features.UpdateMyFeatureRequest
-	13, // 52: features.FeatureService.GetFeatureTradeHistory:input_type -> features.GetFeatureTradeHistoryRequest
-	27, // 53: features.FeatureMarketplaceService.BuyFeature:input_type -> features.BuyFeatureRequest
-	29, // 54: features.FeatureMarketplaceService.SendBuyRequest:input_type -> features.SendBuyRequestRequest
-	39, // 55: features.FeatureMarketplaceService.AcceptBuyRequest:input_type -> features.AcceptBuyRequestRequest
-	40, // 56: features.FeatureMarketplaceService.CreateSellRequest:input_type -> features.CreateSellRequestRequest
-	41, // 57: features.FeatureMarketplaceService.ListSellRequests:input_type -> features.ListSellRequestsRequest
-	42, // 58: features.FeatureMarketplaceService.DeleteSellRequest:input_type -> features.DeleteSellRequestRequest
-	45, // 59: features.FeatureMarketplaceService.RequestGracePeriod:input_type -> features.RequestGracePeriodRequest
-	33, // 60: features.FeatureMarketplaceService.ListBuyRequests:input_type -> features.ListBuyRequestsRequest
-	34, // 61: features.FeatureMarketplaceService.ListReceivedBuyRequests:input_type -> features.ListReceivedBuyRequestsRequest
-	36, // 62: features.FeatureMarketplaceService.RejectBuyRequest:input_type -> features.RejectBuyRequestRequest
-	37, // 63: features.FeatureMarketplaceService.DeleteBuyRequest:input_type -> features.DeleteBuyRequestRequest
-	38, // 64: features.FeatureMarketplaceService.UpdateGracePeriod:input_type -> features.UpdateGracePeriodRequest
-	47, // 65: features.FeatureProfitService.GetHourlyProfits:input_type -> features.GetHourlyProfitsRequest
-	50, // 66: features.FeatureProfitService.GetSingleProfit:input_type -> features.GetSingleProfitRequest
-	52, // 67: features.FeatureProfitService.GetProfitsByApplication:input_type -> features.GetProfitsByApplicationRequest
-	54, // 68: features.BuildingService.GetBuildPackage:input_type -> features.GetBuildPackageRequest
-	57, // 69: features.BuildingService.BuildFeature:input_type -> features.BuildFeatureRequest
-	60, // 70: features.BuildingService.GetBuildings:input_type -> features.GetBuildingsRequest
-	63, // 71: features.BuildingService.UpdateBuilding:input_type -> features.UpdateBuildingRequest
-	65, // 72: features.BuildingService.DestroyBuilding:input_type -> features.DestroyBuildingRequest
-	66, // 73: features.MapsService.ListMaps:input_type -> features.ListMapsRequest
-	67, // 74: features.MapsService.GetMap:input_type -> features.GetMapRequest
-	67, // 75: features.MapsService.GetMapBorder:input_type -> features.GetMapRequest
-	1,  // 76: features.FeatureService.ListFeatures:output_type -> features.FeaturesResponse
-	3,  // 77: features.FeatureService.GetFeature:output_type -> features.FeatureResponse
-	3,  // 78: features.FeatureService.UpdateFeature:output_type -> features.FeatureResponse
-	3,  // 79: features.FeatureService.AddFeatureImages:output_type -> features.FeatureResponse
-	1,  // 80: features.FeatureService.GetMyFeatures:output_type -> features.FeaturesResponse
-	8,  // 81: features.FeatureService.ListMyFeatures:output_type -> features.ListMyFeaturesResponse
-	3,  // 82: features.FeatureService.GetMyFeature:output_type -> features.FeatureResponse
-	3,  // 83: features.FeatureService.AddMyFeatureImages:output_type -> features.FeatureResponse
-	75, // 84: features.FeatureService.RemoveMyFeatureImage:output_type -> google.protobuf.Empty
-	75, // 85: features.FeatureService.UpdateMyFeature:output_type -> google.protobuf.Empty
-	14, // 86: features.FeatureService.GetFeatureTradeHistory:output_type -> features.GetFeatureTradeHistoryResponse
-	28, // 87: features.FeatureMarketplaceService.BuyFeature:output_type -> features.BuyFeatureResponse
-	30, // 88: features.FeatureMarketplaceService.SendBuyRequest:output_type -> features.BuyRequestResponse
-	30, // 89: features.FeatureMarketplaceService.AcceptBuyRequest:output_type -> features.BuyRequestResponse
-	43, // 90: features.FeatureMarketplaceService.CreateSellRequest:output_type -> features.SellRequestResponse
-	44, // 91: features.FeatureMarketplaceService.ListSellRequests:output_type -> features.SellRequestsResponse
-	75, // 92: features.FeatureMarketplaceService.DeleteSellRequest:output_type -> google.protobuf.Empty
-	46, // 93: features.FeatureMarketplaceService.RequestGracePeriod:output_type -> features.GracePeriodResponse
-	35, // 94: features.FeatureMarketplaceService.ListBuyRequests:output_type -> features.BuyRequestsResponse
-	35, // 95: features.FeatureMarketplaceService.ListReceivedBuyRequests:output_type -> features.BuyRequestsResponse
-	75, // 96: features.FeatureMarketplaceService.RejectBuyRequest:output_type -> google.protobuf.Empty
-	75, // 97: features.FeatureMarketplaceService.DeleteBuyRequest:output_type -> google.protobuf.Empty
-	75, // 98: features.FeatureMarketplaceService.UpdateGracePeriod:output_type -> google.protobuf.Empty
-	48, // 99: features.FeatureProfitService.GetHourlyProfits:output_type -> features.HourlyProfitsResponse
-	51, // 100: features.FeatureProfitService.GetSingleProfit:output_type -> features.HourlyProfitResponse
-	53, // 101: features.FeatureProfitService.GetProfitsByApplication:output_type -> features.ProfitsByApplicationResponse
-	55, // 102: features.BuildingService.GetBuildPackage:output_type -> features.BuildPackageResponse
-	59, // 103: features.BuildingService.BuildFeature:output_type -> features.BuildFeatureResponse
-	61, // 104: features.BuildingService.GetBuildings:output_type -> features.BuildingsResponse
-	64, // 105: features.BuildingService.UpdateBuilding:output_type -> features.BuildingResponse
-	64, // 106: features.BuildingService.DestroyBuilding:output_type -> features.BuildingResponse
-	68, // 107: features.MapsService.ListMaps:output_type -> features.ListMapsResponse
-	69, // 108: features.MapsService.GetMap:output_type -> features.GetMapResponse
-	70, // 109: features.MapsService.GetMapBorder:output_type -> features.GetMapBorderResponse
-	76, // [76:110] is the sub-list for method output_type
-	42, // [42:76] is the sub-list for method input_type
-	42, // [42:42] is the sub-list for extension type_name
-	42, // [42:42] is the sub-list for extension extendee
-	0,  // [0:42] is the sub-list for field type_name
+	68, // 35: features.ListCompletedBuildingsResponse.data:type_name -> features.CompletedBuilding
+	19, // 36: features.ListCompletedBuildingsResponse.links:type_name -> features.PaginationLinks
+	18, // 37: features.ListCompletedBuildingsResponse.meta:type_name -> features.FeatureTradeHistoryPaginationMeta
+	75, // 38: features.ListMapsResponse.maps:type_name -> features.Map
+	75, // 39: features.GetMapResponse.map:type_name -> features.Map
+	74, // 40: features.GetMapBorderResponse.data:type_name -> features.MapBorderData
+	76, // 41: features.Map.features:type_name -> features.MapFeatures
+	77, // 42: features.MapFeatures.maskoni:type_name -> features.MapFeatureCount
+	77, // 43: features.MapFeatures.tejari:type_name -> features.MapFeatureCount
+	77, // 44: features.MapFeatures.amoozeshi:type_name -> features.MapFeatureCount
+	0,  // 45: features.FeatureService.ListFeatures:input_type -> features.ListFeaturesRequest
+	2,  // 46: features.FeatureService.GetFeature:input_type -> features.GetFeatureRequest
+	4,  // 47: features.FeatureService.UpdateFeature:input_type -> features.UpdateFeatureRequest
+	5,  // 48: features.FeatureService.AddFeatureImages:input_type -> features.AddFeatureImagesRequest
+	6,  // 49: features.FeatureService.GetMyFeatures:input_type -> features.GetMyFeaturesRequest
+	7,  // 50: features.FeatureService.ListMyFeatures:input_type -> features.ListMyFeaturesRequest
+	9,  // 51: features.FeatureService.GetMyFeature:input_type -> features.GetMyFeatureRequest
+	10, // 52: features.FeatureService.AddMyFeatureImages:input_type -> features.AddMyFeatureImagesRequest
+	11, // 53: features.FeatureService.RemoveMyFeatureImage:input_type -> features.RemoveMyFeatureImageRequest
+	12, // 54: features.FeatureService.UpdateMyFeature:input_type -> features.UpdateMyFeatureRequest
+	13, // 55: features.FeatureService.GetFeatureTradeHistory:input_type -> features.GetFeatureTradeHistoryRequest
+	27, // 56: features.FeatureMarketplaceService.BuyFeature:input_type -> features.BuyFeatureRequest
+	29, // 57: features.FeatureMarketplaceService.SendBuyRequest:input_type -> features.SendBuyRequestRequest
+	39, // 58: features.FeatureMarketplaceService.AcceptBuyRequest:input_type -> features.AcceptBuyRequestRequest
+	40, // 59: features.FeatureMarketplaceService.CreateSellRequest:input_type -> features.CreateSellRequestRequest
+	41, // 60: features.FeatureMarketplaceService.ListSellRequests:input_type -> features.ListSellRequestsRequest
+	42, // 61: features.FeatureMarketplaceService.DeleteSellRequest:input_type -> features.DeleteSellRequestRequest
+	45, // 62: features.FeatureMarketplaceService.RequestGracePeriod:input_type -> features.RequestGracePeriodRequest
+	33, // 63: features.FeatureMarketplaceService.ListBuyRequests:input_type -> features.ListBuyRequestsRequest
+	34, // 64: features.FeatureMarketplaceService.ListReceivedBuyRequests:input_type -> features.ListReceivedBuyRequestsRequest
+	36, // 65: features.FeatureMarketplaceService.RejectBuyRequest:input_type -> features.RejectBuyRequestRequest
+	37, // 66: features.FeatureMarketplaceService.DeleteBuyRequest:input_type -> features.DeleteBuyRequestRequest
+	38, // 67: features.FeatureMarketplaceService.UpdateGracePeriod:input_type -> features.UpdateGracePeriodRequest
+	47, // 68: features.FeatureProfitService.GetHourlyProfits:input_type -> features.GetHourlyProfitsRequest
+	50, // 69: features.FeatureProfitService.GetSingleProfit:input_type -> features.GetSingleProfitRequest
+	52, // 70: features.FeatureProfitService.GetProfitsByApplication:input_type -> features.GetProfitsByApplicationRequest
+	54, // 71: features.BuildingService.GetBuildPackage:input_type -> features.GetBuildPackageRequest
+	57, // 72: features.BuildingService.BuildFeature:input_type -> features.BuildFeatureRequest
+	60, // 73: features.BuildingService.GetBuildings:input_type -> features.GetBuildingsRequest
+	63, // 74: features.BuildingService.UpdateBuilding:input_type -> features.UpdateBuildingRequest
+	65, // 75: features.BuildingService.DestroyBuilding:input_type -> features.DestroyBuildingRequest
+	66, // 76: features.BuildingService.ListCompletedBuildings:input_type -> features.ListCompletedBuildingsRequest
+	69, // 77: features.MapsService.ListMaps:input_type -> features.ListMapsRequest
+	70, // 78: features.MapsService.GetMap:input_type -> features.GetMapRequest
+	70, // 79: features.MapsService.GetMapBorder:input_type -> features.GetMapRequest
+	1,  // 80: features.FeatureService.ListFeatures:output_type -> features.FeaturesResponse
+	3,  // 81: features.FeatureService.GetFeature:output_type -> features.FeatureResponse
+	3,  // 82: features.FeatureService.UpdateFeature:output_type -> features.FeatureResponse
+	3,  // 83: features.FeatureService.AddFeatureImages:output_type -> features.FeatureResponse
+	1,  // 84: features.FeatureService.GetMyFeatures:output_type -> features.FeaturesResponse
+	8,  // 85: features.FeatureService.ListMyFeatures:output_type -> features.ListMyFeaturesResponse
+	3,  // 86: features.FeatureService.GetMyFeature:output_type -> features.FeatureResponse
+	3,  // 87: features.FeatureService.AddMyFeatureImages:output_type -> features.FeatureResponse
+	78, // 88: features.FeatureService.RemoveMyFeatureImage:output_type -> google.protobuf.Empty
+	78, // 89: features.FeatureService.UpdateMyFeature:output_type -> google.protobuf.Empty
+	14, // 90: features.FeatureService.GetFeatureTradeHistory:output_type -> features.GetFeatureTradeHistoryResponse
+	28, // 91: features.FeatureMarketplaceService.BuyFeature:output_type -> features.BuyFeatureResponse
+	30, // 92: features.FeatureMarketplaceService.SendBuyRequest:output_type -> features.BuyRequestResponse
+	30, // 93: features.FeatureMarketplaceService.AcceptBuyRequest:output_type -> features.BuyRequestResponse
+	43, // 94: features.FeatureMarketplaceService.CreateSellRequest:output_type -> features.SellRequestResponse
+	44, // 95: features.FeatureMarketplaceService.ListSellRequests:output_type -> features.SellRequestsResponse
+	78, // 96: features.FeatureMarketplaceService.DeleteSellRequest:output_type -> google.protobuf.Empty
+	46, // 97: features.FeatureMarketplaceService.RequestGracePeriod:output_type -> features.GracePeriodResponse
+	35, // 98: features.FeatureMarketplaceService.ListBuyRequests:output_type -> features.BuyRequestsResponse
+	35, // 99: features.FeatureMarketplaceService.ListReceivedBuyRequests:output_type -> features.BuyRequestsResponse
+	78, // 100: features.FeatureMarketplaceService.RejectBuyRequest:output_type -> google.protobuf.Empty
+	78, // 101: features.FeatureMarketplaceService.DeleteBuyRequest:output_type -> google.protobuf.Empty
+	78, // 102: features.FeatureMarketplaceService.UpdateGracePeriod:output_type -> google.protobuf.Empty
+	48, // 103: features.FeatureProfitService.GetHourlyProfits:output_type -> features.HourlyProfitsResponse
+	51, // 104: features.FeatureProfitService.GetSingleProfit:output_type -> features.HourlyProfitResponse
+	53, // 105: features.FeatureProfitService.GetProfitsByApplication:output_type -> features.ProfitsByApplicationResponse
+	55, // 106: features.BuildingService.GetBuildPackage:output_type -> features.BuildPackageResponse
+	59, // 107: features.BuildingService.BuildFeature:output_type -> features.BuildFeatureResponse
+	61, // 108: features.BuildingService.GetBuildings:output_type -> features.BuildingsResponse
+	64, // 109: features.BuildingService.UpdateBuilding:output_type -> features.BuildingResponse
+	64, // 110: features.BuildingService.DestroyBuilding:output_type -> features.BuildingResponse
+	67, // 111: features.BuildingService.ListCompletedBuildings:output_type -> features.ListCompletedBuildingsResponse
+	71, // 112: features.MapsService.ListMaps:output_type -> features.ListMapsResponse
+	72, // 113: features.MapsService.GetMap:output_type -> features.GetMapResponse
+	73, // 114: features.MapsService.GetMapBorder:output_type -> features.GetMapBorderResponse
+	80, // [80:115] is the sub-list for method output_type
+	45, // [45:80] is the sub-list for method input_type
+	45, // [45:45] is the sub-list for extension type_name
+	45, // [45:45] is the sub-list for extension extendee
+	0,  // [0:45] is the sub-list for field type_name
 }
 
 func init() { file_features_proto_init() }
@@ -5463,13 +5679,14 @@ func file_features_proto_init() {
 	file_features_proto_msgTypes[15].OneofWrappers = []any{}
 	file_features_proto_msgTypes[17].OneofWrappers = []any{}
 	file_features_proto_msgTypes[18].OneofWrappers = []any{}
+	file_features_proto_msgTypes[68].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_features_proto_rawDesc), len(file_features_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   75,
+			NumMessages:   78,
 			NumExtensions: 0,
 			NumServices:   5,
 		},

@@ -63,3 +63,8 @@ type BuildingServicePort interface {
 	UpdateBuilding(ctx context.Context, req *pb.UpdateBuildingRequest) (*pb.Building, error)
 	DestroyBuilding(ctx context.Context, featureID uint64, buildingModelID string) error
 }
+
+// CompletedBuildingServicePort is implemented by *service.CompletedBuildingService.
+type CompletedBuildingServicePort interface {
+	Paginate(ctx context.Context, page int) (*models.CompletedBuildingPage, error)
+}

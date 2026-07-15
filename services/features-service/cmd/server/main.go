@@ -224,12 +224,14 @@ func main() {
 		tradeRepo,
 	)
 
+	completedBuildingService := service.NewCompletedBuildingService(buildingRepo)
+
 	// Initialize gRPC handlers
 	handler.SetProjectLocale(getEnv("PROJECT_LOCALE", "EN"))
 	featureHandler := handler.NewFeatureHandler(featureService, tradeHistoryService)
 	marketplaceHandler := handler.NewMarketplaceHandler(marketplaceService, geometryRepo, featureRepo)
 	profitHandler := handler.NewProfitHandler(profitService)
-	buildingHandler := handler.NewBuildingHandler(buildingService)
+	buildingHandler := handler.NewBuildingHandler(buildingService, completedBuildingService)
 	mapHandler := handler.NewMapHandler(mapService)
 
 	// Initialize token validator for authentication

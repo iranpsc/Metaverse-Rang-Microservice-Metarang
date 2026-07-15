@@ -63,7 +63,7 @@ func TestBuildingHandler_GetBuildPackage(t *testing.T) {
 		m.getBuildPackage = func(ctx context.Context, featureID uint64, page int32) ([]*pb.BuildingModel, []string, error) {
 			return []*pb.BuildingModel{{Id: 1, ModelId: "m1", Name: "Test"}}, []string{"1,2"}, nil
 		}
-		h := handler.NewBuildingHandler(m)
+		h := handler.NewBuildingHandler(m, nil)
 		resp, err := h.GetBuildPackage(ctx, &pb.GetBuildPackageRequest{FeatureId: 123, Page: 1})
 		if err != nil {
 			t.Fatal(err)
@@ -74,7 +74,7 @@ func TestBuildingHandler_GetBuildPackage(t *testing.T) {
 	})
 
 	t.Run("error_feature_id_zero", func(t *testing.T) {
-		h := handler.NewBuildingHandler(&mockBuildingPort{})
+		h := handler.NewBuildingHandler(&mockBuildingPort{}, nil)
 		_, err := h.GetBuildPackage(ctx, &pb.GetBuildPackageRequest{FeatureId: 0, Page: 1})
 		if err == nil {
 			t.Fatal("expected error")
@@ -89,7 +89,7 @@ func TestBuildingHandler_GetBuildPackage(t *testing.T) {
 		m.getBuildPackage = func(ctx context.Context, featureID uint64, page int32) ([]*pb.BuildingModel, []string, error) {
 			return nil, nil, errors.New("unauthorized: user does not own this feature")
 		}
-		h := handler.NewBuildingHandler(m)
+		h := handler.NewBuildingHandler(m, nil)
 		_, err := h.GetBuildPackage(ctx, &pb.GetBuildPackageRequest{FeatureId: 123, Page: 1})
 		if st, _ := status.FromError(err); st.Code() != codes.PermissionDenied {
 			t.Fatalf("got %v", st.Code())
@@ -105,7 +105,7 @@ func TestBuildingHandler_BuildFeature(t *testing.T) {
 		m.buildFeature = func(ctx context.Context, req *pb.BuildFeatureRequest) (*pb.Feature, error) {
 			return &pb.Feature{Id: req.FeatureId}, nil
 		}
-		h := handler.NewBuildingHandler(m)
+		h := handler.NewBuildingHandler(m, nil)
 		resp, err := h.BuildFeature(ctx, &pb.BuildFeatureRequest{
 			FeatureId:            123,
 			BuildingModelId:      "model-1",
@@ -119,7 +119,7 @@ func TestBuildingHandler_BuildFeature(t *testing.T) {
 	})
 
 	t.Run("error_feature_id_zero", func(t *testing.T) {
-		h := handler.NewBuildingHandler(&mockBuildingPort{})
+		h := handler.NewBuildingHandler(&mockBuildingPort{}, nil)
 		_, err := h.BuildFeature(ctx, &pb.BuildFeatureRequest{FeatureId: 0, BuildingModelId: "model-1"})
 		if st, _ := status.FromError(err); st.Code() != codes.InvalidArgument {
 			t.Fatalf("got %v", st.Code())
@@ -127,7 +127,7 @@ func TestBuildingHandler_BuildFeature(t *testing.T) {
 	})
 
 	t.Run("error_building_model_empty", func(t *testing.T) {
-		h := handler.NewBuildingHandler(&mockBuildingPort{})
+		h := handler.NewBuildingHandler(&mockBuildingPort{}, nil)
 		_, err := h.BuildFeature(ctx, &pb.BuildFeatureRequest{FeatureId: 1, BuildingModelId: ""})
 		if st, _ := status.FromError(err); st.Code() != codes.InvalidArgument {
 			t.Fatalf("got %v", st.Code())
@@ -139,7 +139,7 @@ func TestBuildingHandler_BuildFeature(t *testing.T) {
 		m.buildFeature = func(ctx context.Context, req *pb.BuildFeatureRequest) (*pb.Feature, error) {
 			return nil, errors.New("feature already has a building")
 		}
-		h := handler.NewBuildingHandler(m)
+		h := handler.NewBuildingHandler(m, nil)
 		_, err := h.BuildFeature(ctx, &pb.BuildFeatureRequest{
 			FeatureId:            1,
 			BuildingModelId:      "model-1",
@@ -159,7 +159,7 @@ func TestBuildingHandler_GetBuildings(t *testing.T) {
 	m.getBuildings = func(ctx context.Context, featureID uint64) ([]*pb.Building, error) {
 		return []*pb.Building{{Id: 1}}, nil
 	}
-	h := handler.NewBuildingHandler(m)
+	h := handler.NewBuildingHandler(m, nil)
 	resp, err := h.GetBuildings(ctx, &pb.GetBuildingsRequest{FeatureId: 10})
 	if err != nil || len(resp.Buildings) != 1 {
 		t.Fatalf("err=%v resp=%+v", err, resp)
@@ -172,7 +172,7 @@ func TestBuildingHandler_UpdateBuilding(t *testing.T) {
 	m.updateBuilding = func(ctx context.Context, req *pb.UpdateBuildingRequest) (*pb.Building, error) {
 		return &pb.Building{Id: 1}, nil
 	}
-	h := handler.NewBuildingHandler(m)
+	h := handler.NewBuildingHandler(m, nil)
 	resp, err := h.UpdateBuilding(ctx, &pb.UpdateBuildingRequest{
 		FeatureId:            10,
 		BuildingModelId:      "model-2",
@@ -191,7 +191,7 @@ func TestBuildingHandler_DestroyBuilding(t *testing.T) {
 	m.destroyBuilding = func(ctx context.Context, featureID uint64, buildingModelID string) error {
 		return nil
 	}
-	h := handler.NewBuildingHandler(m)
+	h := handler.NewBuildingHandler(m, nil)
 	resp, err := h.DestroyBuilding(ctx, &pb.DestroyBuildingRequest{FeatureId: 10, BuildingModelId: "model-3"})
 	if err != nil || !resp.Success {
 		t.Fatalf("err=%v resp=%+v", err, resp)
@@ -204,7 +204,7 @@ func TestBuildingHandler_DestroyBuilding_Unauthorized(t *testing.T) {
 	m.destroyBuilding = func(ctx context.Context, featureID uint64, buildingModelID string) error {
 		return errors.New("unauthorized: user does not own this feature")
 	}
-	h := handler.NewBuildingHandler(m)
+	h := handler.NewBuildingHandler(m, nil)
 	_, err := h.DestroyBuilding(ctx, &pb.DestroyBuildingRequest{FeatureId: 10, BuildingModelId: "model-3"})
 	st, _ := status.FromError(err)
 	if st.Code() != codes.PermissionDenied {
@@ -218,7 +218,7 @@ func TestBuildingHandler_GetBuildings_Error(t *testing.T) {
 	m.getBuildings = func(ctx context.Context, featureID uint64) ([]*pb.Building, error) {
 		return nil, errors.New("db")
 	}
-	h := handler.NewBuildingHandler(m)
+	h := handler.NewBuildingHandler(m, nil)
 	_, err := h.GetBuildings(ctx, &pb.GetBuildingsRequest{FeatureId: 10})
 	st, _ := status.FromError(err)
 	if st.Code() != codes.Internal {
@@ -228,7 +228,7 @@ func TestBuildingHandler_GetBuildings_Error(t *testing.T) {
 
 func TestBuildingHandler_UpdateBuilding_Invalid(t *testing.T) {
 	ctx := context.Background()
-	h := handler.NewBuildingHandler(&mockBuildingPort{})
+	h := handler.NewBuildingHandler(&mockBuildingPort{}, nil)
 	_, err := h.UpdateBuilding(ctx, &pb.UpdateBuildingRequest{FeatureId: 0, BuildingModelId: "model-1"})
 	st, _ := status.FromError(err)
 	if st.Code() != codes.InvalidArgument {

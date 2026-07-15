@@ -368,6 +368,8 @@ service BuildingService {
   rpc GetBuildings(GetBuildingsRequest) returns (BuildingsResponse);
   rpc UpdateBuilding(UpdateBuildingRequest) returns (BuildingResponse);
   rpc DestroyBuilding(DestroyBuildingRequest) returns (BuildingResponse);
+  // ListCompletedBuildings returns paginated buildings with construction_end_date < now (Laravel GET /features/build/completed).
+  rpc ListCompletedBuildings(ListCompletedBuildingsRequest) returns (ListCompletedBuildingsResponse);
 }
 
 // Hourly Profit Messages
@@ -502,6 +504,26 @@ message BuildingResponse {
 message DestroyBuildingRequest {
   uint64 feature_id = 1;
   string building_model_id = 2;  // Changed from uint64 to string to match Laravel model_id format
+}
+
+// Completed buildings (GET /api/features/build/completed)
+message ListCompletedBuildingsRequest {
+  int32 page = 1; // default 1, 10 items per page
+}
+
+message ListCompletedBuildingsResponse {
+  repeated CompletedBuilding data = 1;
+  PaginationLinks links = 2;
+  FeatureTradeHistoryPaginationMeta meta = 3; // full Laravel-style pagination meta
+}
+
+message CompletedBuilding {
+  uint64 id = 1;
+  uint64 feature_id = 2;
+  string feature_properties_id = 3;
+  optional string name = 4;
+  optional string building_total_area = 5;
+  optional string density = 6;
 }
 
 // MapsService handles map polygon and feature rollup operations

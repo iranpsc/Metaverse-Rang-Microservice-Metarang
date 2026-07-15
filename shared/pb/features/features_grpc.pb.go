@@ -1217,11 +1217,12 @@ var FeatureProfitService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	BuildingService_GetBuildPackage_FullMethodName = "/features.BuildingService/GetBuildPackage"
-	BuildingService_BuildFeature_FullMethodName    = "/features.BuildingService/BuildFeature"
-	BuildingService_GetBuildings_FullMethodName    = "/features.BuildingService/GetBuildings"
-	BuildingService_UpdateBuilding_FullMethodName  = "/features.BuildingService/UpdateBuilding"
-	BuildingService_DestroyBuilding_FullMethodName = "/features.BuildingService/DestroyBuilding"
+	BuildingService_GetBuildPackage_FullMethodName        = "/features.BuildingService/GetBuildPackage"
+	BuildingService_BuildFeature_FullMethodName           = "/features.BuildingService/BuildFeature"
+	BuildingService_GetBuildings_FullMethodName           = "/features.BuildingService/GetBuildings"
+	BuildingService_UpdateBuilding_FullMethodName         = "/features.BuildingService/UpdateBuilding"
+	BuildingService_DestroyBuilding_FullMethodName        = "/features.BuildingService/DestroyBuilding"
+	BuildingService_ListCompletedBuildings_FullMethodName = "/features.BuildingService/ListCompletedBuildings"
 )
 
 // BuildingServiceClient is the client API for BuildingService service.
@@ -1235,6 +1236,8 @@ type BuildingServiceClient interface {
 	GetBuildings(ctx context.Context, in *GetBuildingsRequest, opts ...grpc.CallOption) (*BuildingsResponse, error)
 	UpdateBuilding(ctx context.Context, in *UpdateBuildingRequest, opts ...grpc.CallOption) (*BuildingResponse, error)
 	DestroyBuilding(ctx context.Context, in *DestroyBuildingRequest, opts ...grpc.CallOption) (*BuildingResponse, error)
+	// ListCompletedBuildings returns paginated buildings with construction_end_date < now (Laravel GET /features/build/completed).
+	ListCompletedBuildings(ctx context.Context, in *ListCompletedBuildingsRequest, opts ...grpc.CallOption) (*ListCompletedBuildingsResponse, error)
 }
 
 type buildingServiceClient struct {
@@ -1295,6 +1298,16 @@ func (c *buildingServiceClient) DestroyBuilding(ctx context.Context, in *Destroy
 	return out, nil
 }
 
+func (c *buildingServiceClient) ListCompletedBuildings(ctx context.Context, in *ListCompletedBuildingsRequest, opts ...grpc.CallOption) (*ListCompletedBuildingsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListCompletedBuildingsResponse)
+	err := c.cc.Invoke(ctx, BuildingService_ListCompletedBuildings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BuildingServiceServer is the server API for BuildingService service.
 // All implementations must embed UnimplementedBuildingServiceServer
 // for forward compatibility.
@@ -1306,6 +1319,8 @@ type BuildingServiceServer interface {
 	GetBuildings(context.Context, *GetBuildingsRequest) (*BuildingsResponse, error)
 	UpdateBuilding(context.Context, *UpdateBuildingRequest) (*BuildingResponse, error)
 	DestroyBuilding(context.Context, *DestroyBuildingRequest) (*BuildingResponse, error)
+	// ListCompletedBuildings returns paginated buildings with construction_end_date < now (Laravel GET /features/build/completed).
+	ListCompletedBuildings(context.Context, *ListCompletedBuildingsRequest) (*ListCompletedBuildingsResponse, error)
 	mustEmbedUnimplementedBuildingServiceServer()
 }
 
@@ -1330,6 +1345,9 @@ func (UnimplementedBuildingServiceServer) UpdateBuilding(context.Context, *Updat
 }
 func (UnimplementedBuildingServiceServer) DestroyBuilding(context.Context, *DestroyBuildingRequest) (*BuildingResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DestroyBuilding not implemented")
+}
+func (UnimplementedBuildingServiceServer) ListCompletedBuildings(context.Context, *ListCompletedBuildingsRequest) (*ListCompletedBuildingsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListCompletedBuildings not implemented")
 }
 func (UnimplementedBuildingServiceServer) mustEmbedUnimplementedBuildingServiceServer() {}
 func (UnimplementedBuildingServiceServer) testEmbeddedByValue()                         {}
@@ -1442,6 +1460,24 @@ func _BuildingService_DestroyBuilding_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BuildingService_ListCompletedBuildings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListCompletedBuildingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BuildingServiceServer).ListCompletedBuildings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BuildingService_ListCompletedBuildings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BuildingServiceServer).ListCompletedBuildings(ctx, req.(*ListCompletedBuildingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // BuildingService_ServiceDesc is the grpc.ServiceDesc for BuildingService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1468,6 +1504,10 @@ var BuildingService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DestroyBuilding",
 			Handler:    _BuildingService_DestroyBuilding_Handler,
+		},
+		{
+			MethodName: "ListCompletedBuildings",
+			Handler:    _BuildingService_ListCompletedBuildings_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
