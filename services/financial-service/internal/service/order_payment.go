@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -25,6 +26,22 @@ func (s *orderService) requestSadadPayment(orderID uint64, amount int32, asset s
 	}
 
 	amountRials := amountInRials(amount, rate)
+
+	params := map[string]interface{}{
+		"MerchantID":       s.sadadConfig.SadadMerchantID,
+		"TerminalID":       s.sadadConfig.SadadTerminalID,
+		"TransactionKey":   "[REDACTED]",
+		"OrderID":          orderID,
+		"Amount":           amountRials,
+		"ReturnURL":        returnURL,
+		"MultiplexingData": multiplexingData,
+	}
+	jsonParams, err := json.Marshal(params)
+	if err != nil {
+		fmt.Printf("Warning: failed to marshal Sadad request params: %v\n", err)
+	} else {
+		fmt.Printf("Sadad payment request params: %s\n", string(jsonParams))
+	}
 
 	response, err := s.sadadClient.RequestPayment(sadad.RequestParams{
 		MerchantID:       s.sadadConfig.SadadMerchantID,
