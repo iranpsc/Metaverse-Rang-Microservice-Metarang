@@ -187,11 +187,6 @@ func buildFollowListHTTPResponse(r *http.Request, resources []*socialpb.FollowRe
 }
 
 func followResourceJSON(resource *socialpb.FollowResource) map[string]interface{} {
-	photos := resource.ProfilePhotos
-	if photos == nil {
-		photos = []string{}
-	}
-
 	canFollow := false
 	canUnfollow := false
 	canRemoveFollower := false
@@ -202,13 +197,13 @@ func followResourceJSON(resource *socialpb.FollowResource) map[string]interface{
 	}
 
 	return map[string]interface{}{
-		"id":             resource.Id,
-		"name":           resource.Name,
-		"code":           resource.Code,
-		"profile_photos": photos,
-		"level":          resource.Level,
-		"online":         resource.Online,
-		"followed":       resource.Followed,
+		"id":            resource.Id,
+		"name":          resource.Name,
+		"code":          resource.Code,
+		"profile_photo": resource.ProfilePhoto,
+		"level":         resource.Level,
+		"online":        resource.Online,
+		"followed":      resource.Followed,
 		"can": map[string]bool{
 			"follow":          canFollow,
 			"unfollow":        canUnfollow,

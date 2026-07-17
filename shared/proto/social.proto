@@ -62,7 +62,7 @@ message FollowResource {
   string code = 3;
   string level = 4;
   bool online = 5;
-  repeated string profile_photos = 6;
+  string profile_photo = 6; // Latest profile photo URL (empty when none)
   bool followed = 7;              // Whether the authenticated user follows this user
   FollowPermissions can = 8;      // Actions the authenticated user may take on this user
 }

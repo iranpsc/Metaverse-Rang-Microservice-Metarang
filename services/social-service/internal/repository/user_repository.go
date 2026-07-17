@@ -11,7 +11,6 @@ import (
 type UserRepository interface {
 	GetUserBasicInfo(ctx context.Context, userID uint64) (*UserBasicInfo, error)
 	GetUserLevel(ctx context.Context, userID uint64) (string, error)
-	GetProfilePhotos(ctx context.Context, userID uint64) ([]string, error)
 	IsUserOnline(ctx context.Context, userID uint64) (bool, error)
 }
 
@@ -74,34 +73,6 @@ func (r *userRepository) GetUserLevel(ctx context.Context, userID uint64) (strin
 		return "", fmt.Errorf("failed to get user level: %w", err)
 	}
 	return levelSlug, nil
-}
-
-func (r *userRepository) GetProfilePhotos(ctx context.Context, userID uint64) ([]string, error) {
-	// Profile photos are stored in images table with polymorphic relation
-	// imageable_type = 'App\\Models\\User' and imageable_id = user_id
-	query := `
-		SELECT path FROM images
-		WHERE imageable_type = 'App\\Models\\User' AND imageable_id = ?
-		ORDER BY created_at DESC
-	`
-	rows, err := r.db.QueryContext(ctx, query, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get profile photos: %w", err)
-	}
-	defer rows.Close()
-
-	var photos []string
-	for rows.Next() {
-		var path string
-		if err := rows.Scan(&path); err != nil {
-			return nil, fmt.Errorf("failed to scan profile photo: %w", err)
-		}
-		photos = append(photos, path)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating profile photos: %w", err)
-	}
-	return photos, nil
 }
 
 func (r *userRepository) IsUserOnline(ctx context.Context, userID uint64) (bool, error) {

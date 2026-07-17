@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -393,7 +394,13 @@ func buildSimplePaginationLinks(r *http.Request, currentPage int32, hasMore bool
 	return links
 }
 
-func requestBaseURL(r *http.Request) string {
+// publicBaseURL returns the Kong/public gateway base (scheme+host) when APP_URL
+// is set. Kong sets preserve_host=false, so r.Host is the upstream grpc-gateway
+// host and must not be used in client-facing pagination links.
+func publicBaseURL(r *http.Request) string {
+	if appURL := strings.TrimSuffix(os.Getenv("APP_URL"), "/"); appURL != "" {
+		return appURL
+	}
 	scheme := "http"
 	if r.TLS != nil {
 		scheme = "https"
@@ -401,18 +408,15 @@ func requestBaseURL(r *http.Request) string {
 	if forwarded := r.Header.Get("X-Forwarded-Proto"); forwarded != "" {
 		scheme = forwarded
 	}
-	return scheme + "://" + r.Host + r.URL.Path
+	return scheme + "://" + r.Host
+}
+
+func requestBaseURL(r *http.Request) string {
+	return publicBaseURL(r) + r.URL.Path
 }
 
 func requestPath(r *http.Request) string {
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
-	}
-	if forwarded := r.Header.Get("X-Forwarded-Proto"); forwarded != "" {
-		scheme = forwarded
-	}
-	return scheme + "://" + r.Host + r.URL.Path
+	return publicBaseURL(r) + r.URL.Path
 }
 
 func writeFieldValidationError(w http.ResponseWriter, message string, errors map[string][]string) {

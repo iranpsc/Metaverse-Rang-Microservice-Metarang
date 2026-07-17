@@ -155,7 +155,6 @@ func (m *MockFollowRepository) GetFollowing(ctx context.Context, userID uint64) 
 type MockUserRepository struct {
 	GetUserBasicInfoFunc func(ctx context.Context, userID uint64) (*repository.UserBasicInfo, error)
 	GetUserLevelFunc     func(ctx context.Context, userID uint64) (string, error)
-	GetProfilePhotosFunc func(ctx context.Context, userID uint64) ([]string, error)
 	IsUserOnlineFunc     func(ctx context.Context, userID uint64) (bool, error)
 }
 
@@ -171,13 +170,6 @@ func (m *MockUserRepository) GetUserLevel(ctx context.Context, userID uint64) (s
 		return m.GetUserLevelFunc(ctx, userID)
 	}
 	return "", nil
-}
-
-func (m *MockUserRepository) GetProfilePhotos(ctx context.Context, userID uint64) ([]string, error) {
-	if m.GetProfilePhotosFunc != nil {
-		return m.GetProfilePhotosFunc(ctx, userID)
-	}
-	return nil, nil
 }
 
 func (m *MockUserRepository) IsUserOnline(ctx context.Context, userID uint64) (bool, error) {
@@ -209,8 +201,9 @@ func (m *MockCommercialClient) Close() error {
 
 // MockAuthClient implements client.AuthClient for tests.
 type MockAuthClient struct {
-	CanFollowFunc func(ctx context.Context, callerUserID, targetUserID uint64) (bool, error)
-	CloseFunc     func() error
+	CanFollowFunc                func(ctx context.Context, callerUserID, targetUserID uint64) (bool, error)
+	GetLatestProfilePhotoURLFunc func(ctx context.Context, userID uint64) (string, error)
+	CloseFunc                    func() error
 }
 
 func (m *MockAuthClient) CanFollow(ctx context.Context, callerUserID, targetUserID uint64) (bool, error) {
@@ -218,6 +211,13 @@ func (m *MockAuthClient) CanFollow(ctx context.Context, callerUserID, targetUser
 		return m.CanFollowFunc(ctx, callerUserID, targetUserID)
 	}
 	return true, nil
+}
+
+func (m *MockAuthClient) GetLatestProfilePhotoURL(ctx context.Context, userID uint64) (string, error) {
+	if m.GetLatestProfilePhotoURLFunc != nil {
+		return m.GetLatestProfilePhotoURLFunc(ctx, userID)
+	}
+	return "", nil
 }
 
 func (m *MockAuthClient) Close() error {

@@ -1,5 +1,5 @@
 # Multi-stage build for Features Service
-FROM golang:1.25-alpine AS builder
+FROM docker.arvancloud.ir/golang:1.25-alpine AS builder
 
 ENV CGO_ENABLED=0
 
@@ -36,7 +36,7 @@ ENV GOWORK=/workspace/go.work
 RUN go build -trimpath -ldflags="-s -w" -o /app/features-service ./cmd/server && \
     go build -trimpath -ldflags="-s -w" -o /app/calculate-hourly-profits ./cmd/calculate-profits
 
-FROM alpine:3.21
+FROM docker.arvancloud.ir/alpine:3.21
 
 RUN apk add --no-cache ca-certificates tzdata netcat-openbsd && \
     addgroup -g 1000 appuser && \

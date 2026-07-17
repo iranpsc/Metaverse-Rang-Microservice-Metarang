@@ -361,9 +361,9 @@ type FollowResource struct {
 	Code          string                 `protobuf:"bytes,3,opt,name=code,proto3" json:"code,omitempty"`
 	Level         string                 `protobuf:"bytes,4,opt,name=level,proto3" json:"level,omitempty"`
 	Online        bool                   `protobuf:"varint,5,opt,name=online,proto3" json:"online,omitempty"`
-	ProfilePhotos []string               `protobuf:"bytes,6,rep,name=profile_photos,json=profilePhotos,proto3" json:"profile_photos,omitempty"`
-	Followed      bool                   `protobuf:"varint,7,opt,name=followed,proto3" json:"followed,omitempty"` // Whether the authenticated user follows this user
-	Can           *FollowPermissions     `protobuf:"bytes,8,opt,name=can,proto3" json:"can,omitempty"`            // Actions the authenticated user may take on this user
+	ProfilePhoto  string                 `protobuf:"bytes,6,opt,name=profile_photo,json=profilePhoto,proto3" json:"profile_photo,omitempty"` // Latest profile photo URL (empty when none)
+	Followed      bool                   `protobuf:"varint,7,opt,name=followed,proto3" json:"followed,omitempty"`                            // Whether the authenticated user follows this user
+	Can           *FollowPermissions     `protobuf:"bytes,8,opt,name=can,proto3" json:"can,omitempty"`                                       // Actions the authenticated user may take on this user
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -433,11 +433,11 @@ func (x *FollowResource) GetOnline() bool {
 	return false
 }
 
-func (x *FollowResource) GetProfilePhotos() []string {
+func (x *FollowResource) GetProfilePhoto() string {
 	if x != nil {
-		return x.ProfilePhotos
+		return x.ProfilePhoto
 	}
-	return nil
+	return ""
 }
 
 func (x *FollowResource) GetFollowed() bool {
@@ -1263,14 +1263,14 @@ const file_social_proto_rawDesc = "" +
 	"\x14GetFollowersResponse\x12*\n" +
 	"\x04data\x18\x01 \x03(\v2\x16.social.FollowResourceR\x04data\"B\n" +
 	"\x14GetFollowingResponse\x12*\n" +
-	"\x04data\x18\x01 \x03(\v2\x16.social.FollowResourceR\x04data\"\xe6\x01\n" +
+	"\x04data\x18\x01 \x03(\v2\x16.social.FollowResourceR\x04data\"\xe4\x01\n" +
 	"\x0eFollowResource\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
 	"\x04code\x18\x03 \x01(\tR\x04code\x12\x14\n" +
 	"\x05level\x18\x04 \x01(\tR\x05level\x12\x16\n" +
-	"\x06online\x18\x05 \x01(\bR\x06online\x12%\n" +
-	"\x0eprofile_photos\x18\x06 \x03(\tR\rprofilePhotos\x12\x1a\n" +
+	"\x06online\x18\x05 \x01(\bR\x06online\x12#\n" +
+	"\rprofile_photo\x18\x06 \x01(\tR\fprofilePhoto\x12\x1a\n" +
 	"\bfollowed\x18\a \x01(\bR\bfollowed\x12+\n" +
 	"\x03can\x18\b \x01(\v2\x19.social.FollowPermissionsR\x03can\"p\n" +
 	"\x11FollowPermissions\x12\x16\n" +

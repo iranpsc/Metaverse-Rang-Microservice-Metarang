@@ -103,21 +103,24 @@ func TestFollowService_GetFollowers_BuildsResourcesWithCan(t *testing.T) {
 	ur.GetUserBasicInfoFunc = func(ctx context.Context, userID uint64) (*repository.UserBasicInfo, error) {
 		return &repository.UserBasicInfo{ID: userID, Name: "N", Code: "C"}, nil
 	}
-	ur.GetProfilePhotosFunc = func(ctx context.Context, userID uint64) ([]string, error) {
-		return []string{"http://p"}, nil
-	}
 	ur.GetUserLevelFunc = func(ctx context.Context, userID uint64) (string, error) {
 		return "lvl1", nil
 	}
 	ur.IsUserOnlineFunc = func(ctx context.Context, userID uint64) (bool, error) {
 		return true, nil
 	}
+	auth := &testutil.MockAuthClient{}
+	auth.GetLatestProfilePhotoURLFunc = func(ctx context.Context, userID uint64) (string, error) {
+		require.Equal(t, uint64(10), userID)
+		return "http://p", nil
+	}
 
-	svc := service.NewFollowService(fr, ur, nil, nil)
+	svc := service.NewFollowService(fr, ur, auth, nil)
 	list, err := svc.GetFollowers(context.Background(), 99)
 	require.NoError(t, err)
 	require.Len(t, list, 1)
 	require.Equal(t, "N", list[0].Name)
+	require.Equal(t, "http://p", list[0].ProfilePhoto)
 	require.Equal(t, "lvl1", list[0].Level)
 	require.True(t, list[0].Online)
 	require.False(t, list[0].Followed)

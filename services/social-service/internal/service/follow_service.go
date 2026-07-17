@@ -157,12 +157,15 @@ func (s *followService) buildFollowResource(ctx context.Context, viewerID, userI
 		return nil, nil
 	}
 
-	// Get profile photos
-	photos, err := s.userRepo.GetProfilePhotos(ctx, userID)
-	if err != nil {
-		// Log but continue - photos are optional
-		fmt.Printf("failed to get profile photos for user %d: %v\n", userID, err)
-		photos = []string{}
+	// Latest profile photo from auth-service (optional)
+	profilePhoto := ""
+	if s.authClient != nil {
+		photoURL, err := s.authClient.GetLatestProfilePhotoURL(ctx, userID)
+		if err != nil {
+			fmt.Printf("failed to get profile photo for user %d: %v\n", userID, err)
+		} else {
+			profilePhoto = photoURL
+		}
 	}
 
 	// Get level
@@ -196,13 +199,13 @@ func (s *followService) buildFollowResource(ctx context.Context, viewerID, userI
 	isSelf := viewerID == userID
 
 	return &models.FollowResource{
-		ID:            userInfo.ID,
-		Name:          userInfo.Name,
-		Code:          userInfo.Code,
-		ProfilePhotos: photos,
-		Level:         level,
-		Online:        online,
-		Followed:      isFollowing,
+		ID:           userInfo.ID,
+		Name:         userInfo.Name,
+		Code:         userInfo.Code,
+		ProfilePhoto: profilePhoto,
+		Level:        level,
+		Online:       online,
+		Followed:     isFollowing,
 		Can: models.FollowPermissions{
 			Follow:         !isSelf && !isFollowing,
 			Unfollow:       isFollowing,

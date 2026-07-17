@@ -13,14 +13,14 @@ type Follow struct {
 
 // FollowResource represents a user in follow lists
 type FollowResource struct {
-	ID            uint64
-	Name          string
-	Code          string
-	ProfilePhotos []string
-	Level         string
-	Online        bool
-	Followed      bool
-	Can           FollowPermissions
+	ID           uint64
+	Name         string
+	Code         string
+	ProfilePhoto string // Latest profile photo URL; empty when none
+	Level        string
+	Online       bool
+	Followed     bool
+	Can          FollowPermissions
 }
 
 // FollowPermissions mirrors Laravel FollowResource "can" — actions the

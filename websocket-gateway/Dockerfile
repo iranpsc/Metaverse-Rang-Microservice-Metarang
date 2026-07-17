@@ -1,12 +1,12 @@
 # WebSocket Gateway - multi-stage build
-FROM node:22-alpine AS deps
+FROM docker.arvancloud.ir/node:22-alpine AS deps
 
 WORKDIR /app
 
 COPY websocket-gateway/package*.json ./
 RUN npm install --omit=dev --no-audit --no-fund
 
-FROM node:22-alpine
+FROM docker.arvancloud.ir/node:22-alpine
 
 WORKDIR /app
 

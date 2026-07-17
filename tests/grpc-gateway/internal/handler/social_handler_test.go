@@ -30,13 +30,13 @@ func sampleFollowResources(n int) []*socialpb.FollowResource {
 	out := make([]*socialpb.FollowResource, 0, n)
 	for i := 1; i <= n; i++ {
 		out = append(out, &socialpb.FollowResource{
-			Id:            uint64(i),
-			Name:          "User",
-			Code:          "c",
-			Level:         "lvl1",
-			Online:        i%2 == 0,
-			ProfilePhotos: []string{"http://p"},
-			Followed:      i == 1,
+			Id:           uint64(i),
+			Name:         "User",
+			Code:         "c",
+			Level:        "lvl1",
+			Online:       i%2 == 0,
+			ProfilePhoto: "http://p",
+			Followed:     i == 1,
 			Can: &socialpb.FollowPermissions{
 				Follow:         i != 1,
 				Unfollow:       i == 1,
@@ -48,6 +48,8 @@ func sampleFollowResources(n int) []*socialpb.FollowResource {
 }
 
 func TestGetFollowers_PaginatedShapeAndPerPage(t *testing.T) {
+	t.Setenv("APP_URL", "http://localhost:8000")
+
 	follow := &testutil.MockFollowService{}
 	follow.GetFollowersFunc = func(_ context.Context, req *socialpb.GetFollowersRequest) (*socialpb.GetFollowersResponse, error) {
 		require.Equal(t, uint64(42), req.UserId)
@@ -72,9 +74,11 @@ func TestGetFollowers_PaginatedShapeAndPerPage(t *testing.T) {
 	assert.EqualValues(t, 10, meta["per_page"])
 	assert.EqualValues(t, 1, meta["from"])
 	assert.EqualValues(t, 10, meta["to"])
+	assert.Equal(t, "http://localhost:8000/api/followers", meta["path"])
 
 	links := body["links"].(map[string]interface{})
-	assert.NotNil(t, links["next"])
+	assert.Equal(t, "http://localhost:8000/api/followers?page=2", links["next"])
+	assert.Equal(t, "http://localhost:8000/api/followers?page=1", links["first"])
 	assert.Nil(t, links["prev"])
 
 	first := data[0].(map[string]interface{})
@@ -83,9 +87,7 @@ func TestGetFollowers_PaginatedShapeAndPerPage(t *testing.T) {
 	assert.Equal(t, "c", first["code"])
 	assert.Equal(t, "lvl1", first["level"])
 	assert.Equal(t, true, first["followed"])
-	photos, ok := first["profile_photos"].([]interface{})
-	require.True(t, ok)
-	require.Len(t, photos, 1)
+	assert.Equal(t, "http://p", first["profile_photo"])
 	_, onlineOK := first["online"]
 	assert.True(t, onlineOK)
 

@@ -83,13 +83,13 @@ func (h *followHandler) Remove(ctx context.Context, req *pb.RemoveRequest) (*emp
 
 func convertFollowResourceToProto(resource *models.FollowResource) *pb.FollowResource {
 	return &pb.FollowResource{
-		Id:            resource.ID,
-		Name:          resource.Name,
-		Code:          resource.Code,
-		ProfilePhotos: resource.ProfilePhotos,
-		Level:         resource.Level,
-		Online:        resource.Online,
-		Followed:      resource.Followed,
+		Id:           resource.ID,
+		Name:         resource.Name,
+		Code:         resource.Code,
+		ProfilePhoto: resource.ProfilePhoto,
+		Level:        resource.Level,
+		Online:       resource.Online,
+		Followed:     resource.Followed,
 		Can: &pb.FollowPermissions{
 			Follow:         resource.Can.Follow,
 			Unfollow:       resource.Can.Unfollow,
