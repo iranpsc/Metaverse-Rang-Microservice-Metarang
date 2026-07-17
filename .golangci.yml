@@ -29,12 +29,3 @@ linters:
       - path: _test\.go
         linters:
           - errcheck
-      - text: "could not import"
-      - text: "no required module provides package"
-      - text: "missing metadata for import"
-      - text: "packages.Load error"
-      - text: "conflicting replacements"
-      - text: "initialization failed"
-      - text: "exit status 1"
-      - text: "replacement directory.*does not exist"
-      - text: "use.*go work edit.*to resolve"
