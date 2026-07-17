@@ -1,0 +1,129 @@
+name: Services CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'services/**'
+      - 'shared/**'
+      - 'scripts/schema.sql'
+      - '.github/workflows/services-ci.yml'
+      - '.github/workflows/service-ci.yml'
+      - '.github/actions/setup-test-db/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'services/**'
+      - 'shared/**'
+      - 'scripts/schema.sql'
+      - '.github/workflows/services-ci.yml'
+      - '.github/workflows/service-ci.yml'
+      - '.github/actions/setup-test-db/**'
+  workflow_dispatch:
+    inputs:
+      services:
+        description: 'Comma-separated service names, or "all"'
+        required: false
+        default: all
+
+concurrency:
+  group: services-ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  detect-changes:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.services.outputs.list }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Filter changed paths
+        id: filter
+        if: github.event_name != 'workflow_dispatch'
+        uses: dorny/paths-filter@d1c1ffe0248fe513906c8e24db8ea791d46f8590 # v3.0.3
+        with:
+          filters: |
+            shared:
+              - 'shared/**'
+              - 'scripts/schema.sql'
+              - '.github/workflows/services-ci.yml'
+              - '.github/workflows/service-ci.yml'
+              - '.github/actions/setup-test-db/**'
+            auth-service:
+              - 'services/auth-service/**'
+            calendar-service:
+              - 'services/calendar-service/**'
+            commercial-service:
+              - 'services/commercial-service/**'
+            dynasty-service:
+              - 'services/dynasty-service/**'
+            features-service:
+              - 'services/features-service/**'
+            financial-service:
+              - 'services/financial-service/**'
+            grpc-gateway:
+              - 'services/grpc-gateway/**'
+            health-check-service:
+              - 'services/health-check-service/**'
+            levels-service:
+              - 'services/levels-service/**'
+            notifications-service:
+              - 'services/notifications-service/**'
+            social-service:
+              - 'services/social-service/**'
+            storage-service:
+              - 'services/storage-service/**'
+            support-service:
+              - 'services/support-service/**'
+            training-service:
+              - 'services/training-service/**'
+
+      - name: Build service list
+        id: services
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_INPUT: ${{ github.event.inputs.services }}
+          CHANGES: ${{ steps.filter.outputs.changes }}
+        run: |
+          ALL='["auth-service","calendar-service","commercial-service","dynasty-service","features-service","financial-service","grpc-gateway","health-check-service","levels-service","notifications-service","social-service","storage-service","support-service","training-service"]'
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            if [ "$DISPATCH_INPUT" = "all" ] || [ -z "$DISPATCH_INPUT" ]; then
+              LIST="$ALL"
+            else
+              LIST=$(echo "$DISPATCH_INPUT" | jq -Rc 'split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))')
+            fi
+          elif echo "$CHANGES" | jq -e 'index("shared")' > /dev/null; then
+            # Shared code changed: rebuild everything
+            LIST="$ALL"
+          else
+            LIST=$(echo "$CHANGES" | jq -c 'map(select(. != "shared"))')
+          fi
+
+          echo "Services to build: $LIST"
+          echo "list=$LIST" >> "$GITHUB_OUTPUT"
+
+  ci:
+    name: ${{ matrix.service }}
+    needs: detect-changes
+    if: needs.detect-changes.outputs.services != '[]' && needs.detect-changes.outputs.services != ''
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.services) }}
+    uses: ./.github/workflows/service-ci.yml
+    with:
+      service_name: ${{ matrix.service }}
+      enable_deploy: ${{ matrix.service != 'health-check-service' }}
+    secrets: inherit

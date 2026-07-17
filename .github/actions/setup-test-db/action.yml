@@ -1,0 +1,27 @@
+name: Setup Test Database
+description: Installs the MySQL client and loads the test schema into the MySQL service container
+
+inputs:
+  host:
+    description: MySQL host
+    default: 127.0.0.1
+  user:
+    description: MySQL user
+    default: test_user
+  password:
+    description: MySQL password
+    default: test_password
+  database:
+    description: MySQL database name
+    default: metarang_test
+
+runs:
+  using: composite
+  steps:
+    - name: Install MySQL client
+      shell: bash
+      run: sudo apt-get update && sudo apt-get install -y default-mysql-client
+
+    - name: Load schema
+      shell: bash
+      run: mysql -h ${{ inputs.host }} -u ${{ inputs.user }} -p${{ inputs.password }} ${{ inputs.database }} < scripts/schema.sql

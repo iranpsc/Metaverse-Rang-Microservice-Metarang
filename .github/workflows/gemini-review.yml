@@ -1,4 +1,5 @@
 name: Gemini AI Auto-Review
+
 on:
   pull_request:
     types: [opened, synchronize]
@@ -10,21 +11,25 @@ permissions:
   pull-requests: write
   issues: write
 
+concurrency:
+  group: gemini-review-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: true
+
 jobs:
   ai-review:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
-      
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
-          
+
       - name: Install Gemini CLI
-        run: npm install -g @google/gemini-cli
-        
+        run: npm install -g @google/gemini-cli@0.50.0
+
       - name: Run AI Agent
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

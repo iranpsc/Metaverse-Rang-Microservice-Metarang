@@ -14,18 +14,20 @@ on:
     branches:
       - main
       - develop
-
-env:
-  GO_VERSION: '1.21'
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: shared-packages-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   test-shared:
     name: Test Shared Packages
     runs-on: ubuntu-latest
-    
+
     services:
       mysql:
         image: mysql:8.0
@@ -42,12 +44,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: shared/go.mod
           cache-dependency-path: shared/go.sum
 
       - name: Install dependencies
@@ -57,9 +59,9 @@ jobs:
           go mod verify
 
       - name: Run linter
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@d583c34f0599d37dbac4a198b9c83201be380893 # v9.3.0
         with:
-          version: latest
+          version: v2.9.0
           working-directory: shared
           args: --timeout=5m
 
@@ -74,38 +76,18 @@ jobs:
           cd shared
           go test ./pkg/... -v -race -coverprofile=coverage.out -covermode=atomic
 
+      - name: Run govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
+          cd shared
+          govulncheck ./...
+
       - name: Upload coverage
-        uses: codecov/codecov-action@v5
+        if: always()
+        uses: codecov/codecov-action@5975040f7f7d40edaff8d784b576fd65ae95c073 # v5.5.5
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: ./shared/coverage.out
           flags: shared
           name: shared-packages
-
-  trigger-service-builds:
-    name: Trigger Service Rebuilds
-    runs-on: ubuntu-latest
-    needs: test-shared
-    if: github.ref == 'refs/heads/main'
-    
-    strategy:
-      matrix:
-        service:
-          - auth-service
-          - commercial-service
-          - features-service
-          - levels-service
-          - dynasty-service
-          - support-service
-          - training-service
-          - notifications-service
-          - calendar-service
-          - storage-service
-
-    steps:
-      - name: Trigger ${{ matrix.service }} workflow
-        uses: peter-evans/repository-dispatch@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          event-type: rebuild-${{ matrix.service }}
-          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
-
+          fail_ci_if_error: false

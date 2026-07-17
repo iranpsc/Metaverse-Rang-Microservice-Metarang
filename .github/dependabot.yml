@@ -1,0 +1,52 @@
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: gomod
+    directory: /shared
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      shared:
+        patterns:
+          - "*"
+
+  - package-ecosystem: gomod
+    directory: /services/auth-service
+    schedule:
+      interval: weekly
+      day: monday
+
+  - package-ecosystem: gomod
+    directory: /services/commercial-service
+    schedule:
+      interval: weekly
+      day: monday
+
+  - package-ecosystem: gomod
+    directory: /services/features-service
+    schedule:
+      interval: weekly
+      day: monday
+
+  - package-ecosystem: gomod
+    directory: /services/grpc-gateway
+    schedule:
+      interval: weekly
+      day: monday
+
+  - package-ecosystem: docker
+    directory: /services/auth-service
+    schedule:
+      interval: weekly
+      day: monday
