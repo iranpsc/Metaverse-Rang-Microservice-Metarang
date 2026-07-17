@@ -1711,6 +1711,7 @@ CREATE TABLE `profile_limitations` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `profile_limitations_limiter_limited_unique` (`limiter_user_id`,`limited_user_id`),
   KEY `profile_limitations_limiter_user_id_foreign` (`limiter_user_id`),
   KEY `profile_limitations_limited_user_id_foreign` (`limited_user_id`),
   CONSTRAINT `profile_limitations_limited_user_id_foreign` FOREIGN KEY (`limited_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,

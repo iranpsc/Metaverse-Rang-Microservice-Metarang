@@ -37,7 +37,6 @@ service ProfileLimitationService {
   rpc CreateProfileLimitation(CreateProfileLimitationRequest) returns (ProfileLimitationResponse);
   rpc UpdateProfileLimitation(UpdateProfileLimitationRequest) returns (ProfileLimitationResponse);
   rpc DeleteProfileLimitation(DeleteProfileLimitationRequest) returns (google.protobuf.Empty);
-  rpc GetProfileLimitation(GetProfileLimitationRequest) returns (ProfileLimitationResponse);
 }
 
 // KYC Service - handles KYC verification
@@ -507,13 +506,14 @@ message UpdatePersonalInfoRequest {
 
 // ============== Profile Limitation Service Messages ==============
 
+// Optional bools distinguish omitted keys from explicit false.
 message ProfileLimitationOptions {
-  bool follow = 1;
-  bool send_message = 2;
-  bool share = 3;
-  bool send_ticket = 4;
-  bool view_profile_images = 5;
-  bool view_features_locations = 6;
+  optional bool follow = 1;
+  optional bool send_message = 2;
+  optional bool share = 3;
+  optional bool send_ticket = 4;
+  optional bool view_profile_images = 5;
+  optional bool view_features_locations = 6;
 }
 
 message ProfileLimitation {
@@ -521,7 +521,8 @@ message ProfileLimitation {
   uint64 limiter_user_id = 2;
   uint64 limited_user_id = 3;
   ProfileLimitationOptions options = 4;
-  string note = 5; // Only visible to limiter
+  // Present only when the caller is the limiter. Empty string means a null/cleared note.
+  optional string note = 5;
   google.protobuf.Timestamp created_at = 6;
   google.protobuf.Timestamp updated_at = 7;
 }
@@ -529,24 +530,21 @@ message ProfileLimitation {
 message CreateProfileLimitationRequest {
   uint64 limiter_user_id = 1;
   uint64 limited_user_id = 2;
-  ProfileLimitationOptions options = 3;
-  string note = 4; // Optional, max 500 characters
+  ProfileLimitationOptions options = 3; // Required; must not be nil
+  optional string note = 4; // Optional, max 500 characters
 }
 
 message UpdateProfileLimitationRequest {
   uint64 limitation_id = 1;
   uint64 limiter_user_id = 2;
-  ProfileLimitationOptions options = 3;
-  string note = 4; // Optional, max 500 characters
+  ProfileLimitationOptions options = 3; // Required; must not be nil
+  // Unset: retain existing note. Set (including empty): replace/clear note.
+  optional string note = 4;
 }
 
 message DeleteProfileLimitationRequest {
   uint64 limitation_id = 1;
   uint64 limiter_user_id = 2;
-}
-
-message GetProfileLimitationRequest {
-  uint64 limitation_id = 1;
 }
 
 message GetProfileLimitationsRequest {

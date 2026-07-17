@@ -24,7 +24,10 @@ func setupProfileLimitationTestDB(t *testing.T) *sql.DB {
 		t.Skipf("Database ping failed: %v", err)
 	}
 
-	// Clean up test data
+	_, _ = db.Exec(`
+		ALTER TABLE profile_limitations
+		ADD UNIQUE KEY profile_limitations_limiter_limited_unique (limiter_user_id, limited_user_id)
+	`)
 	_, _ = db.Exec("DELETE FROM profile_limitations")
 
 	return db

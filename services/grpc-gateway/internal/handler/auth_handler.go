@@ -426,9 +426,8 @@ func (h *AuthHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
-// GetProfileLimitations handles GET /api/user/profile-limitations or GET /api/users/{user}/profile-limitations
+// GetProfileLimitations handles GET /api/users/{user}/profile-limitations
 func (h *AuthHandler) GetProfileLimitations(w http.ResponseWriter, r *http.Request) {
-	// Get user from context (set by auth middleware)
 	userCtx, err := middleware.GetUserFromRequest(r)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "authentication required")
@@ -437,32 +436,21 @@ func (h *AuthHandler) GetProfileLimitations(w http.ResponseWriter, r *http.Reque
 
 	callerUserID := userCtx.UserID
 
-	// Try to extract target user ID from path first (/api/users/{user}/profile-limitations)
 	targetUserIDStr := ""
 	if strings.HasPrefix(r.URL.Path, "/api/users/") {
-		// Extract user ID from path: /api/users/{user}/profile-limitations
 		pathParts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/users/"), "/")
 		if len(pathParts) > 0 && pathParts[0] != "" {
 			targetUserIDStr = pathParts[0]
 		}
 	}
 
-	// Fallback to query parameter if not in path
 	if targetUserIDStr == "" {
-		targetUserIDStr = r.URL.Query().Get("target_user_id")
-		// Also support "user_id" as query param
-		if targetUserIDStr == "" {
-			targetUserIDStr = r.URL.Query().Get("user_id")
-		}
-	}
-
-	if targetUserIDStr == "" {
-		writeError(w, http.StatusBadRequest, "target user_id is required (either in path /api/users/{user}/profile-limitations or as query parameter)")
+		writeError(w, http.StatusBadRequest, "target user_id is required in path /api/users/{user}/profile-limitations")
 		return
 	}
 
 	targetUserID, err := strconv.ParseUint(targetUserIDStr, 10, 64)
-	if err != nil {
+	if err != nil || targetUserID == 0 {
 		writeError(w, http.StatusBadRequest, "invalid target user_id")
 		return
 	}
@@ -478,35 +466,14 @@ func (h *AuthHandler) GetProfileLimitations(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Format response according to API spec: { "data": {...} } or { "data": [] } if not found
 	if resp.Data == nil || resp.Data.Id == 0 {
 		writeJSON(w, http.StatusOK, map[string]interface{}{"data": []interface{}{}})
 		return
 	}
 
-	// Convert proto to JSON format matching Laravel API
-	data := map[string]interface{}{
-		"id":              resp.Data.Id,
-		"limiter_user_id": resp.Data.LimiterUserId,
-		"limited_user_id": resp.Data.LimitedUserId,
-		"options": map[string]bool{
-			"follow":                  resp.Data.Options.Follow,
-			"send_message":            resp.Data.Options.SendMessage,
-			"share":                   resp.Data.Options.Share,
-			"send_ticket":             resp.Data.Options.SendTicket,
-			"view_profile_images":     resp.Data.Options.ViewProfileImages,
-			"view_features_locations": resp.Data.Options.ViewFeaturesLocations,
-		},
-		"created_at": resp.Data.CreatedAt,
-		"updated_at": resp.Data.UpdatedAt,
-	}
-
-	// Only include note if caller is the limiter
-	if resp.Data.Note != "" && callerUserID == resp.Data.LimiterUserId {
-		data["note"] = resp.Data.Note
-	}
-
-	writeJSON(w, http.StatusOK, map[string]interface{}{"data": data})
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"data": profileLimitationResourceJSON(resp.Data, callerUserID),
+	})
 }
 
 // ListUsers handles GET /api/users
@@ -1892,11 +1859,9 @@ func (h *AuthHandler) HandleUsersRoutes(w http.ResponseWriter, r *http.Request) 
 			http.NotFound(w, r)
 		}
 	case "profile-limitations":
-		if r.Method == http.MethodGet {
-			h.GetProfileLimitations(w, r)
-		} else {
-			http.NotFound(w, r)
-		}
+		// Authenticated route is registered as GET /api/users/{user}/profile-limitations
+		http.NotFound(w, r)
+
 	default:
 		// If no endpoint specified, treat as invalid
 		http.NotFound(w, r)
@@ -2249,48 +2214,23 @@ func (h *AuthHandler) UpdatePersonalInfo(w http.ResponseWriter, r *http.Request)
 
 // CreateProfileLimitation handles POST /api/profile-limitations
 func (h *AuthHandler) CreateProfileLimitation(w http.ResponseWriter, r *http.Request) {
-	// Get user from context (set by auth middleware)
 	userCtx, err := middleware.GetUserFromRequest(r)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "authentication required")
 		return
 	}
 
-	var req struct {
-		LimitedUserID uint64 `json:"limited_user_id"`
-		Options       struct {
-			Follow                bool `json:"follow"`
-			SendMessage           bool `json:"send_message"`
-			Share                 bool `json:"share"`
-			SendTicket            bool `json:"send_ticket"`
-			ViewProfileImages     bool `json:"view_profile_images"`
-			ViewFeaturesLocations bool `json:"view_features_locations"`
-		} `json:"options"`
-		Note string `json:"note,omitempty"`
-	}
-
-	if err := decodeRequestBody(r, &req); err != nil {
-		if err == io.EOF {
-			writeError(w, http.StatusBadRequest, "request body is required")
-		} else {
-			writeError(w, http.StatusBadRequest, "invalid request body")
-		}
+	input, fieldErrors := parseCreateProfileLimitationBody(r)
+	if fieldErrors != nil {
+		writeProfileLimitationValidationErrors(w, fieldErrors, h.locale)
 		return
 	}
 
-	// Validate that all six options are provided
 	grpcReq := &pb.CreateProfileLimitationRequest{
 		LimiterUserId: userCtx.UserID,
-		LimitedUserId: req.LimitedUserID,
-		Options: &pb.ProfileLimitationOptions{
-			Follow:                req.Options.Follow,
-			SendMessage:           req.Options.SendMessage,
-			Share:                 req.Options.Share,
-			SendTicket:            req.Options.SendTicket,
-			ViewProfileImages:     req.Options.ViewProfileImages,
-			ViewFeaturesLocations: req.Options.ViewFeaturesLocations,
-		},
-		Note: req.Note,
+		LimitedUserId: input.LimitedUserID,
+		Options:       input.Options,
+		Note:          notePtrFromInput(input.Note),
 	}
 
 	resp, err := h.profileLimitationClient.CreateProfileLimitation(r.Context(), grpcReq)
@@ -2299,33 +2239,13 @@ func (h *AuthHandler) CreateProfileLimitation(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// Format response according to Laravel API spec: { "data": {...} }
-	data := map[string]interface{}{
-		"id":              resp.Data.Id,
-		"limiter_user_id": resp.Data.LimiterUserId,
-		"limited_user_id": resp.Data.LimitedUserId,
-		"options": map[string]bool{
-			"follow":                  resp.Data.Options.Follow,
-			"send_message":            resp.Data.Options.SendMessage,
-			"share":                   resp.Data.Options.Share,
-			"send_ticket":             resp.Data.Options.SendTicket,
-			"view_profile_images":     resp.Data.Options.ViewProfileImages,
-			"view_features_locations": resp.Data.Options.ViewFeaturesLocations,
-		},
-		"created_at": resp.Data.CreatedAt,
-		"updated_at": resp.Data.UpdatedAt,
-	}
-
-	if resp.Data.Note != "" {
-		data["note"] = resp.Data.Note
-	}
-
-	writeJSON(w, http.StatusCreated, map[string]interface{}{"data": data})
+	writeJSON(w, http.StatusCreated, map[string]interface{}{
+		"data": profileLimitationResourceJSON(resp.Data, userCtx.UserID),
+	})
 }
 
 // UpdateProfileLimitation handles PUT/PATCH /api/profile-limitations/{limitation_id}
 func (h *AuthHandler) UpdateProfileLimitation(w http.ResponseWriter, r *http.Request) {
-	// Get user from context (set by auth middleware)
 	userCtx, err := middleware.GetUserFromRequest(r)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "authentication required")
@@ -2344,39 +2264,17 @@ func (h *AuthHandler) UpdateProfileLimitation(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	var req struct {
-		Options struct {
-			Follow                bool `json:"follow"`
-			SendMessage           bool `json:"send_message"`
-			Share                 bool `json:"share"`
-			SendTicket            bool `json:"send_ticket"`
-			ViewProfileImages     bool `json:"view_profile_images"`
-			ViewFeaturesLocations bool `json:"view_features_locations"`
-		} `json:"options"`
-		Note string `json:"note,omitempty"`
-	}
-
-	if err := decodeRequestBody(r, &req); err != nil {
-		if err == io.EOF {
-			writeError(w, http.StatusBadRequest, "request body is required")
-		} else {
-			writeError(w, http.StatusBadRequest, "invalid request body")
-		}
+	input, fieldErrors := parseUpdateProfileLimitationBody(r)
+	if fieldErrors != nil {
+		writeProfileLimitationValidationErrors(w, fieldErrors, h.locale)
 		return
 	}
 
 	grpcReq := &pb.UpdateProfileLimitationRequest{
 		LimitationId:  limitationID,
 		LimiterUserId: userCtx.UserID,
-		Options: &pb.ProfileLimitationOptions{
-			Follow:                req.Options.Follow,
-			SendMessage:           req.Options.SendMessage,
-			Share:                 req.Options.Share,
-			SendTicket:            req.Options.SendTicket,
-			ViewProfileImages:     req.Options.ViewProfileImages,
-			ViewFeaturesLocations: req.Options.ViewFeaturesLocations,
-		},
-		Note: req.Note,
+		Options:       input.Options,
+		Note:          notePtrFromInput(input.Note),
 	}
 
 	resp, err := h.profileLimitationClient.UpdateProfileLimitation(r.Context(), grpcReq)
@@ -2385,34 +2283,13 @@ func (h *AuthHandler) UpdateProfileLimitation(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// Format response according to Laravel API spec: { "data": {...} }
-	data := map[string]interface{}{
-		"id":              resp.Data.Id,
-		"limiter_user_id": resp.Data.LimiterUserId,
-		"limited_user_id": resp.Data.LimitedUserId,
-		"options": map[string]bool{
-			"follow":                  resp.Data.Options.Follow,
-			"send_message":            resp.Data.Options.SendMessage,
-			"share":                   resp.Data.Options.Share,
-			"send_ticket":             resp.Data.Options.SendTicket,
-			"view_profile_images":     resp.Data.Options.ViewProfileImages,
-			"view_features_locations": resp.Data.Options.ViewFeaturesLocations,
-		},
-		"created_at": resp.Data.CreatedAt,
-		"updated_at": resp.Data.UpdatedAt,
-	}
-
-	// Only include note if caller is the limiter
-	if resp.Data.Note != "" && userCtx.UserID == resp.Data.LimiterUserId {
-		data["note"] = resp.Data.Note
-	}
-
-	writeJSON(w, http.StatusOK, map[string]interface{}{"data": data})
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"data": profileLimitationResourceJSON(resp.Data, userCtx.UserID),
+	})
 }
 
 // DeleteProfileLimitation handles DELETE /api/profile-limitations/{limitation_id}
 func (h *AuthHandler) DeleteProfileLimitation(w http.ResponseWriter, r *http.Request) {
-	// Get user from context (set by auth middleware)
 	userCtx, err := middleware.GetUserFromRequest(r)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "authentication required")
@@ -2443,62 +2320,6 @@ func (h *AuthHandler) DeleteProfileLimitation(w http.ResponseWriter, r *http.Req
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-}
-
-// GetProfileLimitation handles GET /api/profile-limitations/{limitation_id}
-func (h *AuthHandler) GetProfileLimitation(w http.ResponseWriter, r *http.Request) {
-	limitationIDStr := extractIDFromPath(r.URL.Path, "/api/profile-limitations/")
-	if limitationIDStr == "" {
-		writeError(w, http.StatusBadRequest, "limitation_id is required")
-		return
-	}
-
-	limitationID, err := strconv.ParseUint(limitationIDStr, 10, 64)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid limitation_id")
-		return
-	}
-
-	grpcReq := &pb.GetProfileLimitationRequest{
-		LimitationId: limitationID,
-	}
-
-	resp, err := h.profileLimitationClient.GetProfileLimitation(r.Context(), grpcReq)
-	if err != nil {
-		h.writeGRPCErrorLocale(w, err)
-		return
-	}
-
-	// Format response according to Laravel API spec: { "data": {...} }
-	// Get user from context to determine note visibility
-	userCtx, err := middleware.GetUserFromRequest(r)
-	callerUserID := uint64(0)
-	if err == nil {
-		callerUserID = userCtx.UserID
-	}
-
-	data := map[string]interface{}{
-		"id":              resp.Data.Id,
-		"limiter_user_id": resp.Data.LimiterUserId,
-		"limited_user_id": resp.Data.LimitedUserId,
-		"options": map[string]bool{
-			"follow":                  resp.Data.Options.Follow,
-			"send_message":            resp.Data.Options.SendMessage,
-			"share":                   resp.Data.Options.Share,
-			"send_ticket":             resp.Data.Options.SendTicket,
-			"view_profile_images":     resp.Data.Options.ViewProfileImages,
-			"view_features_locations": resp.Data.Options.ViewFeaturesLocations,
-		},
-		"created_at": resp.Data.CreatedAt,
-		"updated_at": resp.Data.UpdatedAt,
-	}
-
-	// Only include note if caller is the limiter (as per API documentation)
-	if resp.Data.Note != "" && callerUserID == resp.Data.LimiterUserId {
-		data["note"] = resp.Data.Note
-	}
-
-	writeJSON(w, http.StatusOK, map[string]interface{}{"data": data})
 }
 
 // ============================================================================

@@ -18,7 +18,6 @@ tags:
     - name: Auth
     - name: Buy Requests
     - name: Calendar
-    - name: Challenge
     - name: Citizen
     - name: Comments
     - name: Commercial
@@ -1216,16 +1215,8 @@ paths:
             tags:
                 - Social
     /api/challenge/question:
-        post:
-            operationId: post_challenge_question
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            type: object
-                    multipart/form-data:
-                        schema:
-                            type: object
+        get:
+            operationId: get_challenge_question
             responses:
                 "200":
                     description: Successful response
@@ -2678,6 +2669,45 @@ paths:
             summary: GetBuildPackage
             tags:
                 - Features
+    /api/features/{feature}/trade-history.:
+        get:
+            operationId: get_features_feature_trade-history.
+            parameters:
+                - description: Feature ID
+                  in: path
+                  name: feature
+                  required: true
+                  schema:
+                    example: 1
+                    format: int64
+                    type: integer
+                - description: Page number for pagination
+                  in: query
+                  name: page
+                  required: false
+                  schema:
+                    type: integer
+            responses:
+                "200":
+                    description: Successful response
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: Unauthenticated
+                "422":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ValidationError'
+                    description: Validation error
+            security:
+                - {}
+                - BearerAuth: []
+            summary: GetFeatureTradeHistory
+            tags:
+                - Features
     /api/features/{id}:
         get:
             operationId: get_features_id
@@ -2709,6 +2739,58 @@ paths:
                 - {}
                 - BearerAuth: []
             summary: Get feature details
+            tags:
+                - Features
+    /api/features/build/completed:
+        get:
+            operationId: get_features_build_completed
+            responses:
+                "200":
+                    description: Successful response
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: Unauthenticated
+                "422":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ValidationError'
+                    description: Validation error
+            summary: List construction-completed buildings (paginated, 10 per page)
+            tags:
+                - Features
+    /api/features/build/completed.:
+        get:
+            operationId: get_features_build_completed.
+            parameters:
+                - description: Page number for pagination
+                  in: query
+                  name: page
+                  required: false
+                  schema:
+                    type: integer
+            responses:
+                "200":
+                    description: Successful response
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: Unauthenticated
+                "422":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ValidationError'
+                    description: Validation error
+            security:
+                - {}
+                - BearerAuth: []
+            summary: ListCompletedBuildings
             tags:
                 - Features
     /api/features/buy/{feature}:
@@ -4391,38 +4473,7 @@ paths:
                     description: Validation error
             security:
                 - BearerAuth: []
-            summary: Manage profile limitation
-            tags:
-                - Profile
-        get:
-            operationId: get_profile-limitations_id
-            parameters:
-                - description: Profile limitation ID
-                  in: path
-                  name: id
-                  required: true
-                  schema:
-                    example: 1
-                    format: int64
-                    type: integer
-            responses:
-                "200":
-                    description: Successful response
-                "401":
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Error'
-                    description: Unauthenticated
-                "422":
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ValidationError'
-                    description: Validation error
-            security:
-                - BearerAuth: []
-            summary: Manage profile limitation
+            summary: Update or delete profile limitation
             tags:
                 - Profile
         patch:
@@ -4461,7 +4512,7 @@ paths:
                     description: Validation error
             security:
                 - BearerAuth: []
-            summary: Manage profile limitation
+            summary: Update or delete profile limitation
             tags:
                 - Profile
         put:
@@ -4500,7 +4551,7 @@ paths:
                     description: Validation error
             security:
                 - BearerAuth: []
-            summary: Manage profile limitation
+            summary: Update or delete profile limitation
             tags:
                 - Profile
     /api/profile-photos:
@@ -6907,42 +6958,6 @@ paths:
             summary: Update authenticated user profile
             tags:
                 - Users
-    /api/user/profile-limitations:
-        get:
-            operationId: get_user_profile-limitations
-            parameters:
-                - description: target_user_id query parameter
-                  in: query
-                  name: target_user_id
-                  required: false
-                  schema:
-                    type: integer
-                - description: User ID
-                  in: query
-                  name: user_id
-                  required: false
-                  schema:
-                    type: integer
-            responses:
-                "200":
-                    description: Successful response
-                "401":
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Error'
-                    description: Unauthenticated
-                "422":
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ValidationError'
-                    description: Validation error
-            security:
-                - BearerAuth: []
-            summary: List profile limitations for current user
-            tags:
-                - Profile
     /api/user/transactions:
         get:
             operationId: get_user_transactions
@@ -7325,6 +7340,37 @@ paths:
             summary: GetUserProfile
             tags:
                 - Users
+    /api/users/{user}/profile-limitations:
+        get:
+            operationId: get_users_user_profile-limitations
+            parameters:
+                - description: User ID or citizen code
+                  in: path
+                  name: user
+                  required: true
+                  schema:
+                    example: user-code
+                    type: string
+            responses:
+                "200":
+                    description: Successful response
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: Unauthenticated
+                "422":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ValidationError'
+                    description: Validation error
+            security:
+                - BearerAuth: []
+            summary: Get mutual profile limitation between caller and user
+            tags:
+                - Profile
     /api/users/{user}/wallet:
         get:
             operationId: get_users_user_wallet

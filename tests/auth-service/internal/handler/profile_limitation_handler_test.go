@@ -4,35 +4,33 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"metarang/auth-service/internal/handler"
 	"testing"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"metarang/auth-service/internal/handler"
 	"metarang/auth-service/internal/models"
 	"metarang/auth-service/internal/service"
 	pb "metarang/shared/pb/auth"
 )
 
-// mockProfileLimitationService is a mock implementation for testing
 type mockProfileLimitationService struct {
-	createFunc          func(ctx context.Context, limiterUserID, limitedUserID uint64, options models.ProfileLimitationOptions, note string) (*models.ProfileLimitation, error)
-	updateFunc          func(ctx context.Context, limitationID, limiterUserID uint64, options models.ProfileLimitationOptions, note string) (*models.ProfileLimitation, error)
+	createFunc          func(ctx context.Context, limiterUserID, limitedUserID uint64, options models.ProfileLimitationOptions, note service.NoteUpdate) (*models.ProfileLimitation, error)
+	updateFunc          func(ctx context.Context, limitationID, limiterUserID uint64, options models.ProfileLimitationOptions, note service.NoteUpdate) (*models.ProfileLimitation, error)
 	deleteFunc          func(ctx context.Context, limitationID, limiterUserID uint64) error
 	getByIDFunc         func(ctx context.Context, limitationID uint64) (*models.ProfileLimitation, error)
 	getBetweenUsersFunc func(ctx context.Context, callerUserID, targetUserID uint64) (*models.ProfileLimitation, error)
-	validateOptionsFunc func(options models.ProfileLimitationOptions) error
 }
 
-func (m *mockProfileLimitationService) Create(ctx context.Context, limiterUserID, limitedUserID uint64, options models.ProfileLimitationOptions, note string) (*models.ProfileLimitation, error) {
+func (m *mockProfileLimitationService) Create(ctx context.Context, limiterUserID, limitedUserID uint64, options models.ProfileLimitationOptions, note service.NoteUpdate) (*models.ProfileLimitation, error) {
 	if m.createFunc != nil {
 		return m.createFunc(ctx, limiterUserID, limitedUserID, options, note)
 	}
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockProfileLimitationService) Update(ctx context.Context, limitationID, limiterUserID uint64, options models.ProfileLimitationOptions, note string) (*models.ProfileLimitation, error) {
+func (m *mockProfileLimitationService) Update(ctx context.Context, limitationID, limiterUserID uint64, options models.ProfileLimitationOptions, note service.NoteUpdate) (*models.ProfileLimitation, error) {
 	if m.updateFunc != nil {
 		return m.updateFunc(ctx, limitationID, limiterUserID, options, note)
 	}
@@ -60,11 +58,21 @@ func (m *mockProfileLimitationService) GetBetweenUsers(ctx context.Context, call
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockProfileLimitationService) ValidateOptions(options models.ProfileLimitationOptions) error {
-	if m.validateOptionsFunc != nil {
-		return m.validateOptionsFunc(options)
+func boolPtr(v bool) *bool { return &v }
+
+func plStringPtr(v string) *string { return &v }
+
+func fullOptions(follow bool) *pb.ProfileLimitationOptions {
+	f := follow
+	t := true
+	return &pb.ProfileLimitationOptions{
+		Follow:                &f,
+		SendMessage:           &t,
+		Share:                 &t,
+		SendTicket:            &t,
+		ViewProfileImages:     &t,
+		ViewFeaturesLocations: &t,
 	}
-	return nil
 }
 
 func TestProfileLimitationHandler_CreateProfileLimitation(t *testing.T) {
@@ -72,80 +80,98 @@ func TestProfileLimitationHandler_CreateProfileLimitation(t *testing.T) {
 
 	t.Run("successful creation", func(t *testing.T) {
 		mockService := &mockProfileLimitationService{}
-		mockService.createFunc = func(ctx context.Context, limiterUserID, limitedUserID uint64, options models.ProfileLimitationOptions, note string) (*models.ProfileLimitation, error) {
+		mockService.createFunc = func(ctx context.Context, limiterUserID, limitedUserID uint64, options models.ProfileLimitationOptions, note service.NoteUpdate) (*models.ProfileLimitation, error) {
+			n := sql.NullString{}
+			if note.Present && note.Value != nil {
+				n = sql.NullString{String: *note.Value, Valid: true}
+			}
 			return &models.ProfileLimitation{
 				ID:            1,
 				LimiterUserID: limiterUserID,
 				LimitedUserID: limitedUserID,
 				Options:       options,
-				Note:          sql.NullString{String: note, Valid: note != ""},
+				Note:          n,
 			}, nil
 		}
 
 		h := handler.NewProfileLimitationHandler(mockService)
-
+		note := "Test note"
 		req := &pb.CreateProfileLimitationRequest{
 			LimiterUserId: 1,
 			LimitedUserId: 2,
 			Options: &pb.ProfileLimitationOptions{
-				Follow:                false,
-				SendMessage:           false,
-				Share:                 true,
-				SendTicket:            true,
-				ViewProfileImages:     false,
-				ViewFeaturesLocations: true,
+				Follow:                boolPtr(false),
+				SendMessage:           boolPtr(false),
+				Share:                 boolPtr(true),
+				SendTicket:            boolPtr(true),
+				ViewProfileImages:     boolPtr(false),
+				ViewFeaturesLocations: boolPtr(true),
 			},
-			Note: "Test note",
+			Note: &note,
 		}
 
 		resp, err := h.CreateProfileLimitation(ctx, req)
 		if err != nil {
 			t.Fatalf("CreateProfileLimitation failed: %v", err)
 		}
-
-		if resp.Data == nil {
-			t.Fatal("Expected data to be returned")
+		if resp.Data == nil || resp.Data.Id != 1 {
+			t.Fatalf("unexpected response: %+v", resp.Data)
 		}
-		if resp.Data.Id != 1 {
-			t.Errorf("Expected ID 1, got %d", resp.Data.Id)
-		}
-		if resp.Data.Note != "Test note" {
-			t.Errorf("Expected note 'Test note', got '%s'", resp.Data.Note)
+		if resp.Data.Note == nil || *resp.Data.Note != "Test note" {
+			t.Errorf("Expected note 'Test note', got %v", resp.Data.Note)
 		}
 	})
 
-	t.Run("service error", func(t *testing.T) {
-		mockService := &mockProfileLimitationService{}
-		mockService.createFunc = func(ctx context.Context, limiterUserID, limitedUserID uint64, options models.ProfileLimitationOptions, note string) (*models.ProfileLimitation, error) {
-			return nil, service.ErrProfileLimitationAlreadyExists
+	t.Run("nil request", func(t *testing.T) {
+		h := handler.NewProfileLimitationHandler(&mockProfileLimitationService{})
+		_, err := h.CreateProfileLimitation(ctx, nil)
+		st, ok := status.FromError(err)
+		if !ok || st.Code() != codes.InvalidArgument {
+			t.Fatalf("expected InvalidArgument, got %v", err)
 		}
+	})
 
-		h := handler.NewProfileLimitationHandler(mockService)
+	t.Run("nil options", func(t *testing.T) {
+		h := handler.NewProfileLimitationHandler(&mockProfileLimitationService{})
+		_, err := h.CreateProfileLimitation(ctx, &pb.CreateProfileLimitationRequest{
+			LimiterUserId: 1,
+			LimitedUserId: 2,
+		})
+		st, ok := status.FromError(err)
+		if !ok || st.Code() != codes.InvalidArgument {
+			t.Fatalf("expected InvalidArgument, got %v", err)
+		}
+	})
 
-		req := &pb.CreateProfileLimitationRequest{
+	t.Run("missing option key", func(t *testing.T) {
+		h := handler.NewProfileLimitationHandler(&mockProfileLimitationService{})
+		_, err := h.CreateProfileLimitation(ctx, &pb.CreateProfileLimitationRequest{
 			LimiterUserId: 1,
 			LimitedUserId: 2,
 			Options: &pb.ProfileLimitationOptions{
-				Follow:                true,
-				SendMessage:           true,
-				Share:                 true,
-				SendTicket:            true,
-				ViewProfileImages:     true,
-				ViewFeaturesLocations: true,
+				Follow: boolPtr(true),
 			},
-		}
-
-		_, err := h.CreateProfileLimitation(ctx, req)
-		if err == nil {
-			t.Fatal("Expected error")
-		}
-
+		})
 		st, ok := status.FromError(err)
-		if !ok {
-			t.Fatal("Expected gRPC status error")
+		if !ok || st.Code() != codes.InvalidArgument {
+			t.Fatalf("expected InvalidArgument, got %v", err)
 		}
-		if st.Code() != codes.PermissionDenied {
-			t.Errorf("Expected PermissionDenied, got %v", st.Code())
+	})
+
+	t.Run("already exists", func(t *testing.T) {
+		mockService := &mockProfileLimitationService{}
+		mockService.createFunc = func(ctx context.Context, limiterUserID, limitedUserID uint64, options models.ProfileLimitationOptions, note service.NoteUpdate) (*models.ProfileLimitation, error) {
+			return nil, service.ErrProfileLimitationAlreadyExists
+		}
+		h := handler.NewProfileLimitationHandler(mockService)
+		_, err := h.CreateProfileLimitation(ctx, &pb.CreateProfileLimitationRequest{
+			LimiterUserId: 1,
+			LimitedUserId: 2,
+			Options:       fullOptions(true),
+		})
+		st, ok := status.FromError(err)
+		if !ok || st.Code() != codes.PermissionDenied {
+			t.Fatalf("expected PermissionDenied, got %v", err)
 		}
 	})
 }
@@ -153,79 +179,92 @@ func TestProfileLimitationHandler_CreateProfileLimitation(t *testing.T) {
 func TestProfileLimitationHandler_UpdateProfileLimitation(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("successful update", func(t *testing.T) {
+	t.Run("successful update retains note when omitted", func(t *testing.T) {
 		mockService := &mockProfileLimitationService{}
-		mockService.updateFunc = func(ctx context.Context, limitationID, limiterUserID uint64, options models.ProfileLimitationOptions, note string) (*models.ProfileLimitation, error) {
+		mockService.updateFunc = func(ctx context.Context, limitationID, limiterUserID uint64, options models.ProfileLimitationOptions, note service.NoteUpdate) (*models.ProfileLimitation, error) {
+			if note.Present {
+				t.Fatal("expected note to be omitted")
+			}
 			return &models.ProfileLimitation{
 				ID:            limitationID,
 				LimiterUserID: limiterUserID,
 				LimitedUserID: 2,
 				Options:       options,
-				Note:          sql.NullString{String: note, Valid: note != ""},
+				Note:          sql.NullString{String: "kept", Valid: true},
 			}, nil
 		}
 
 		h := handler.NewProfileLimitationHandler(mockService)
-
-		req := &pb.UpdateProfileLimitationRequest{
+		resp, err := h.UpdateProfileLimitation(ctx, &pb.UpdateProfileLimitationRequest{
 			LimitationId:  1,
 			LimiterUserId: 1,
-			Options: &pb.ProfileLimitationOptions{
-				Follow:                false,
-				SendMessage:           false,
-				Share:                 true,
-				SendTicket:            true,
-				ViewProfileImages:     false,
-				ViewFeaturesLocations: true,
-			},
-			Note: "Updated note",
-		}
-
-		resp, err := h.UpdateProfileLimitation(ctx, req)
+			Options:       fullOptions(false),
+		})
 		if err != nil {
 			t.Fatalf("UpdateProfileLimitation failed: %v", err)
 		}
-
-		if resp.Data == nil {
-			t.Fatal("Expected data to be returned")
+		if resp.Data.Note == nil || *resp.Data.Note != "kept" {
+			t.Fatalf("expected retained note, got %v", resp.Data.Note)
 		}
-		if resp.Data.Note != "Updated note" {
-			t.Errorf("Expected note 'Updated note', got '%s'", resp.Data.Note)
+	})
+
+	t.Run("explicit clear note", func(t *testing.T) {
+		mockService := &mockProfileLimitationService{}
+		mockService.updateFunc = func(ctx context.Context, limitationID, limiterUserID uint64, options models.ProfileLimitationOptions, note service.NoteUpdate) (*models.ProfileLimitation, error) {
+			if !note.Present || note.Value != nil {
+				t.Fatalf("expected clear note update, got %+v", note)
+			}
+			return &models.ProfileLimitation{
+				ID:            limitationID,
+				LimiterUserID: limiterUserID,
+				LimitedUserID: 2,
+				Options:       options,
+				Note:          sql.NullString{Valid: false},
+			}, nil
+		}
+
+		h := handler.NewProfileLimitationHandler(mockService)
+		empty := ""
+		resp, err := h.UpdateProfileLimitation(ctx, &pb.UpdateProfileLimitationRequest{
+			LimitationId:  1,
+			LimiterUserId: 1,
+			Options:       fullOptions(true),
+			Note:          &empty,
+		})
+		if err != nil {
+			t.Fatalf("UpdateProfileLimitation failed: %v", err)
+		}
+		if resp.Data.Note == nil || *resp.Data.Note != "" {
+			t.Fatalf("expected empty note present for limiter, got %v", resp.Data.Note)
 		}
 	})
 
 	t.Run("unauthorized update", func(t *testing.T) {
 		mockService := &mockProfileLimitationService{}
-		mockService.updateFunc = func(ctx context.Context, limitationID, limiterUserID uint64, options models.ProfileLimitationOptions, note string) (*models.ProfileLimitation, error) {
+		mockService.updateFunc = func(ctx context.Context, limitationID, limiterUserID uint64, options models.ProfileLimitationOptions, note service.NoteUpdate) (*models.ProfileLimitation, error) {
 			return nil, service.ErrUnauthorized
 		}
-
 		h := handler.NewProfileLimitationHandler(mockService)
-
-		req := &pb.UpdateProfileLimitationRequest{
+		_, err := h.UpdateProfileLimitation(ctx, &pb.UpdateProfileLimitationRequest{
 			LimitationId:  1,
-			LimiterUserId: 2, // Not the owner
-			Options: &pb.ProfileLimitationOptions{
-				Follow:                true,
-				SendMessage:           true,
-				Share:                 true,
-				SendTicket:            true,
-				ViewProfileImages:     true,
-				ViewFeaturesLocations: true,
-			},
-		}
-
-		_, err := h.UpdateProfileLimitation(ctx, req)
-		if err == nil {
-			t.Fatal("Expected error")
-		}
-
+			LimiterUserId: 2,
+			Options:       fullOptions(true),
+		})
 		st, ok := status.FromError(err)
-		if !ok {
-			t.Fatal("Expected gRPC status error")
+		if !ok || st.Code() != codes.PermissionDenied {
+			t.Fatalf("expected PermissionDenied, got %v", err)
 		}
-		if st.Code() != codes.PermissionDenied {
-			t.Errorf("Expected PermissionDenied, got %v", st.Code())
+	})
+
+	t.Run("nil options", func(t *testing.T) {
+		h := handler.NewProfileLimitationHandler(&mockProfileLimitationService{})
+		_, err := h.UpdateProfileLimitation(ctx, &pb.UpdateProfileLimitationRequest{
+			LimitationId:  1,
+			LimiterUserId: 1,
+		})
+		st, ok := status.FromError(err)
+		if !ok || st.Code() != codes.InvalidArgument {
+			t.Fatalf("expected InvalidArgument, got %v", err)
 		}
 	})
 }
@@ -238,15 +277,11 @@ func TestProfileLimitationHandler_DeleteProfileLimitation(t *testing.T) {
 		mockService.deleteFunc = func(ctx context.Context, limitationID, limiterUserID uint64) error {
 			return nil
 		}
-
 		h := handler.NewProfileLimitationHandler(mockService)
-
-		req := &pb.DeleteProfileLimitationRequest{
+		_, err := h.DeleteProfileLimitation(ctx, &pb.DeleteProfileLimitationRequest{
 			LimitationId:  1,
 			LimiterUserId: 1,
-		}
-
-		_, err := h.DeleteProfileLimitation(ctx, req)
+		})
 		if err != nil {
 			t.Fatalf("DeleteProfileLimitation failed: %v", err)
 		}
@@ -257,88 +292,45 @@ func TestProfileLimitationHandler_DeleteProfileLimitation(t *testing.T) {
 		mockService.deleteFunc = func(ctx context.Context, limitationID, limiterUserID uint64) error {
 			return service.ErrUnauthorized
 		}
-
 		h := handler.NewProfileLimitationHandler(mockService)
-
-		req := &pb.DeleteProfileLimitationRequest{
+		_, err := h.DeleteProfileLimitation(ctx, &pb.DeleteProfileLimitationRequest{
 			LimitationId:  1,
-			LimiterUserId: 2, // Not the owner
-		}
-
-		_, err := h.DeleteProfileLimitation(ctx, req)
-		if err == nil {
-			t.Fatal("Expected error")
-		}
-
+			LimiterUserId: 2,
+		})
 		st, ok := status.FromError(err)
-		if !ok {
-			t.Fatal("Expected gRPC status error")
-		}
-		if st.Code() != codes.PermissionDenied {
-			t.Errorf("Expected PermissionDenied, got %v", st.Code())
+		if !ok || st.Code() != codes.PermissionDenied {
+			t.Fatalf("expected PermissionDenied, got %v", err)
 		}
 	})
 }
 
-func TestProfileLimitationHandler_GetProfileLimitation(t *testing.T) {
+func TestProfileLimitationHandler_NoteVisibility(t *testing.T) {
 	ctx := context.Background()
+	mockService := &mockProfileLimitationService{}
+	mockService.createFunc = func(ctx context.Context, limiterUserID, limitedUserID uint64, options models.ProfileLimitationOptions, note service.NoteUpdate) (*models.ProfileLimitation, error) {
+		return &models.ProfileLimitation{
+			ID:            1,
+			LimiterUserID: 10,
+			LimitedUserID: 20,
+			Options:       options,
+			Note:          sql.NullString{String: "secret", Valid: true},
+		}, nil
+	}
+	h := handler.NewProfileLimitationHandler(mockService)
 
-	t.Run("successful get", func(t *testing.T) {
-		mockService := &mockProfileLimitationService{}
-		mockService.getByIDFunc = func(ctx context.Context, limitationID uint64) (*models.ProfileLimitation, error) {
-			return &models.ProfileLimitation{
-				ID:            limitationID,
-				LimiterUserID: 1,
-				LimitedUserID: 2,
-				Options:       models.DefaultOptions(),
-				Note:          sql.NullString{String: "Test note", Valid: true},
-			}, nil
-		}
-
-		h := handler.NewProfileLimitationHandler(mockService)
-
-		req := &pb.GetProfileLimitationRequest{
-			LimitationId: 1,
-		}
-
-		resp, err := h.GetProfileLimitation(ctx, req)
-		if err != nil {
-			t.Fatalf("GetProfileLimitation failed: %v", err)
-		}
-
-		if resp.Data == nil {
-			t.Fatal("Expected data to be returned")
-		}
-		if resp.Data.Id != 1 {
-			t.Errorf("Expected ID 1, got %d", resp.Data.Id)
-		}
+	// Create response always uses limiter as caller, so note is present.
+	resp, err := h.CreateProfileLimitation(ctx, &pb.CreateProfileLimitationRequest{
+		LimiterUserId: 10,
+		LimitedUserId: 20,
+		Options:       fullOptions(true),
+		Note:          plStringPtr("secret"),
 	})
-
-	t.Run("not found", func(t *testing.T) {
-		mockService := &mockProfileLimitationService{}
-		mockService.getByIDFunc = func(ctx context.Context, limitationID uint64) (*models.ProfileLimitation, error) {
-			return nil, service.ErrProfileLimitationNotFound
-		}
-
-		h := handler.NewProfileLimitationHandler(mockService)
-
-		req := &pb.GetProfileLimitationRequest{
-			LimitationId: 99999,
-		}
-
-		_, err := h.GetProfileLimitation(ctx, req)
-		if err == nil {
-			t.Fatal("Expected error")
-		}
-
-		st, ok := status.FromError(err)
-		if !ok {
-			t.Fatal("Expected gRPC status error")
-		}
-		if st.Code() != codes.NotFound {
-			t.Errorf("Expected NotFound, got %v", st.Code())
-		}
-	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.Data.Note == nil || *resp.Data.Note != "secret" {
+		t.Fatalf("limiter should see note, got %v", resp.Data.Note)
+	}
 }
 
 func TestMapProfileLimitationError(t *testing.T) {
@@ -346,43 +338,14 @@ func TestMapProfileLimitationError(t *testing.T) {
 		name         string
 		err          error
 		expectedCode codes.Code
-		expectedMsg  string
 	}{
-		{
-			name:         "not found",
-			err:          service.ErrProfileLimitationNotFound,
-			expectedCode: codes.NotFound,
-		},
-		{
-			name:         "already exists",
-			err:          service.ErrProfileLimitationAlreadyExists,
-			expectedCode: codes.PermissionDenied,
-		},
-		{
-			name:         "invalid options",
-			err:          service.ErrInvalidOptions,
-			expectedCode: codes.InvalidArgument,
-		},
-		{
-			name:         "note too long",
-			err:          service.ErrNoteTooLong,
-			expectedCode: codes.InvalidArgument,
-		},
-		{
-			name:         "user not found",
-			err:          service.ErrUserNotFound,
-			expectedCode: codes.NotFound,
-		},
-		{
-			name:         "unauthorized",
-			err:          service.ErrUnauthorized,
-			expectedCode: codes.PermissionDenied,
-		},
-		{
-			name:         "internal error",
-			err:          errors.New("some internal error"),
-			expectedCode: codes.Internal,
-		},
+		{"not found", service.ErrProfileLimitationNotFound, codes.NotFound},
+		{"already exists", service.ErrProfileLimitationAlreadyExists, codes.PermissionDenied},
+		{"invalid options", service.ErrInvalidOptions, codes.InvalidArgument},
+		{"note too long", service.ErrNoteTooLong, codes.InvalidArgument},
+		{"user not found", service.ErrUserNotFound, codes.NotFound},
+		{"unauthorized", service.ErrUnauthorized, codes.PermissionDenied},
+		{"internal error", errors.New("some internal error"), codes.Internal},
 	}
 
 	for _, tt := range tests {

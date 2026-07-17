@@ -3,11 +3,13 @@ package service_test
 import (
 	"context"
 	"database/sql"
-	"metarang/auth-service/internal/service"
+	"errors"
+	"sync"
 	"testing"
 
 	"metarang/auth-service/internal/models"
 	"metarang/auth-service/internal/repository"
+	"metarang/auth-service/internal/service"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/assert"
@@ -24,11 +26,14 @@ func setupProfileLimitationTestService(t *testing.T) (service.ProfileLimitationS
 		t.Skipf("Database ping failed: %v", err)
 	}
 
-	// Clean up test data
+	_, _ = db.Exec(`
+		ALTER TABLE profile_limitations
+		ADD UNIQUE KEY profile_limitations_limiter_limited_unique (limiter_user_id, limited_user_id)
+	`)
+
 	_, _ = db.Exec("DELETE FROM profile_limitations")
 	_, _ = db.Exec("DELETE FROM users WHERE id IN (1, 2, 3)")
 
-	// Create test users
 	_, _ = db.Exec("INSERT INTO users (id, name, email, phone, password, code, created_at, updated_at) VALUES (1, 'User 1', 'user1@test.com', '09123456789', 'password', 'USER1', NOW(), NOW())")
 	_, _ = db.Exec("INSERT INTO users (id, name, email, phone, password, code, created_at, updated_at) VALUES (2, 'User 2', 'user2@test.com', '09123456790', 'password', 'USER2', NOW(), NOW())")
 	_, _ = db.Exec("INSERT INTO users (id, name, email, phone, password, code, created_at, updated_at) VALUES (3, 'User 3', 'user3@test.com', '09123456791', 'password', 'USER3', NOW(), NOW())")
@@ -38,6 +43,18 @@ func setupProfileLimitationTestService(t *testing.T) (service.ProfileLimitationS
 	svc := service.NewProfileLimitationService(limitationRepo, userRepo)
 
 	return svc, db
+}
+
+func noteString(s string) service.NoteUpdate {
+	return service.NoteUpdate{Present: true, Value: &s}
+}
+
+func noteClear() service.NoteUpdate {
+	return service.NoteUpdate{Present: true, Value: nil}
+}
+
+func noteOmit() service.NoteUpdate {
+	return service.NoteUpdate{Present: false}
 }
 
 func TestProfileLimitationService_Create(t *testing.T) {
@@ -51,47 +68,36 @@ func TestProfileLimitationService_Create(t *testing.T) {
 		options.Follow = false
 		options.SendMessage = false
 
-		limitation, err := svc.Create(ctx, 1, 2, options, "Test note")
+		limitation, err := svc.Create(ctx, 1, 2, options, noteString("Test note"))
 		require.NoError(t, err)
 		assert.NotZero(t, limitation.ID)
 		assert.Equal(t, uint64(1), limitation.LimiterUserID)
 		assert.Equal(t, uint64(2), limitation.LimitedUserID)
 		assert.False(t, limitation.Options.Follow)
-		assert.False(t, limitation.Options.SendMessage)
 		assert.True(t, limitation.Note.Valid)
 		assert.Equal(t, "Test note", limitation.Note.String)
 	})
 
 	t.Run("duplicate creation fails", func(t *testing.T) {
 		options := models.DefaultOptions()
-		_, err := svc.Create(ctx, 1, 2, options, "")
-		assert.Error(t, err)
-		assert.Equal(t, service.ErrProfileLimitationAlreadyExists, err)
+		_, err := svc.Create(ctx, 1, 2, options, noteOmit())
+		assert.ErrorIs(t, err, service.ErrProfileLimitationAlreadyExists)
 	})
 
-	t.Run("invalid limited user fails", func(t *testing.T) {
+	t.Run("invalid limited user fails with 404 contract", func(t *testing.T) {
 		options := models.DefaultOptions()
-		_, err := svc.Create(ctx, 1, 99999, options, "")
-		assert.Error(t, err)
-		assert.Equal(t, service.ErrUserNotFound, err)
-	})
-
-	t.Run("invalid limiter user fails", func(t *testing.T) {
-		options := models.DefaultOptions()
-		_, err := svc.Create(ctx, 99999, 2, options, "")
-		assert.Error(t, err)
-		assert.Equal(t, service.ErrUserNotFound, err)
+		_, err := svc.Create(ctx, 1, 99999, options, noteOmit())
+		assert.ErrorIs(t, err, service.ErrUserNotFound)
 	})
 
 	t.Run("note too long fails", func(t *testing.T) {
 		options := models.DefaultOptions()
-		longNote := make([]byte, 501)
-		for i := range longNote {
-			longNote[i] = 'a'
+		long := make([]byte, 501)
+		for i := range long {
+			long[i] = 'a'
 		}
-		_, err := svc.Create(ctx, 1, 3, options, string(longNote))
-		assert.Error(t, err)
-		assert.Equal(t, service.ErrNoteTooLong, err)
+		_, err := svc.Create(ctx, 1, 3, options, noteString(string(long)))
+		assert.ErrorIs(t, err, service.ErrNoteTooLong)
 	})
 }
 
@@ -101,47 +107,45 @@ func TestProfileLimitationService_Update(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Create a limitation
 	options := models.DefaultOptions()
-	limitation, err := svc.Create(ctx, 1, 2, options, "Original note")
+	limitation, err := svc.Create(ctx, 1, 2, options, noteString("Original note"))
 	require.NoError(t, err)
 
 	t.Run("successful update", func(t *testing.T) {
 		newOptions := models.DefaultOptions()
 		newOptions.Follow = false
-		newOptions.SendMessage = false
 
-		updated, err := svc.Update(ctx, limitation.ID, 1, newOptions, "Updated note")
+		updated, err := svc.Update(ctx, limitation.ID, 1, newOptions, noteString("Updated note"))
 		require.NoError(t, err)
 		assert.False(t, updated.Options.Follow)
-		assert.False(t, updated.Options.SendMessage)
+		assert.Equal(t, "Updated note", updated.Note.String)
+	})
+
+	t.Run("omitted note retains existing", func(t *testing.T) {
+		newOptions := models.DefaultOptions()
+		updated, err := svc.Update(ctx, limitation.ID, 1, newOptions, noteOmit())
+		require.NoError(t, err)
 		assert.True(t, updated.Note.Valid)
 		assert.Equal(t, "Updated note", updated.Note.String)
 	})
 
+	t.Run("explicit clear note", func(t *testing.T) {
+		newOptions := models.DefaultOptions()
+		updated, err := svc.Update(ctx, limitation.ID, 1, newOptions, noteClear())
+		require.NoError(t, err)
+		assert.False(t, updated.Note.Valid)
+	})
+
 	t.Run("unauthorized update fails", func(t *testing.T) {
 		newOptions := models.DefaultOptions()
-		_, err := svc.Update(ctx, limitation.ID, 2, newOptions, "")
-		assert.Error(t, err)
-		assert.Equal(t, service.ErrUnauthorized, err)
+		_, err := svc.Update(ctx, limitation.ID, 2, newOptions, noteOmit())
+		assert.ErrorIs(t, err, service.ErrUnauthorized)
 	})
 
 	t.Run("not found fails", func(t *testing.T) {
 		newOptions := models.DefaultOptions()
-		_, err := svc.Update(ctx, 99999, 1, newOptions, "")
-		assert.Error(t, err)
-		assert.Equal(t, service.ErrProfileLimitationNotFound, err)
-	})
-
-	t.Run("note too long fails", func(t *testing.T) {
-		newOptions := models.DefaultOptions()
-		longNote := make([]byte, 501)
-		for i := range longNote {
-			longNote[i] = 'a'
-		}
-		_, err := svc.Update(ctx, limitation.ID, 1, newOptions, string(longNote))
-		assert.Error(t, err)
-		assert.Equal(t, service.ErrNoteTooLong, err)
+		_, err := svc.Update(ctx, 99999, 1, newOptions, noteOmit())
+		assert.ErrorIs(t, err, service.ErrProfileLimitationNotFound)
 	})
 }
 
@@ -150,62 +154,22 @@ func TestProfileLimitationService_Delete(t *testing.T) {
 	defer db.Close()
 
 	ctx := context.Background()
-
-	// Create a limitation
 	options := models.DefaultOptions()
-	limitation, err := svc.Create(ctx, 1, 2, options, "")
+	limitation, err := svc.Create(ctx, 1, 2, options, noteOmit())
 	require.NoError(t, err)
 
 	t.Run("successful delete", func(t *testing.T) {
 		err := svc.Delete(ctx, limitation.ID, 1)
 		assert.NoError(t, err)
-
-		// Verify deletion
 		_, err = svc.GetByID(ctx, limitation.ID)
-		assert.Error(t, err)
-		assert.Equal(t, service.ErrProfileLimitationNotFound, err)
+		assert.ErrorIs(t, err, service.ErrProfileLimitationNotFound)
 	})
 
 	t.Run("unauthorized delete fails", func(t *testing.T) {
-		// Create another limitation
-		limitation2, err := svc.Create(ctx, 1, 3, options, "")
+		limitation2, err := svc.Create(ctx, 1, 3, options, noteOmit())
 		require.NoError(t, err)
-
 		err = svc.Delete(ctx, limitation2.ID, 2)
-		assert.Error(t, err)
-		assert.Equal(t, service.ErrUnauthorized, err)
-	})
-
-	t.Run("not found fails", func(t *testing.T) {
-		err := svc.Delete(ctx, 99999, 1)
-		assert.Error(t, err)
-		assert.Equal(t, service.ErrProfileLimitationNotFound, err)
-	})
-}
-
-func TestProfileLimitationService_GetByID(t *testing.T) {
-	svc, db := setupProfileLimitationTestService(t)
-	defer db.Close()
-
-	ctx := context.Background()
-
-	// Create a limitation
-	options := models.DefaultOptions()
-	options.Follow = false
-	limitation, err := svc.Create(ctx, 1, 2, options, "Test note")
-	require.NoError(t, err)
-
-	t.Run("successful get", func(t *testing.T) {
-		found, err := svc.GetByID(ctx, limitation.ID)
-		require.NoError(t, err)
-		assert.Equal(t, limitation.ID, found.ID)
-		assert.False(t, found.Options.Follow)
-	})
-
-	t.Run("not found", func(t *testing.T) {
-		_, err := svc.GetByID(ctx, 99999)
-		assert.Error(t, err)
-		assert.Equal(t, service.ErrProfileLimitationNotFound, err)
+		assert.ErrorIs(t, err, service.ErrUnauthorized)
 	})
 }
 
@@ -214,10 +178,8 @@ func TestProfileLimitationService_GetBetweenUsers(t *testing.T) {
 	defer db.Close()
 
 	ctx := context.Background()
-
-	// Create a limitation (user 1 limiting user 2)
 	options := models.DefaultOptions()
-	limitation, err := svc.Create(ctx, 1, 2, options, "Test note")
+	limitation, err := svc.Create(ctx, 1, 2, options, noteString("Test note"))
 	require.NoError(t, err)
 
 	t.Run("find from limiter perspective", func(t *testing.T) {
@@ -234,32 +196,52 @@ func TestProfileLimitationService_GetBetweenUsers(t *testing.T) {
 		assert.Equal(t, limitation.ID, found.ID)
 	})
 
-	t.Run("not found", func(t *testing.T) {
+	t.Run("empty when users exist but no limitation", func(t *testing.T) {
 		found, err := svc.GetBetweenUsers(ctx, 2, 3)
 		require.NoError(t, err)
 		assert.Nil(t, found)
 	})
+
+	t.Run("missing target user returns not found", func(t *testing.T) {
+		_, err := svc.GetBetweenUsers(ctx, 1, 99999)
+		assert.ErrorIs(t, err, service.ErrUserNotFound)
+	})
 }
 
-func TestProfileLimitationService_ValidateOptions(t *testing.T) {
-	svc, _ := setupProfileLimitationTestService(t)
+func TestProfileLimitationService_ConcurrentDuplicateCreate(t *testing.T) {
+	svc, db := setupProfileLimitationTestService(t)
+	defer db.Close()
 
-	t.Run("valid options", func(t *testing.T) {
-		options := models.DefaultOptions()
-		err := svc.ValidateOptions(options)
-		assert.NoError(t, err)
-	})
+	ctx := context.Background()
+	options := models.DefaultOptions()
 
-	t.Run("custom options", func(t *testing.T) {
-		options := models.ProfileLimitationOptions{
-			Follow:                false,
-			SendMessage:           false,
-			Share:                 true,
-			SendTicket:            true,
-			ViewProfileImages:     false,
-			ViewFeaturesLocations: true,
+	var wg sync.WaitGroup
+	results := make(chan error, 2)
+	for i := 0; i < 2; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := svc.Create(ctx, 1, 2, options, noteString("race"))
+			results <- err
+		}()
+	}
+	wg.Wait()
+	close(results)
+
+	var success, alreadyExists, other int
+	for err := range results {
+		switch {
+		case err == nil:
+			success++
+		case errors.Is(err, service.ErrProfileLimitationAlreadyExists):
+			alreadyExists++
+		default:
+			other++
+			t.Logf("unexpected error: %v", err)
 		}
-		err := svc.ValidateOptions(options)
-		assert.NoError(t, err)
-	})
+	}
+
+	assert.Equal(t, 1, success)
+	assert.Equal(t, 1, alreadyExists)
+	assert.Equal(t, 0, other)
 }

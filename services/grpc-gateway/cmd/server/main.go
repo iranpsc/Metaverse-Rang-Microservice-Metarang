@@ -320,9 +320,11 @@ func main() {
 	mux.Handle("/api/user/wallet", authMiddleware(http.HandlerFunc(authHandler.GetAuthenticatedUserWallet)))
 	mux.Handle("/api/user/profile", authMiddleware(http.HandlerFunc(authHandler.UpdateProfile)))
 
+	// GET /api/users/{user}/profile-limitations requires authentication (docs + Laravel)
+	mux.Handle("GET /api/users/{user}/profile-limitations", authMiddleware(http.HandlerFunc(authHandler.GetProfileLimitations)))
+
 	// Dynamic /api/users/{user}/... routes
 	// Must be registered AFTER /api/users to avoid prefix matching conflicts
-	// Use a dedicated handler function similar to HandleCitizenRoutes
 	mux.Handle("/api/users/", optionalAuthMiddleware(http.HandlerFunc(authHandler.HandleUsersRoutes)))
 
 	// Citizen routes (public, no authentication required)
@@ -394,12 +396,9 @@ func main() {
 	mux.Handle("/api/personal-info", personalInfoHandler)
 	mux.Handle("/api/personal-info/", personalInfoHandler)
 
-	// Profile Limitation routes
-	// Register route with trailing slash first to handle /api/profile-limitations/{id}
+	// Profile Limitation routes (no undocumented GET-by-ID)
 	mux.Handle("/api/profile-limitations/", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
-		case http.MethodGet:
-			authHandler.GetProfileLimitation(w, r)
 		case http.MethodPut, http.MethodPatch:
 			authHandler.UpdateProfileLimitation(w, r)
 		case http.MethodDelete:
@@ -408,7 +407,6 @@ func main() {
 			http.NotFound(w, r)
 		}
 	})))
-	// Register exact match route for POST /api/profile-limitations (must be after prefix route)
 	mux.Handle("/api/profile-limitations", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			authHandler.CreateProfileLimitation(w, r)
@@ -416,7 +414,6 @@ func main() {
 			http.NotFound(w, r)
 		}
 	})))
-	mux.Handle("/api/user/profile-limitations", authMiddleware(http.HandlerFunc(authHandler.GetProfileLimitations)))
 
 	// Profile Photo routes
 	mux.Handle("/api/profilePhotos", authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -805,7 +805,6 @@ const (
 	ProfileLimitationService_CreateProfileLimitation_FullMethodName = "/auth.ProfileLimitationService/CreateProfileLimitation"
 	ProfileLimitationService_UpdateProfileLimitation_FullMethodName = "/auth.ProfileLimitationService/UpdateProfileLimitation"
 	ProfileLimitationService_DeleteProfileLimitation_FullMethodName = "/auth.ProfileLimitationService/DeleteProfileLimitation"
-	ProfileLimitationService_GetProfileLimitation_FullMethodName    = "/auth.ProfileLimitationService/GetProfileLimitation"
 )
 
 // ProfileLimitationServiceClient is the client API for ProfileLimitationService service.
@@ -817,7 +816,6 @@ type ProfileLimitationServiceClient interface {
 	CreateProfileLimitation(ctx context.Context, in *CreateProfileLimitationRequest, opts ...grpc.CallOption) (*ProfileLimitationResponse, error)
 	UpdateProfileLimitation(ctx context.Context, in *UpdateProfileLimitationRequest, opts ...grpc.CallOption) (*ProfileLimitationResponse, error)
 	DeleteProfileLimitation(ctx context.Context, in *DeleteProfileLimitationRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	GetProfileLimitation(ctx context.Context, in *GetProfileLimitationRequest, opts ...grpc.CallOption) (*ProfileLimitationResponse, error)
 }
 
 type profileLimitationServiceClient struct {
@@ -858,16 +856,6 @@ func (c *profileLimitationServiceClient) DeleteProfileLimitation(ctx context.Con
 	return out, nil
 }
 
-func (c *profileLimitationServiceClient) GetProfileLimitation(ctx context.Context, in *GetProfileLimitationRequest, opts ...grpc.CallOption) (*ProfileLimitationResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ProfileLimitationResponse)
-	err := c.cc.Invoke(ctx, ProfileLimitationService_GetProfileLimitation_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // ProfileLimitationServiceServer is the server API for ProfileLimitationService service.
 // All implementations must embed UnimplementedProfileLimitationServiceServer
 // for forward compatibility.
@@ -877,7 +865,6 @@ type ProfileLimitationServiceServer interface {
 	CreateProfileLimitation(context.Context, *CreateProfileLimitationRequest) (*ProfileLimitationResponse, error)
 	UpdateProfileLimitation(context.Context, *UpdateProfileLimitationRequest) (*ProfileLimitationResponse, error)
 	DeleteProfileLimitation(context.Context, *DeleteProfileLimitationRequest) (*emptypb.Empty, error)
-	GetProfileLimitation(context.Context, *GetProfileLimitationRequest) (*ProfileLimitationResponse, error)
 	mustEmbedUnimplementedProfileLimitationServiceServer()
 }
 
@@ -896,9 +883,6 @@ func (UnimplementedProfileLimitationServiceServer) UpdateProfileLimitation(conte
 }
 func (UnimplementedProfileLimitationServiceServer) DeleteProfileLimitation(context.Context, *DeleteProfileLimitationRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteProfileLimitation not implemented")
-}
-func (UnimplementedProfileLimitationServiceServer) GetProfileLimitation(context.Context, *GetProfileLimitationRequest) (*ProfileLimitationResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetProfileLimitation not implemented")
 }
 func (UnimplementedProfileLimitationServiceServer) mustEmbedUnimplementedProfileLimitationServiceServer() {
 }
@@ -976,24 +960,6 @@ func _ProfileLimitationService_DeleteProfileLimitation_Handler(srv interface{}, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ProfileLimitationService_GetProfileLimitation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetProfileLimitationRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProfileLimitationServiceServer).GetProfileLimitation(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProfileLimitationService_GetProfileLimitation_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProfileLimitationServiceServer).GetProfileLimitation(ctx, req.(*GetProfileLimitationRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // ProfileLimitationService_ServiceDesc is the grpc.ServiceDesc for ProfileLimitationService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1012,10 +978,6 @@ var ProfileLimitationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteProfileLimitation",
 			Handler:    _ProfileLimitationService_DeleteProfileLimitation_Handler,
-		},
-		{
-			MethodName: "GetProfileLimitation",
-			Handler:    _ProfileLimitationService_GetProfileLimitation_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

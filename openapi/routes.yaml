@@ -166,14 +166,14 @@ routes:
     summary: Create profile limitation
     security: bearer
   - path: /api/profile-limitations/{id}
-    methods: [get, put, patch, delete]
+    methods: [put, patch, delete]
     tag: Profile
-    summary: Manage profile limitation
+    summary: Update or delete profile limitation
     security: bearer
-  - path: /api/user/profile-limitations
+  - path: /api/users/{user}/profile-limitations
     methods: [get]
     tag: Profile
-    summary: List profile limitations for current user
+    summary: Get mutual profile limitation between caller and user
     security: bearer
 
   # --- Profile Photos ---

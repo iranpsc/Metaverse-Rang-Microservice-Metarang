@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -10,7 +11,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"metarang/auth-service/internal/models"
 	"metarang/auth-service/internal/service"
 	pb "metarang/shared/pb/auth"
 )
@@ -185,17 +185,19 @@ func (h *userHandler) GetUserLevel(ctx context.Context, req *pb.GetUserLevelRequ
 func (h *userHandler) GetProfileLimitations(ctx context.Context, req *pb.GetProfileLimitationsRequest) (*pb.GetProfileLimitationsResponse, error) {
 	limitation, err := h.profileLimitationService.GetBetweenUsers(ctx, req.CallerUserId, req.TargetUserId)
 	if err != nil {
+		if errors.Is(err, service.ErrUserNotFound) {
+			return nil, status.Errorf(codes.NotFound, "%s", err.Error())
+		}
 		return nil, status.Errorf(codes.Internal, "failed to get profile limitations: %v", err)
 	}
 
-	// If no limitation exists, return empty response
+	// If no limitation exists, return empty response ({ "data": [] } at the gateway)
 	if limitation == nil {
 		return &pb.GetProfileLimitationsResponse{}, nil
 	}
 
-	// Convert to proto - note visibility depends on caller being the limiter
 	return &pb.GetProfileLimitationsResponse{
-		Data: convertProfileLimitationToProtoForUser(limitation, req.CallerUserId),
+		Data: convertProfileLimitationToProto(limitation, req.CallerUserId),
 	}, nil
 }
 
@@ -377,30 +379,4 @@ func userListLevelToProto(lvl *service.LevelSummary) *pb.Level {
 		Slug:     lvl.Slug,
 		ImageUrl: lvl.Image,
 	}
-}
-
-// convertProfileLimitationToProtoForUser converts a ProfileLimitation model to proto for user service
-func convertProfileLimitationToProtoForUser(limitation *models.ProfileLimitation, callerUserID uint64) *pb.ProfileLimitation {
-	proto := &pb.ProfileLimitation{
-		Id:            limitation.ID,
-		LimiterUserId: limitation.LimiterUserID,
-		LimitedUserId: limitation.LimitedUserID,
-		Options: &pb.ProfileLimitationOptions{
-			Follow:                limitation.Options.Follow,
-			SendMessage:           limitation.Options.SendMessage,
-			Share:                 limitation.Options.Share,
-			SendTicket:            limitation.Options.SendTicket,
-			ViewProfileImages:     limitation.Options.ViewProfileImages,
-			ViewFeaturesLocations: limitation.Options.ViewFeaturesLocations,
-		},
-		CreatedAt: timestamppb.New(limitation.CreatedAt),
-		UpdatedAt: timestamppb.New(limitation.UpdatedAt),
-	}
-
-	// Only include note if caller is the limiter
-	if limitation.Note.Valid && callerUserID == limitation.LimiterUserID {
-		proto.Note = limitation.Note.String
-	}
-
-	return proto
 }
