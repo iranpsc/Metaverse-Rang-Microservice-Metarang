@@ -690,7 +690,6 @@ func (h *FeaturesHandler) DestroyBuilding(w http.ResponseWriter, r *http.Request
 }
 
 // ListSellRequests handles GET /api/sell-requests
-// Implements Laravel's SellRequestsController@index
 func (h *FeaturesHandler) ListSellRequests(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -715,7 +714,6 @@ func (h *FeaturesHandler) ListSellRequests(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Build response matching Laravel SellRequestResource format
 	sellRequests := make([]map[string]interface{}, 0, len(resp.SellRequests))
 	for _, req := range resp.SellRequests {
 		reqMap := map[string]interface{}{
@@ -767,7 +765,6 @@ func (h *FeaturesHandler) ListSellRequests(w http.ResponseWriter, r *http.Reques
 }
 
 // CreateSellRequest handles POST /api/sell-requests/store/{feature}
-// Implements Laravel's SellRequestsController@store
 func (h *FeaturesHandler) CreateSellRequest(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -834,7 +831,6 @@ func (h *FeaturesHandler) CreateSellRequest(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Build response matching Laravel SellRequestResource format
 	respMap := map[string]interface{}{
 		"id":         resp.Id,
 		"feature_id": resp.FeatureId,
@@ -881,7 +877,6 @@ func (h *FeaturesHandler) CreateSellRequest(w http.ResponseWriter, r *http.Reque
 }
 
 // DeleteSellRequest handles DELETE /api/sell-requests/{sellRequest}
-// Implements Laravel's SellRequestsController@destroy
 func (h *FeaturesHandler) DeleteSellRequest(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -916,12 +911,10 @@ func (h *FeaturesHandler) DeleteSellRequest(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Return empty 200 response (Laravel uses response()->noContent(200))
 	w.WriteHeader(http.StatusOK)
 }
 
 // UpdateGracePeriod handles POST /api/buy-requests/add-grace-period/{buyFeatureRequest}
-// Implements Laravel's BuyRequestsController@addGracePeriod
 func (h *FeaturesHandler) UpdateGracePeriod(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -987,7 +980,6 @@ func (h *FeaturesHandler) UpdateGracePeriod(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Return empty JSON response (Laravel returns {})
 	writeJSON(w, http.StatusOK, map[string]interface{}{})
 }
 

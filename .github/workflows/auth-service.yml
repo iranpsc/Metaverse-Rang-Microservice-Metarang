@@ -84,7 +84,6 @@ jobs:
       - name: Setup test database
         run: |
           mysql -h 127.0.0.1 -u test_user -ptest_password metarang_test < scripts/schema.sql
-          mysql -h 127.0.0.1 -u test_user -ptest_password metarang_test < tests/fixtures/test_data.sql
 
       - name: Run unit tests
         env:

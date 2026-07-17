@@ -65,10 +65,9 @@ mysql -u root -p -e "CREATE DATABASE metarang_test;"
 
 # Import schema
 mysql -u root -p metarang_test < scripts/schema.sql
-
-# Import test fixtures
-mysql -u root -p metarang_test < tests/fixtures/test_data.sql
 ```
+
+Tests create the data they need themselves (see `tests/integration/test_helpers.go`), so no fixture import is required.
 
 ## Environment Setup
 
