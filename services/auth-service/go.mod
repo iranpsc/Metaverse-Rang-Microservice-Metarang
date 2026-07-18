@@ -5,7 +5,7 @@ go 1.25.12
 require (
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/joho/godotenv v1.5.1
-	golang.org/x/crypto v0.53.0
+	golang.org/x/crypto v0.54.0
 	google.golang.org/grpc v1.79.3
 	google.golang.org/protobuf v1.36.11
 )
@@ -29,8 +29,8 @@ require (
 	github.com/prometheus/procfs v0.11.1 // indirect
 	github.com/yaa110/go-persian-calendar v1.2.0 // indirect
 	golang.org/x/net v0.56.0 // indirect
-	golang.org/x/sys v0.46.0 // indirect
-	golang.org/x/text v0.39.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/text v0.40.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 )
 
