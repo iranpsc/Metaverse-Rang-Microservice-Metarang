@@ -1,4 +1,4 @@
-package service
+package period
 
 import (
 	"fmt"
@@ -27,6 +27,12 @@ type PeriodWindow struct {
 	Buckets     []PeriodBucket
 }
 
+// PreviousWindow is the immediately preceding period of equal length.
+type PreviousWindow struct {
+	Start time.Time
+	End   time.Time
+}
+
 // ResolvePeriod ports Laravel App\Services\WalletHistory\PeriodResolver::resolve.
 func ResolvePeriod(period string, reference time.Time) (*PeriodWindow, error) {
 	if !isValidPeriod(period) {
@@ -52,6 +58,19 @@ func ResolvePeriod(period string, reference time.Time) (*PeriodWindow, error) {
 		End:         end,
 		Granularity: granularityFor(period),
 		Buckets:     buildBuckets(period, start, end),
+	}, nil
+}
+
+// ResolvePrevious ports Laravel PeriodResolver::resolvePrevious.
+func ResolvePrevious(period string, reference time.Time) (*PreviousWindow, error) {
+	current, err := ResolvePeriod(period, reference)
+	if err != nil {
+		return nil, err
+	}
+	duration := current.End.Sub(current.Start)
+	return &PreviousWindow{
+		Start: current.Start.Add(-(duration + time.Second)),
+		End:   current.Start.Add(-time.Second),
 	}, nil
 }
 
@@ -103,9 +122,9 @@ func buildBuckets(period string, start, end time.Time) []PeriodBucket {
 }
 
 func hourlyBuckets(end time.Time) []PeriodBucket {
-	// Laravel: range(23,0)->map->reverse — newest hour first.
+	// Chronological order (oldest → newest), consistent with daily/weekly/monthly buckets.
 	buckets := make([]PeriodBucket, 0, 24)
-	for offset := 0; offset <= 23; offset++ {
+	for offset := 23; offset >= 0; offset-- {
 		bucketEnd := endOfHour(end.Add(-time.Duration(offset) * time.Hour))
 		bucketStart := startOfHour(bucketEnd)
 		buckets = append(buckets, PeriodBucket{

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"metarang/features-service/internal/service"
+	"metarang/shared/pkg/period"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,13 +13,13 @@ import (
 )
 
 func TestPeriodResolver_InvalidPeriod(t *testing.T) {
-	_, err := service.ResolvePeriod("invalid", time.Now())
+	_, err := period.ResolvePeriod("invalid", time.Now())
 	require.Error(t, err)
 }
 
 func TestPeriodResolver_Daily(t *testing.T) {
 	ref := time.Date(2026, 5, 15, 14, 30, 45, 0, time.Local)
-	window, err := service.ResolvePeriod("daily", ref)
+	window, err := period.ResolvePeriod("daily", ref)
 	require.NoError(t, err)
 
 	assert.Equal(t, "daily", window.Period)
@@ -31,15 +31,19 @@ func TestPeriodResolver_Daily(t *testing.T) {
 	assert.True(t, window.End.Equal(expectedEnd), "end=%v expected=%v", window.End, expectedEnd)
 	assert.True(t, window.Start.Equal(expectedStart), "start=%v expected=%v", window.Start, expectedStart)
 
-	// Laravel reverses hourly buckets so newest hour is first.
+	// Chronological order: oldest hour first (matches weekly/monthly/yearly buckets).
 	first := window.Buckets[0]
+	last := window.Buckets[len(window.Buckets)-1]
 	assert.Equal(t, first.Start.Format("15:04"), first.Label)
-	assert.Equal(t, expectedEnd.Truncate(time.Hour), first.Start.Truncate(time.Hour))
+	assert.True(t, first.Start.Before(last.Start), "hourly buckets must be oldest→newest")
+	assert.Equal(t, expectedEnd.Truncate(time.Hour), last.Start.Truncate(time.Hour))
+	// Oldest bucket is ~23 hours before the window end.
+	assert.Equal(t, expectedEnd.Add(-23*time.Hour).Truncate(time.Hour), first.Start.Truncate(time.Hour))
 }
 
 func TestPeriodResolver_Weekly(t *testing.T) {
 	ref := time.Date(2026, 5, 15, 14, 30, 45, 0, time.Local)
-	window, err := service.ResolvePeriod("weekly", ref)
+	window, err := period.ResolvePeriod("weekly", ref)
 	require.NoError(t, err)
 
 	assert.Equal(t, "weekly", window.Period)
@@ -59,7 +63,7 @@ func TestPeriodResolver_Weekly(t *testing.T) {
 
 func TestPeriodResolver_Monthly(t *testing.T) {
 	ref := time.Date(2026, 5, 15, 14, 30, 45, 0, time.Local)
-	window, err := service.ResolvePeriod("monthly", ref)
+	window, err := period.ResolvePeriod("monthly", ref)
 	require.NoError(t, err)
 
 	assert.Equal(t, "monthly", window.Period)
@@ -75,7 +79,7 @@ func TestPeriodResolver_Monthly(t *testing.T) {
 
 func TestPeriodResolver_Yearly(t *testing.T) {
 	ref := time.Date(2026, 5, 15, 14, 30, 45, 0, time.Local)
-	window, err := service.ResolvePeriod("yearly", ref)
+	window, err := period.ResolvePeriod("yearly", ref)
 	require.NoError(t, err)
 
 	assert.Equal(t, "yearly", window.Period)
@@ -89,6 +93,19 @@ func TestPeriodResolver_Yearly(t *testing.T) {
 	first := window.Buckets[0]
 	pt := ptime.New(first.Start)
 	assert.Equal(t, pt.Month().String()+" "+strconv.Itoa(pt.Year()), first.Label)
+}
+
+func TestPeriodResolver_ResolvePrevious(t *testing.T) {
+	ref := time.Date(2026, 5, 15, 14, 30, 45, 0, time.Local)
+	current, err := period.ResolvePeriod("daily", ref)
+	require.NoError(t, err)
+
+	previous, err := period.ResolvePrevious("daily", ref)
+	require.NoError(t, err)
+
+	duration := current.End.Sub(current.Start)
+	assert.True(t, previous.Start.Equal(current.Start.Add(-(duration + time.Second))))
+	assert.True(t, previous.End.Equal(current.Start.Add(-time.Second)))
 }
 
 func startOfDayLocal(t time.Time) time.Time {

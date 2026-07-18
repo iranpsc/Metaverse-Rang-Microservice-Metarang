@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"metarang/features-service/internal/models"
+	periodpkg "metarang/shared/pkg/period"
 )
 
 // DisplayableKarbaris matches Laravel UserFeaturesService::DISPLAYABLE_KARBARIS.
@@ -61,11 +62,11 @@ func (s *CitizenFeaturesService) GetSummary(
 	allowedKarbaris []string,
 	reference time.Time,
 ) (*models.CitizenFeatureSummaryResult, error) {
-	period = NormalizePeriod(period)
+	period = periodpkg.NormalizePeriod(period)
 	if reference.IsZero() {
 		reference = s.now()
 	}
-	window, err := ResolvePeriod(period, reference)
+	window, err := periodpkg.ResolvePeriod(period, reference)
 	if err != nil {
 		return nil, err
 	}
@@ -107,11 +108,11 @@ func (s *CitizenFeaturesService) GetChart(
 	allowedKarbaris []string,
 	reference time.Time,
 ) (*models.CitizenFeatureChartData, error) {
-	period = NormalizePeriod(period)
+	period = periodpkg.NormalizePeriod(period)
 	if reference.IsZero() {
 		reference = s.now()
 	}
-	window, err := ResolvePeriod(period, reference)
+	window, err := periodpkg.ResolvePeriod(period, reference)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +219,7 @@ func KarbariLabel(karbari string) string {
 	return "نامشخص"
 }
 
-func countTradesInBucket(trades []models.CitizenTradeTimestamp, bucket PeriodBucket) int32 {
+func countTradesInBucket(trades []models.CitizenTradeTimestamp, bucket periodpkg.PeriodBucket) int32 {
 	var count int32
 	for _, trade := range trades {
 		if !trade.CreatedAt.Before(bucket.Start) && !trade.CreatedAt.After(bucket.End) {

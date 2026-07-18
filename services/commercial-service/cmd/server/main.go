@@ -72,12 +72,16 @@ func main() {
 	referralRepo := repository.NewReferralRepository(db)
 	variableRepo := repository.NewVariableRepository(db)
 	userVariableRepo := repository.NewUserVariableRepository(db)
+	walletHistoryRepo := repository.NewWalletHistoryRepository(db)
 	jalaliConverter := service.NewJalaliConverter()
 
 	walletService := service.NewWalletService(walletRepo)
 	transactionService := service.NewTransactionService(transactionRepo, jalaliConverter)
 	referralService := service.NewReferralService(referralRepo, variableRepo, userVariableRepo, walletRepo)
 	userVariableService := service.NewUserVariableService(userVariableRepo)
+	incomeCalc := service.NewIncomeCalculator(walletHistoryRepo)
+	spendingCalc := service.NewSpendingCalculator(walletHistoryRepo)
+	walletHistoryService := service.NewWalletHistoryService(walletHistoryRepo, incomeCalc, spendingCalc)
 
 	authServiceAddr := getEnv("AUTH_SERVICE_ADDR", "auth-service:50051")
 	authConn, err := grpcutil.NewClient(authServiceAddr)
@@ -114,6 +118,7 @@ func main() {
 	handler.RegisterTransactionHandler(grpcServer, transactionService)
 	handler.RegisterReferralHandler(grpcServer, referralService)
 	handler.RegisterUserVariableHandler(grpcServer, userVariableService)
+	handler.RegisterWalletHistoryHandler(grpcServer, walletHistoryService)
 
 	port := getEnv("GRPC_PORT", "50052")
 	listener, err := net.Listen("tcp", ":"+port)

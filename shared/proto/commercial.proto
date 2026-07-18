@@ -202,3 +202,55 @@ message ProcessReferralRequest {
   string asset = 3;
   double amount = 4;
 }
+
+// WalletHistoryService — public citizen wallet income/spending history.
+// Auth is skipped; privacy is applied by the gateway via allowed_assets,
+// and the service still returns privacy_restricted stubs for requested hidden assets.
+service WalletHistoryService {
+  rpc GetWalletHistorySummary(GetWalletHistorySummaryRequest) returns (GetWalletHistorySummaryResponse);
+  rpc GetWalletHistoryChart(GetWalletHistoryChartRequest) returns (GetWalletHistoryChartResponse);
+}
+
+message GetWalletHistorySummaryRequest {
+  uint64 user_id = 1;
+  string period = 2;
+  repeated string assets = 3; // optional filter; empty = all assets
+  map<string, int32> privacy = 4; // privacy settings from auth
+}
+
+message WalletAssetCard {
+  string asset = 1;
+  double current_balance = 2;
+  double period_income = 3;
+  double period_spending = 4;
+  double growth_percent = 5;
+  string direction = 6; // "up" | "down"
+  bool privacy_restricted = 7;
+}
+
+message GetWalletHistorySummaryResponse {
+  repeated WalletAssetCard data = 1;
+  string period = 2;
+}
+
+message GetWalletHistoryChartRequest {
+  uint64 user_id = 1;
+  string period = 2;
+  repeated string assets = 3; // optional filter; empty = all assets
+  map<string, int32> privacy = 4;
+}
+
+message WalletChartPoint {
+  string label = 1;
+  double amount = 2;
+}
+
+message WalletAssetChartSeries {
+  repeated WalletChartPoint income = 1;
+  repeated WalletChartPoint spending = 2;
+}
+
+message GetWalletHistoryChartResponse {
+  map<string, WalletAssetChartSeries> data = 1;
+  string period = 2;
+}

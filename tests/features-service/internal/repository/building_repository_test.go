@@ -198,7 +198,7 @@ func TestBuildingRepository_HasBuilding(t *testing.T) {
 
 		// Create building
 		featureID := uint64(1)
-		err = repo.CreateBuilding(ctx, featureID, modelID, "25.0", "45.0", "100.5, -50.25", "", time.Now(), time.Now().Add(24*time.Hour), 100.0)
+		err = repo.CreateBuilding(ctx, featureID, uint64(1), modelID, "25.0", "45.0", "100.5, -50.25", "", time.Now(), time.Now().Add(24*time.Hour), 100.0)
 		require.NoError(t, err)
 
 		// Check if building exists
@@ -241,7 +241,7 @@ func TestBuildingRepository_CreateBuilding(t *testing.T) {
 		endDate := startDate.Add(24 * time.Hour)
 		bubbleDiameter := 256.5
 
-		err = repo.CreateBuilding(ctx, featureID, modelID, launchedSatisfaction, rotation, position, information, startDate, endDate, bubbleDiameter)
+		err = repo.CreateBuilding(ctx, featureID, uint64(1), modelID, launchedSatisfaction, rotation, position, information, startDate, endDate, bubbleDiameter)
 		require.NoError(t, err)
 
 		// Verify building was created
@@ -264,7 +264,7 @@ func TestBuildingRepository_CreateBuilding(t *testing.T) {
 		featureID := uint64(2)
 		information := `{"activity_line": "Retail", "name": "Store", "address": "123 Main St", "postal_code": "1234567890"}`
 
-		err = repo.CreateBuilding(ctx, featureID, modelID, "25.0", "0.0", "0,0", information, time.Now(), time.Now().Add(24*time.Hour), 100.0)
+		err = repo.CreateBuilding(ctx, featureID, uint64(1), modelID, "25.0", "0.0", "0,0", information, time.Now(), time.Now().Add(24*time.Hour), 100.0)
 		require.NoError(t, err)
 
 		buildings, err := repo.FindByFeatureID(ctx, featureID)
@@ -297,7 +297,7 @@ func TestBuildingRepository_FindByFeatureID(t *testing.T) {
 		require.NoError(t, err)
 
 		featureID := uint64(3)
-		err = repo.CreateBuilding(ctx, featureID, modelID, "25.0", "45.0", "100,200", "", time.Now(), time.Now().Add(24*time.Hour), 100.0)
+		err = repo.CreateBuilding(ctx, featureID, uint64(1), modelID, "25.0", "45.0", "100,200", "", time.Now(), time.Now().Add(24*time.Hour), 100.0)
 		require.NoError(t, err)
 
 		buildings, err := repo.FindByFeatureID(ctx, featureID)
@@ -338,7 +338,7 @@ func TestBuildingRepository_UpdateBuilding(t *testing.T) {
 		originalBubbleDiameter := 200.0
 
 		// Create building
-		err = repo.CreateBuilding(ctx, featureID, modelID, "25.0", "45.0", "100,200", "", time.Now(), time.Now().Add(24*time.Hour), originalBubbleDiameter)
+		err = repo.CreateBuilding(ctx, featureID, uint64(1), modelID, "25.0", "45.0", "100,200", "", time.Now(), time.Now().Add(24*time.Hour), originalBubbleDiameter)
 		require.NoError(t, err)
 
 		// Update building
@@ -365,7 +365,7 @@ func TestBuildingRepository_UpdateBuilding(t *testing.T) {
 		require.NoError(t, err)
 
 		featureID := uint64(5)
-		err = repo.CreateBuilding(ctx, featureID, modelID, "25.0", "0.0", "0,0", "", time.Now(), time.Now().Add(24*time.Hour), 100.0)
+		err = repo.CreateBuilding(ctx, featureID, uint64(1), modelID, "25.0", "0.0", "0,0", "", time.Now(), time.Now().Add(24*time.Hour), 100.0)
 		require.NoError(t, err)
 
 		updatedBuilding, err := repo.UpdateBuilding(ctx, featureID, modelID, "30.0", "45.0", "50,50", "", time.Now().Add(48*time.Hour), 100.0)
@@ -392,7 +392,7 @@ func TestBuildingRepository_DeleteBuilding(t *testing.T) {
 		require.NoError(t, err)
 
 		featureID := uint64(6)
-		err = repo.CreateBuilding(ctx, featureID, modelID, "25.0", "0.0", "0,0", "", time.Now(), time.Now().Add(24*time.Hour), 100.0)
+		err = repo.CreateBuilding(ctx, featureID, uint64(1), modelID, "25.0", "0.0", "0,0", "", time.Now(), time.Now().Add(24*time.Hour), 100.0)
 		require.NoError(t, err)
 
 		// Verify building exists

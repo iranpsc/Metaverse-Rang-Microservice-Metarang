@@ -137,6 +137,7 @@ CREATE TABLE `buildings` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `model_id` bigint(20) unsigned NOT NULL,
   `feature_id` bigint(20) unsigned NOT NULL,
+  `user_id` bigint(20) unsigned DEFAULT NULL,
   `construction_start_date` datetime NOT NULL,
   `construction_end_date` datetime NOT NULL,
   `launched_satisfaction` double NOT NULL DEFAULT 0,
@@ -149,6 +150,7 @@ CREATE TABLE `buildings` (
   PRIMARY KEY (`id`),
   KEY `buildings_model_id_foreign` (`model_id`),
   KEY `buildings_feature_id_foreign` (`feature_id`),
+  KEY `idx_buildings_user_id` (`user_id`),
   CONSTRAINT `buildings_feature_id_foreign` FOREIGN KEY (`feature_id`) REFERENCES `features` (`id`),
   CONSTRAINT `buildings_model_id_foreign` FOREIGN KEY (`model_id`) REFERENCES `building_models` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

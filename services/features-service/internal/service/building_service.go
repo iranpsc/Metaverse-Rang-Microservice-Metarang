@@ -24,7 +24,7 @@ type buildingRepository interface {
 	UpsertBuildingModel(ctx context.Context, modelID uint64, name, sku, images, attributes, file string, requiredSatisfaction float64) error
 	FindBuildingModelByModelID(ctx context.Context, modelID string) (*pb.BuildingModel, error)
 	HasBuilding(ctx context.Context, featureID uint64) (bool, error)
-	CreateBuilding(ctx context.Context, featureID uint64, buildingModelID string, launchedSatisfaction, rotation, position, information string, startDate, endDate time.Time, bubbleDiameter float64) error
+	CreateBuilding(ctx context.Context, featureID, userID uint64, buildingModelID string, launchedSatisfaction, rotation, position, information string, startDate, endDate time.Time, bubbleDiameter float64) error
 	FindByFeatureID(ctx context.Context, featureID uint64) ([]*pb.Building, error)
 	UpdateBuilding(ctx context.Context, featureID uint64, buildingModelID string, launchedSatisfaction, rotation, position, information string, endDate time.Time, bubbleDiameter float64) (*pb.Building, error)
 	FindBuildingByFeatureAndModel(ctx context.Context, featureID uint64, buildingModelID string) (*pb.Building, error)
@@ -315,7 +315,7 @@ func (s *BuildingService) BuildFeature(ctx context.Context, req *pb.BuildFeature
 
 	// 12. Create building record
 	buildingModelIDStr = strings.TrimSpace(req.BuildingModelId)
-	err = s.buildingRepo.CreateBuilding(ctx, req.FeatureId, buildingModelIDStr,
+	err = s.buildingRepo.CreateBuilding(ctx, req.FeatureId, user.UserID, buildingModelIDStr,
 		req.LaunchedSatisfaction, req.Rotation, req.Position, informationJSON,
 		constructionStartDate, constructionEndDate, bubbleDiameter)
 	if err != nil {

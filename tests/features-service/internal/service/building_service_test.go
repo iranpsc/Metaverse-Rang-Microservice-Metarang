@@ -19,7 +19,7 @@ type mockBuildingRepository struct {
 	upsertModelFunc                   func(ctx context.Context, modelID uint64, name, sku, images, attributes, file string, requiredSatisfaction float64) error
 	findModelFunc                     func(ctx context.Context, modelID string) (*pb.BuildingModel, error)
 	hasBuildingFunc                   func(ctx context.Context, featureID uint64) (bool, error)
-	createBuildingFunc                func(ctx context.Context, featureID uint64, buildingModelID string, launchedSatisfaction, rotation, position, information string, startDate, endDate time.Time, bubbleDiameter float64) error
+	createBuildingFunc                func(ctx context.Context, featureID, userID uint64, buildingModelID string, launchedSatisfaction, rotation, position, information string, startDate, endDate time.Time, bubbleDiameter float64) error
 	findByFeatureIDFunc               func(ctx context.Context, featureID uint64) ([]*pb.Building, error)
 	updateBuildingFunc                func(ctx context.Context, featureID uint64, buildingModelID string, launchedSatisfaction, rotation, position, information string, endDate time.Time, bubbleDiameter float64) (*pb.Building, error)
 	findBuildingByFeatureAndModelFunc func(ctx context.Context, featureID uint64, buildingModelID string) (*pb.Building, error)
@@ -48,9 +48,9 @@ func (m *mockBuildingRepository) HasBuilding(ctx context.Context, featureID uint
 	return false, errors.New("not implemented")
 }
 
-func (m *mockBuildingRepository) CreateBuilding(ctx context.Context, featureID uint64, buildingModelID string, launchedSatisfaction, rotation, position, information string, startDate, endDate time.Time, bubbleDiameter float64) error {
+func (m *mockBuildingRepository) CreateBuilding(ctx context.Context, featureID, userID uint64, buildingModelID string, launchedSatisfaction, rotation, position, information string, startDate, endDate time.Time, bubbleDiameter float64) error {
 	if m.createBuildingFunc != nil {
-		return m.createBuildingFunc(ctx, featureID, buildingModelID, launchedSatisfaction, rotation, position, information, startDate, endDate, bubbleDiameter)
+		return m.createBuildingFunc(ctx, featureID, userID, buildingModelID, launchedSatisfaction, rotation, position, information, startDate, endDate, bubbleDiameter)
 	}
 	return errors.New("not implemented")
 }

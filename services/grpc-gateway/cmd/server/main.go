@@ -230,8 +230,12 @@ func main() {
 	}
 
 	var commercialHandler *handler.CommercialHandler
+	var citizenWalletHandler *handler.CitizenWalletHandler
 	if commercialConn != nil {
 		commercialHandler = handler.NewCommercialHandler(commercialConn, cfg.Locale)
+		if authConn != nil {
+			citizenWalletHandler = handler.NewCitizenWalletHandler(authConn, commercialConn, cfg.Locale)
+		}
 	}
 
 	var levelsHandler *handler.LevelsHandler
@@ -331,6 +335,15 @@ func main() {
 				rest = parts[2:]
 			}
 			citizenFeaturesHandler.Handle(w, r, parts[0], rest)
+			return
+		}
+		// /api/citizen/{code}/wallet/history/{summary|chart}
+		if len(parts) >= 4 && parts[1] == "wallet" && parts[2] == "history" {
+			if citizenWalletHandler == nil {
+				http.Error(w, `{"error":"commercial service unavailable"}`, http.StatusServiceUnavailable)
+				return
+			}
+			citizenWalletHandler.Handle(w, r, parts[0], parts[3:])
 			return
 		}
 		authHandler.HandleCitizenRoutes(w, r)

@@ -32,9 +32,9 @@ func TestBuildingRepository_FindCompleted_OnlyPastEndDate(t *testing.T) {
 	featureCompleted := uint64(91001)
 	featureInProgress := uint64(91002)
 
-	require.NoError(t, repo.CreateBuilding(ctx, featureCompleted, completedModelID, "10", "0", "0,0", "",
+	require.NoError(t, repo.CreateBuilding(ctx, featureCompleted, uint64(1), completedModelID, "10", "0", "0,0", "",
 		now.Add(-48*time.Hour), now.Add(-1*time.Hour), 100))
-	require.NoError(t, repo.CreateBuilding(ctx, featureInProgress, inProgressModelID, "10", "0", "0,0", "",
+	require.NoError(t, repo.CreateBuilding(ctx, featureInProgress, uint64(1), inProgressModelID, "10", "0", "0,0", "",
 		now.Add(-1*time.Hour), now.Add(48*time.Hour), 100))
 
 	rows, err := repo.FindCompleted(ctx, now, 10, 0)

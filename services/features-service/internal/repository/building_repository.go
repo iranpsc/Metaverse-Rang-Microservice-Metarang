@@ -98,7 +98,7 @@ func (r *BuildingRepository) HasBuilding(ctx context.Context, featureID uint64) 
 
 // CreateBuilding creates a building record with all required fields
 // buildingModelID is the string model_id from 3D API - we need to find the database ID
-func (r *BuildingRepository) CreateBuilding(ctx context.Context, featureID uint64, buildingModelID string, launchedSatisfaction, rotation, position, information string, constructionStartDate, constructionEndDate time.Time, bubbleDiameter float64) error {
+func (r *BuildingRepository) CreateBuilding(ctx context.Context, featureID, userID uint64, buildingModelID string, launchedSatisfaction, rotation, position, information string, constructionStartDate, constructionEndDate time.Time, bubbleDiameter float64) error {
 	// First, find the building model by model_id string to get its database ID
 	buildingModel, err := r.FindBuildingModelByModelID(ctx, buildingModelID)
 	if err != nil {
@@ -110,15 +110,15 @@ func (r *BuildingRepository) CreateBuilding(ctx context.Context, featureID uint6
 
 	query := `
 		INSERT INTO buildings (
-			feature_id, model_id, construction_start_date, construction_end_date,
+			feature_id, user_id, model_id, construction_start_date, construction_end_date,
 			launched_satisfaction, information, rotation, position, bubble_diameter,
 			created_at, updated_at
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
 	`
 
 	_, err = r.db.ExecContext(ctx, query,
-		featureID, buildingModel.Id, constructionStartDate, constructionEndDate,
+		featureID, userID, buildingModel.Id, constructionStartDate, constructionEndDate,
 		launchedSatisfaction, information, rotation, position, bubbleDiameter,
 	)
 	return err

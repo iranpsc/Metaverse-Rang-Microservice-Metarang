@@ -223,6 +223,8 @@ func shouldSkipAuth(fullMethod string) bool {
 		"/auth.AuthService/ValidateToken", // Other services call this to validate tokens
 		// Commercial service public endpoints
 		"/commercial.WalletService/GetWallet", // Public endpoint - anyone can view any user's wallet
+		"/commercial.WalletHistoryService/GetWalletHistorySummary",
+		"/commercial.WalletHistoryService/GetWalletHistoryChart",
 		// Financial service public endpoints (payment gateway callbacks)
 		"/financial.OrderService/HandleCallback",
 		// Features service public endpoints

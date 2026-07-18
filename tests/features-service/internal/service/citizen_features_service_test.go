@@ -7,6 +7,7 @@ import (
 
 	"metarang/features-service/internal/models"
 	"metarang/features-service/internal/service"
+	"metarang/shared/pkg/period"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -98,7 +99,7 @@ func TestCitizenFeaturesService_GetChart_EmptyKarbaris(t *testing.T) {
 
 func TestCitizenFeaturesService_GetChart_BucketsTrades(t *testing.T) {
 	ref := time.Date(2026, 5, 15, 12, 0, 0, 0, time.Local)
-	window, err := service.ResolvePeriod("weekly", ref)
+	window, err := period.ResolvePeriod("weekly", ref)
 	require.NoError(t, err)
 
 	boughtAt := window.Buckets[1].Start.Add(2 * time.Hour)

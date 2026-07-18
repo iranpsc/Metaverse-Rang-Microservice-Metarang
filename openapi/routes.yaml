@@ -191,6 +191,49 @@ routes:
         description: Items per page (default 15)
         example: 15
 
+  - path: /api/citizen/{code}/wallet/history/summary
+    methods: [get]
+    tag: Citizen
+    summary: Citizen wallet asset history summary cards
+    security: none
+    params:
+      - name: code
+        in: path
+        type: string
+        description: Citizen code
+        example: HM-2000000
+      - name: period
+        in: query
+        type: string
+        description: Required time window (`daily`, `weekly`, `monthly`, or `yearly`)
+        example: weekly
+      - name: assets
+        in: query
+        type: array
+        description: Optional filter by asset names (`psc`, `irr`, `red`, `blue`, `yellow`, `satisfaction`, `effect`)
+        example: [psc, irr]
+  - path: /api/citizen/{code}/wallet/history/chart
+    methods: [get]
+    tag: Citizen
+    summary: Citizen wallet asset history income/spending chart
+    security: none
+    params:
+      - name: code
+        in: path
+        type: string
+        description: Citizen code
+        example: HM-2000000
+      - name: period
+        in: query
+        type: string
+        description: Required time window (`daily`, `weekly`, `monthly`, or `yearly`)
+        example: weekly
+      - name: assets
+        in: query
+        type: array
+        description: Optional filter by asset names
+        example: [psc]
+
   # --- Search ---
   - path: /api/search/users
     methods: [get]

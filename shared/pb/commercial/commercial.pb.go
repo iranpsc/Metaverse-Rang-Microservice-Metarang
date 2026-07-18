@@ -1595,6 +1595,442 @@ func (x *ProcessReferralRequest) GetAmount() float64 {
 	return 0
 }
 
+type GetWalletHistorySummaryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        uint64                 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Period        string                 `protobuf:"bytes,2,opt,name=period,proto3" json:"period,omitempty"`
+	Assets        []string               `protobuf:"bytes,3,rep,name=assets,proto3" json:"assets,omitempty"`                                                                              // optional filter; empty = all assets
+	Privacy       map[string]int32       `protobuf:"bytes,4,rep,name=privacy,proto3" json:"privacy,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"` // privacy settings from auth
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetWalletHistorySummaryRequest) Reset() {
+	*x = GetWalletHistorySummaryRequest{}
+	mi := &file_commercial_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetWalletHistorySummaryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetWalletHistorySummaryRequest) ProtoMessage() {}
+
+func (x *GetWalletHistorySummaryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetWalletHistorySummaryRequest.ProtoReflect.Descriptor instead.
+func (*GetWalletHistorySummaryRequest) Descriptor() ([]byte, []int) {
+	return file_commercial_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *GetWalletHistorySummaryRequest) GetUserId() uint64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *GetWalletHistorySummaryRequest) GetPeriod() string {
+	if x != nil {
+		return x.Period
+	}
+	return ""
+}
+
+func (x *GetWalletHistorySummaryRequest) GetAssets() []string {
+	if x != nil {
+		return x.Assets
+	}
+	return nil
+}
+
+func (x *GetWalletHistorySummaryRequest) GetPrivacy() map[string]int32 {
+	if x != nil {
+		return x.Privacy
+	}
+	return nil
+}
+
+type WalletAssetCard struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Asset             string                 `protobuf:"bytes,1,opt,name=asset,proto3" json:"asset,omitempty"`
+	CurrentBalance    float64                `protobuf:"fixed64,2,opt,name=current_balance,json=currentBalance,proto3" json:"current_balance,omitempty"`
+	PeriodIncome      float64                `protobuf:"fixed64,3,opt,name=period_income,json=periodIncome,proto3" json:"period_income,omitempty"`
+	PeriodSpending    float64                `protobuf:"fixed64,4,opt,name=period_spending,json=periodSpending,proto3" json:"period_spending,omitempty"`
+	GrowthPercent     float64                `protobuf:"fixed64,5,opt,name=growth_percent,json=growthPercent,proto3" json:"growth_percent,omitempty"`
+	Direction         string                 `protobuf:"bytes,6,opt,name=direction,proto3" json:"direction,omitempty"` // "up" | "down"
+	PrivacyRestricted bool                   `protobuf:"varint,7,opt,name=privacy_restricted,json=privacyRestricted,proto3" json:"privacy_restricted,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *WalletAssetCard) Reset() {
+	*x = WalletAssetCard{}
+	mi := &file_commercial_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WalletAssetCard) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WalletAssetCard) ProtoMessage() {}
+
+func (x *WalletAssetCard) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WalletAssetCard.ProtoReflect.Descriptor instead.
+func (*WalletAssetCard) Descriptor() ([]byte, []int) {
+	return file_commercial_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *WalletAssetCard) GetAsset() string {
+	if x != nil {
+		return x.Asset
+	}
+	return ""
+}
+
+func (x *WalletAssetCard) GetCurrentBalance() float64 {
+	if x != nil {
+		return x.CurrentBalance
+	}
+	return 0
+}
+
+func (x *WalletAssetCard) GetPeriodIncome() float64 {
+	if x != nil {
+		return x.PeriodIncome
+	}
+	return 0
+}
+
+func (x *WalletAssetCard) GetPeriodSpending() float64 {
+	if x != nil {
+		return x.PeriodSpending
+	}
+	return 0
+}
+
+func (x *WalletAssetCard) GetGrowthPercent() float64 {
+	if x != nil {
+		return x.GrowthPercent
+	}
+	return 0
+}
+
+func (x *WalletAssetCard) GetDirection() string {
+	if x != nil {
+		return x.Direction
+	}
+	return ""
+}
+
+func (x *WalletAssetCard) GetPrivacyRestricted() bool {
+	if x != nil {
+		return x.PrivacyRestricted
+	}
+	return false
+}
+
+type GetWalletHistorySummaryResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Data          []*WalletAssetCard     `protobuf:"bytes,1,rep,name=data,proto3" json:"data,omitempty"`
+	Period        string                 `protobuf:"bytes,2,opt,name=period,proto3" json:"period,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetWalletHistorySummaryResponse) Reset() {
+	*x = GetWalletHistorySummaryResponse{}
+	mi := &file_commercial_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetWalletHistorySummaryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetWalletHistorySummaryResponse) ProtoMessage() {}
+
+func (x *GetWalletHistorySummaryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetWalletHistorySummaryResponse.ProtoReflect.Descriptor instead.
+func (*GetWalletHistorySummaryResponse) Descriptor() ([]byte, []int) {
+	return file_commercial_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *GetWalletHistorySummaryResponse) GetData() []*WalletAssetCard {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+func (x *GetWalletHistorySummaryResponse) GetPeriod() string {
+	if x != nil {
+		return x.Period
+	}
+	return ""
+}
+
+type GetWalletHistoryChartRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        uint64                 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Period        string                 `protobuf:"bytes,2,opt,name=period,proto3" json:"period,omitempty"`
+	Assets        []string               `protobuf:"bytes,3,rep,name=assets,proto3" json:"assets,omitempty"` // optional filter; empty = all assets
+	Privacy       map[string]int32       `protobuf:"bytes,4,rep,name=privacy,proto3" json:"privacy,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetWalletHistoryChartRequest) Reset() {
+	*x = GetWalletHistoryChartRequest{}
+	mi := &file_commercial_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetWalletHistoryChartRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetWalletHistoryChartRequest) ProtoMessage() {}
+
+func (x *GetWalletHistoryChartRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetWalletHistoryChartRequest.ProtoReflect.Descriptor instead.
+func (*GetWalletHistoryChartRequest) Descriptor() ([]byte, []int) {
+	return file_commercial_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *GetWalletHistoryChartRequest) GetUserId() uint64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *GetWalletHistoryChartRequest) GetPeriod() string {
+	if x != nil {
+		return x.Period
+	}
+	return ""
+}
+
+func (x *GetWalletHistoryChartRequest) GetAssets() []string {
+	if x != nil {
+		return x.Assets
+	}
+	return nil
+}
+
+func (x *GetWalletHistoryChartRequest) GetPrivacy() map[string]int32 {
+	if x != nil {
+		return x.Privacy
+	}
+	return nil
+}
+
+type WalletChartPoint struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Label         string                 `protobuf:"bytes,1,opt,name=label,proto3" json:"label,omitempty"`
+	Amount        float64                `protobuf:"fixed64,2,opt,name=amount,proto3" json:"amount,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WalletChartPoint) Reset() {
+	*x = WalletChartPoint{}
+	mi := &file_commercial_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WalletChartPoint) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WalletChartPoint) ProtoMessage() {}
+
+func (x *WalletChartPoint) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WalletChartPoint.ProtoReflect.Descriptor instead.
+func (*WalletChartPoint) Descriptor() ([]byte, []int) {
+	return file_commercial_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *WalletChartPoint) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+func (x *WalletChartPoint) GetAmount() float64 {
+	if x != nil {
+		return x.Amount
+	}
+	return 0
+}
+
+type WalletAssetChartSeries struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Income        []*WalletChartPoint    `protobuf:"bytes,1,rep,name=income,proto3" json:"income,omitempty"`
+	Spending      []*WalletChartPoint    `protobuf:"bytes,2,rep,name=spending,proto3" json:"spending,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WalletAssetChartSeries) Reset() {
+	*x = WalletAssetChartSeries{}
+	mi := &file_commercial_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WalletAssetChartSeries) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WalletAssetChartSeries) ProtoMessage() {}
+
+func (x *WalletAssetChartSeries) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WalletAssetChartSeries.ProtoReflect.Descriptor instead.
+func (*WalletAssetChartSeries) Descriptor() ([]byte, []int) {
+	return file_commercial_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *WalletAssetChartSeries) GetIncome() []*WalletChartPoint {
+	if x != nil {
+		return x.Income
+	}
+	return nil
+}
+
+func (x *WalletAssetChartSeries) GetSpending() []*WalletChartPoint {
+	if x != nil {
+		return x.Spending
+	}
+	return nil
+}
+
+type GetWalletHistoryChartResponse struct {
+	state         protoimpl.MessageState             `protogen:"open.v1"`
+	Data          map[string]*WalletAssetChartSeries `protobuf:"bytes,1,rep,name=data,proto3" json:"data,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Period        string                             `protobuf:"bytes,2,opt,name=period,proto3" json:"period,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetWalletHistoryChartResponse) Reset() {
+	*x = GetWalletHistoryChartResponse{}
+	mi := &file_commercial_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetWalletHistoryChartResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetWalletHistoryChartResponse) ProtoMessage() {}
+
+func (x *GetWalletHistoryChartResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_commercial_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetWalletHistoryChartResponse.ProtoReflect.Descriptor instead.
+func (*GetWalletHistoryChartResponse) Descriptor() ([]byte, []int) {
+	return file_commercial_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *GetWalletHistoryChartResponse) GetData() map[string]*WalletAssetChartSeries {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+func (x *GetWalletHistoryChartResponse) GetPeriod() string {
+	if x != nil {
+		return x.Period
+	}
+	return ""
+}
+
 var File_commercial_proto protoreflect.FileDescriptor
 
 const file_commercial_proto_rawDesc = "" +
@@ -1734,7 +2170,46 @@ const file_commercial_proto_rawDesc = "" +
 	"\rbuyer_user_id\x18\x01 \x01(\x04R\vbuyerUserId\x12\x19\n" +
 	"\border_id\x18\x02 \x01(\x04R\aorderId\x12\x14\n" +
 	"\x05asset\x18\x03 \x01(\tR\x05asset\x12\x16\n" +
-	"\x06amount\x18\x04 \x01(\x01R\x06amount2\xd8\x03\n" +
+	"\x06amount\x18\x04 \x01(\x01R\x06amount\"\xf8\x01\n" +
+	"\x1eGetWalletHistorySummaryRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x04R\x06userId\x12\x16\n" +
+	"\x06period\x18\x02 \x01(\tR\x06period\x12\x16\n" +
+	"\x06assets\x18\x03 \x03(\tR\x06assets\x12Q\n" +
+	"\aprivacy\x18\x04 \x03(\v27.commercial.GetWalletHistorySummaryRequest.PrivacyEntryR\aprivacy\x1a:\n" +
+	"\fPrivacyEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\"\x92\x02\n" +
+	"\x0fWalletAssetCard\x12\x14\n" +
+	"\x05asset\x18\x01 \x01(\tR\x05asset\x12'\n" +
+	"\x0fcurrent_balance\x18\x02 \x01(\x01R\x0ecurrentBalance\x12#\n" +
+	"\rperiod_income\x18\x03 \x01(\x01R\fperiodIncome\x12'\n" +
+	"\x0fperiod_spending\x18\x04 \x01(\x01R\x0eperiodSpending\x12%\n" +
+	"\x0egrowth_percent\x18\x05 \x01(\x01R\rgrowthPercent\x12\x1c\n" +
+	"\tdirection\x18\x06 \x01(\tR\tdirection\x12-\n" +
+	"\x12privacy_restricted\x18\a \x01(\bR\x11privacyRestricted\"j\n" +
+	"\x1fGetWalletHistorySummaryResponse\x12/\n" +
+	"\x04data\x18\x01 \x03(\v2\x1b.commercial.WalletAssetCardR\x04data\x12\x16\n" +
+	"\x06period\x18\x02 \x01(\tR\x06period\"\xf4\x01\n" +
+	"\x1cGetWalletHistoryChartRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x04R\x06userId\x12\x16\n" +
+	"\x06period\x18\x02 \x01(\tR\x06period\x12\x16\n" +
+	"\x06assets\x18\x03 \x03(\tR\x06assets\x12O\n" +
+	"\aprivacy\x18\x04 \x03(\v25.commercial.GetWalletHistoryChartRequest.PrivacyEntryR\aprivacy\x1a:\n" +
+	"\fPrivacyEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\"@\n" +
+	"\x10WalletChartPoint\x12\x14\n" +
+	"\x05label\x18\x01 \x01(\tR\x05label\x12\x16\n" +
+	"\x06amount\x18\x02 \x01(\x01R\x06amount\"\x88\x01\n" +
+	"\x16WalletAssetChartSeries\x124\n" +
+	"\x06income\x18\x01 \x03(\v2\x1c.commercial.WalletChartPointR\x06income\x128\n" +
+	"\bspending\x18\x02 \x03(\v2\x1c.commercial.WalletChartPointR\bspending\"\xdd\x01\n" +
+	"\x1dGetWalletHistoryChartResponse\x12G\n" +
+	"\x04data\x18\x01 \x03(\v23.commercial.GetWalletHistoryChartResponse.DataEntryR\x04data\x12\x16\n" +
+	"\x06period\x18\x02 \x01(\tR\x06period\x1a[\n" +
+	"\tDataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x128\n" +
+	"\x05value\x18\x02 \x01(\v2\".commercial.WalletAssetChartSeriesR\x05value:\x028\x012\xd8\x03\n" +
 	"\rWalletService\x12E\n" +
 	"\tGetWallet\x12\x1c.commercial.GetWalletRequest\x1a\x1a.commercial.WalletResponse\x12K\n" +
 	"\fCreateWallet\x12\x1f.commercial.CreateWalletRequest\x1a\x1a.commercial.WalletResponse\x12T\n" +
@@ -1750,7 +2225,10 @@ const file_commercial_proto_rawDesc = "" +
 	"\x0fReferralService\x12M\n" +
 	"\x0fProcessReferral\x12\".commercial.ProcessReferralRequest\x1a\x16.google.protobuf.Empty2l\n" +
 	"\x13UserVariableService\x12U\n" +
-	"\x13CreateUserVariables\x12&.commercial.CreateUserVariablesRequest\x1a\x16.google.protobuf.EmptyB\x1fZ\x1dmetarang/shared/pb/commercialb\x06proto3"
+	"\x13CreateUserVariables\x12&.commercial.CreateUserVariablesRequest\x1a\x16.google.protobuf.Empty2\xf8\x01\n" +
+	"\x14WalletHistoryService\x12r\n" +
+	"\x17GetWalletHistorySummary\x12*.commercial.GetWalletHistorySummaryRequest\x1a+.commercial.GetWalletHistorySummaryResponse\x12l\n" +
+	"\x15GetWalletHistoryChart\x12(.commercial.GetWalletHistoryChartRequest\x1a).commercial.GetWalletHistoryChartResponseB\x1fZ\x1dmetarang/shared/pb/commercialb\x06proto3"
 
 var (
 	file_commercial_proto_rawDescOnce sync.Once
@@ -1764,72 +2242,93 @@ func file_commercial_proto_rawDescGZIP() []byte {
 	return file_commercial_proto_rawDescData
 }
 
-var file_commercial_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
+var file_commercial_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
 var file_commercial_proto_goTypes = []any{
-	(*Wallet)(nil),                      // 0: commercial.Wallet
-	(*Transaction)(nil),                 // 1: commercial.Transaction
-	(*Order)(nil),                       // 2: commercial.Order
-	(*Payment)(nil),                     // 3: commercial.Payment
-	(*GetWalletRequest)(nil),            // 4: commercial.GetWalletRequest
-	(*CreateWalletRequest)(nil),         // 5: commercial.CreateWalletRequest
-	(*CreateUserVariablesRequest)(nil),  // 6: commercial.CreateUserVariablesRequest
-	(*WalletResponse)(nil),              // 7: commercial.WalletResponse
-	(*DeductBalanceRequest)(nil),        // 8: commercial.DeductBalanceRequest
-	(*DeductBalanceResponse)(nil),       // 9: commercial.DeductBalanceResponse
-	(*AddBalanceRequest)(nil),           // 10: commercial.AddBalanceRequest
-	(*AddBalanceResponse)(nil),          // 11: commercial.AddBalanceResponse
-	(*LockBalanceRequest)(nil),          // 12: commercial.LockBalanceRequest
-	(*UnlockBalanceRequest)(nil),        // 13: commercial.UnlockBalanceRequest
-	(*ListTransactionsRequest)(nil),     // 14: commercial.ListTransactionsRequest
-	(*ListTransactionsResponse)(nil),    // 15: commercial.ListTransactionsResponse
-	(*TransactionResource)(nil),         // 16: commercial.TransactionResource
-	(*GetLatestTransactionRequest)(nil), // 17: commercial.GetLatestTransactionRequest
-	(*LatestTransactionResponse)(nil),   // 18: commercial.LatestTransactionResponse
-	(*CreateTransactionRequest)(nil),    // 19: commercial.CreateTransactionRequest
-	(*ProcessReferralRequest)(nil),      // 20: commercial.ProcessReferralRequest
-	(*timestamppb.Timestamp)(nil),       // 21: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),               // 22: google.protobuf.Empty
+	(*Wallet)(nil),                          // 0: commercial.Wallet
+	(*Transaction)(nil),                     // 1: commercial.Transaction
+	(*Order)(nil),                           // 2: commercial.Order
+	(*Payment)(nil),                         // 3: commercial.Payment
+	(*GetWalletRequest)(nil),                // 4: commercial.GetWalletRequest
+	(*CreateWalletRequest)(nil),             // 5: commercial.CreateWalletRequest
+	(*CreateUserVariablesRequest)(nil),      // 6: commercial.CreateUserVariablesRequest
+	(*WalletResponse)(nil),                  // 7: commercial.WalletResponse
+	(*DeductBalanceRequest)(nil),            // 8: commercial.DeductBalanceRequest
+	(*DeductBalanceResponse)(nil),           // 9: commercial.DeductBalanceResponse
+	(*AddBalanceRequest)(nil),               // 10: commercial.AddBalanceRequest
+	(*AddBalanceResponse)(nil),              // 11: commercial.AddBalanceResponse
+	(*LockBalanceRequest)(nil),              // 12: commercial.LockBalanceRequest
+	(*UnlockBalanceRequest)(nil),            // 13: commercial.UnlockBalanceRequest
+	(*ListTransactionsRequest)(nil),         // 14: commercial.ListTransactionsRequest
+	(*ListTransactionsResponse)(nil),        // 15: commercial.ListTransactionsResponse
+	(*TransactionResource)(nil),             // 16: commercial.TransactionResource
+	(*GetLatestTransactionRequest)(nil),     // 17: commercial.GetLatestTransactionRequest
+	(*LatestTransactionResponse)(nil),       // 18: commercial.LatestTransactionResponse
+	(*CreateTransactionRequest)(nil),        // 19: commercial.CreateTransactionRequest
+	(*ProcessReferralRequest)(nil),          // 20: commercial.ProcessReferralRequest
+	(*GetWalletHistorySummaryRequest)(nil),  // 21: commercial.GetWalletHistorySummaryRequest
+	(*WalletAssetCard)(nil),                 // 22: commercial.WalletAssetCard
+	(*GetWalletHistorySummaryResponse)(nil), // 23: commercial.GetWalletHistorySummaryResponse
+	(*GetWalletHistoryChartRequest)(nil),    // 24: commercial.GetWalletHistoryChartRequest
+	(*WalletChartPoint)(nil),                // 25: commercial.WalletChartPoint
+	(*WalletAssetChartSeries)(nil),          // 26: commercial.WalletAssetChartSeries
+	(*GetWalletHistoryChartResponse)(nil),   // 27: commercial.GetWalletHistoryChartResponse
+	nil,                                     // 28: commercial.GetWalletHistorySummaryRequest.PrivacyEntry
+	nil,                                     // 29: commercial.GetWalletHistoryChartRequest.PrivacyEntry
+	nil,                                     // 30: commercial.GetWalletHistoryChartResponse.DataEntry
+	(*timestamppb.Timestamp)(nil),           // 31: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),                   // 32: google.protobuf.Empty
 }
 var file_commercial_proto_depIdxs = []int32{
-	21, // 0: commercial.Wallet.created_at:type_name -> google.protobuf.Timestamp
-	21, // 1: commercial.Wallet.updated_at:type_name -> google.protobuf.Timestamp
-	21, // 2: commercial.Transaction.created_at:type_name -> google.protobuf.Timestamp
-	21, // 3: commercial.Transaction.updated_at:type_name -> google.protobuf.Timestamp
-	21, // 4: commercial.Order.created_at:type_name -> google.protobuf.Timestamp
-	21, // 5: commercial.Payment.created_at:type_name -> google.protobuf.Timestamp
+	31, // 0: commercial.Wallet.created_at:type_name -> google.protobuf.Timestamp
+	31, // 1: commercial.Wallet.updated_at:type_name -> google.protobuf.Timestamp
+	31, // 2: commercial.Transaction.created_at:type_name -> google.protobuf.Timestamp
+	31, // 3: commercial.Transaction.updated_at:type_name -> google.protobuf.Timestamp
+	31, // 4: commercial.Order.created_at:type_name -> google.protobuf.Timestamp
+	31, // 5: commercial.Payment.created_at:type_name -> google.protobuf.Timestamp
 	7,  // 6: commercial.DeductBalanceResponse.wallet:type_name -> commercial.WalletResponse
 	7,  // 7: commercial.AddBalanceResponse.wallet:type_name -> commercial.WalletResponse
 	16, // 8: commercial.ListTransactionsResponse.transactions:type_name -> commercial.TransactionResource
 	1,  // 9: commercial.LatestTransactionResponse.latest_transaction:type_name -> commercial.Transaction
 	3,  // 10: commercial.LatestTransactionResponse.latest_payment:type_name -> commercial.Payment
 	2,  // 11: commercial.LatestTransactionResponse.latest_order:type_name -> commercial.Order
-	4,  // 12: commercial.WalletService.GetWallet:input_type -> commercial.GetWalletRequest
-	5,  // 13: commercial.WalletService.CreateWallet:input_type -> commercial.CreateWalletRequest
-	8,  // 14: commercial.WalletService.DeductBalance:input_type -> commercial.DeductBalanceRequest
-	10, // 15: commercial.WalletService.AddBalance:input_type -> commercial.AddBalanceRequest
-	12, // 16: commercial.WalletService.LockBalance:input_type -> commercial.LockBalanceRequest
-	13, // 17: commercial.WalletService.UnlockBalance:input_type -> commercial.UnlockBalanceRequest
-	14, // 18: commercial.TransactionService.ListTransactions:input_type -> commercial.ListTransactionsRequest
-	17, // 19: commercial.TransactionService.GetLatestTransaction:input_type -> commercial.GetLatestTransactionRequest
-	19, // 20: commercial.TransactionService.CreateTransaction:input_type -> commercial.CreateTransactionRequest
-	20, // 21: commercial.ReferralService.ProcessReferral:input_type -> commercial.ProcessReferralRequest
-	6,  // 22: commercial.UserVariableService.CreateUserVariables:input_type -> commercial.CreateUserVariablesRequest
-	7,  // 23: commercial.WalletService.GetWallet:output_type -> commercial.WalletResponse
-	7,  // 24: commercial.WalletService.CreateWallet:output_type -> commercial.WalletResponse
-	9,  // 25: commercial.WalletService.DeductBalance:output_type -> commercial.DeductBalanceResponse
-	11, // 26: commercial.WalletService.AddBalance:output_type -> commercial.AddBalanceResponse
-	22, // 27: commercial.WalletService.LockBalance:output_type -> google.protobuf.Empty
-	22, // 28: commercial.WalletService.UnlockBalance:output_type -> google.protobuf.Empty
-	15, // 29: commercial.TransactionService.ListTransactions:output_type -> commercial.ListTransactionsResponse
-	18, // 30: commercial.TransactionService.GetLatestTransaction:output_type -> commercial.LatestTransactionResponse
-	1,  // 31: commercial.TransactionService.CreateTransaction:output_type -> commercial.Transaction
-	22, // 32: commercial.ReferralService.ProcessReferral:output_type -> google.protobuf.Empty
-	22, // 33: commercial.UserVariableService.CreateUserVariables:output_type -> google.protobuf.Empty
-	23, // [23:34] is the sub-list for method output_type
-	12, // [12:23] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	28, // 12: commercial.GetWalletHistorySummaryRequest.privacy:type_name -> commercial.GetWalletHistorySummaryRequest.PrivacyEntry
+	22, // 13: commercial.GetWalletHistorySummaryResponse.data:type_name -> commercial.WalletAssetCard
+	29, // 14: commercial.GetWalletHistoryChartRequest.privacy:type_name -> commercial.GetWalletHistoryChartRequest.PrivacyEntry
+	25, // 15: commercial.WalletAssetChartSeries.income:type_name -> commercial.WalletChartPoint
+	25, // 16: commercial.WalletAssetChartSeries.spending:type_name -> commercial.WalletChartPoint
+	30, // 17: commercial.GetWalletHistoryChartResponse.data:type_name -> commercial.GetWalletHistoryChartResponse.DataEntry
+	26, // 18: commercial.GetWalletHistoryChartResponse.DataEntry.value:type_name -> commercial.WalletAssetChartSeries
+	4,  // 19: commercial.WalletService.GetWallet:input_type -> commercial.GetWalletRequest
+	5,  // 20: commercial.WalletService.CreateWallet:input_type -> commercial.CreateWalletRequest
+	8,  // 21: commercial.WalletService.DeductBalance:input_type -> commercial.DeductBalanceRequest
+	10, // 22: commercial.WalletService.AddBalance:input_type -> commercial.AddBalanceRequest
+	12, // 23: commercial.WalletService.LockBalance:input_type -> commercial.LockBalanceRequest
+	13, // 24: commercial.WalletService.UnlockBalance:input_type -> commercial.UnlockBalanceRequest
+	14, // 25: commercial.TransactionService.ListTransactions:input_type -> commercial.ListTransactionsRequest
+	17, // 26: commercial.TransactionService.GetLatestTransaction:input_type -> commercial.GetLatestTransactionRequest
+	19, // 27: commercial.TransactionService.CreateTransaction:input_type -> commercial.CreateTransactionRequest
+	20, // 28: commercial.ReferralService.ProcessReferral:input_type -> commercial.ProcessReferralRequest
+	6,  // 29: commercial.UserVariableService.CreateUserVariables:input_type -> commercial.CreateUserVariablesRequest
+	21, // 30: commercial.WalletHistoryService.GetWalletHistorySummary:input_type -> commercial.GetWalletHistorySummaryRequest
+	24, // 31: commercial.WalletHistoryService.GetWalletHistoryChart:input_type -> commercial.GetWalletHistoryChartRequest
+	7,  // 32: commercial.WalletService.GetWallet:output_type -> commercial.WalletResponse
+	7,  // 33: commercial.WalletService.CreateWallet:output_type -> commercial.WalletResponse
+	9,  // 34: commercial.WalletService.DeductBalance:output_type -> commercial.DeductBalanceResponse
+	11, // 35: commercial.WalletService.AddBalance:output_type -> commercial.AddBalanceResponse
+	32, // 36: commercial.WalletService.LockBalance:output_type -> google.protobuf.Empty
+	32, // 37: commercial.WalletService.UnlockBalance:output_type -> google.protobuf.Empty
+	15, // 38: commercial.TransactionService.ListTransactions:output_type -> commercial.ListTransactionsResponse
+	18, // 39: commercial.TransactionService.GetLatestTransaction:output_type -> commercial.LatestTransactionResponse
+	1,  // 40: commercial.TransactionService.CreateTransaction:output_type -> commercial.Transaction
+	32, // 41: commercial.ReferralService.ProcessReferral:output_type -> google.protobuf.Empty
+	32, // 42: commercial.UserVariableService.CreateUserVariables:output_type -> google.protobuf.Empty
+	23, // 43: commercial.WalletHistoryService.GetWalletHistorySummary:output_type -> commercial.GetWalletHistorySummaryResponse
+	27, // 44: commercial.WalletHistoryService.GetWalletHistoryChart:output_type -> commercial.GetWalletHistoryChartResponse
+	32, // [32:45] is the sub-list for method output_type
+	19, // [19:32] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_commercial_proto_init() }
@@ -1843,9 +2342,9 @@ func file_commercial_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_commercial_proto_rawDesc), len(file_commercial_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   21,
+			NumMessages:   31,
 			NumExtensions: 0,
-			NumServices:   4,
+			NumServices:   5,
 		},
 		GoTypes:           file_commercial_proto_goTypes,
 		DependencyIndexes: file_commercial_proto_depIdxs,
