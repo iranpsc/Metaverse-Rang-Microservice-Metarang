@@ -48,7 +48,7 @@ Use **Actions → Services CI/CD → Run workflow**:
 
 | Secret | Used by | Required |
 |--------|---------|----------|
-| `DOCKER_USERNAME` / `DOCKER_PASSWORD` | Image push | Yes |
+| `DOCKER_USERNAME` / `DOCKER_PASSWORD` | Image push to Docker Hub (`abbasajorloo/<service>`) | Yes |
 | `KUBE_CONFIG` | Deploy, load tests | For deploys |
 | `CODECOV_TOKEN` | Coverage upload | Optional |
 
