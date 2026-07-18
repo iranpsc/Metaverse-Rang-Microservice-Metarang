@@ -14,10 +14,10 @@ import (
 )
 
 type mockCompletedBuildingRepo struct {
-	rows    []models.CompletedBuildingRow
-	total   int
-	listErr error
-	countErr error
+	rows       []models.CompletedBuildingRow
+	total      int
+	listErr    error
+	countErr   error
 	lastLimit  int
 	lastOffset int
 }
@@ -52,6 +52,7 @@ func TestCompletedBuildingService_Paginate_DefaultsPageAndPerPage(t *testing.T) 
 }
 
 func TestCompletedBuildingService_Paginate_MapsAttributes(t *testing.T) {
+	density := 3
 	repo := &mockCompletedBuildingRepo{
 		total: 1,
 		rows: []models.CompletedBuildingRow{
@@ -59,7 +60,9 @@ func TestCompletedBuildingService_Paginate_MapsAttributes(t *testing.T) {
 				ID:                  42,
 				FeatureID:           7,
 				FeaturePropertiesID: "abc-123",
-				AttributesJSON:      `[{"slug":"name","value":"Tower A"},{"slug":"area","value":120.5},{"slug":"density","value":3}]`,
+				AttributesJSON:      `[{"slug":"length","value":30},{"slug":"width","value":50},{"slug":"name","value":"Tower A"}]`,
+				Density:             &density,
+				Karbari:             "m",
 			},
 		},
 	}
@@ -73,12 +76,13 @@ func TestCompletedBuildingService_Paginate_MapsAttributes(t *testing.T) {
 	assert.Equal(t, uint64(42), item.ID)
 	assert.Equal(t, uint64(7), item.FeatureID)
 	assert.Equal(t, "ABC-123", item.FeaturePropertiesID)
-	require.NotNil(t, item.Name)
-	assert.Equal(t, "Tower A", *item.Name)
-	require.NotNil(t, item.BuildingTotalArea)
-	assert.Equal(t, "120.5", *item.BuildingTotalArea)
+	require.NotNil(t, item.Length)
+	assert.Equal(t, "30", *item.Length)
+	require.NotNil(t, item.Width)
+	assert.Equal(t, "50", *item.Width)
 	require.NotNil(t, item.Density)
 	assert.Equal(t, "3", *item.Density)
+	assert.Equal(t, "m", item.Karbari)
 	assert.Equal(t, 1, page.Total)
 	assert.Equal(t, 1, page.LastPage)
 	require.NotNil(t, page.From)
@@ -96,6 +100,8 @@ func TestCompletedBuildingService_Paginate_MissingAttributesAreNil(t *testing.T)
 				FeatureID:           2,
 				FeaturePropertiesID: "x",
 				AttributesJSON:      `[]`,
+				Density:             nil,
+				Karbari:             "",
 			},
 		},
 	}
@@ -104,9 +110,10 @@ func TestCompletedBuildingService_Paginate_MissingAttributesAreNil(t *testing.T)
 	page, err := svc.Paginate(context.Background(), 1)
 	require.NoError(t, err)
 	require.Len(t, page.Items, 1)
-	assert.Nil(t, page.Items[0].Name)
-	assert.Nil(t, page.Items[0].BuildingTotalArea)
+	assert.Nil(t, page.Items[0].Length)
+	assert.Nil(t, page.Items[0].Width)
 	assert.Nil(t, page.Items[0].Density)
+	assert.Equal(t, "", page.Items[0].Karbari)
 }
 
 func TestCompletedBuildingService_Paginate_SecondPageOffset(t *testing.T) {

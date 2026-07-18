@@ -576,7 +576,9 @@ func (r *BuildingRepository) FindCompleted(ctx context.Context, now time.Time, l
 			b.id,
 			b.feature_id,
 			COALESCE(fp.id, '') AS feature_properties_id,
-			COALESCE(bm.attributes, '[]') AS attributes
+			COALESCE(bm.attributes, '[]') AS attributes,
+			fp.density,
+			COALESCE(fp.karbari, '') AS karbari
 		FROM buildings b
 		INNER JOIN building_models bm ON b.model_id = bm.id
 		LEFT JOIN feature_properties fp ON b.feature_id = fp.feature_id
@@ -594,8 +596,20 @@ func (r *BuildingRepository) FindCompleted(ctx context.Context, now time.Time, l
 	result := make([]models.CompletedBuildingRow, 0)
 	for rows.Next() {
 		var row models.CompletedBuildingRow
-		if err := rows.Scan(&row.ID, &row.FeatureID, &row.FeaturePropertiesID, &row.AttributesJSON); err != nil {
+		var density sql.NullInt64
+		if err := rows.Scan(
+			&row.ID,
+			&row.FeatureID,
+			&row.FeaturePropertiesID,
+			&row.AttributesJSON,
+			&density,
+			&row.Karbari,
+		); err != nil {
 			return nil, fmt.Errorf("failed to scan completed building: %w", err)
+		}
+		if density.Valid {
+			d := int(density.Int64)
+			row.Density = &d
 		}
 		result = append(result, row)
 	}

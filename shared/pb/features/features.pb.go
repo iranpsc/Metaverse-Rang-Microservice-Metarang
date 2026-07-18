@@ -4418,7 +4418,7 @@ func (x *DestroyBuildingRequest) GetBuildingModelId() string {
 	return ""
 }
 
-// Completed buildings (GET /api/features/build/completed)
+// Completed buildings (GET /api/features/buildings/completed)
 type ListCompletedBuildingsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Page          int32                  `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"` // default 1, 10 items per page
@@ -4528,9 +4528,10 @@ type CompletedBuilding struct {
 	Id                  uint64                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	FeatureId           uint64                 `protobuf:"varint,2,opt,name=feature_id,json=featureId,proto3" json:"feature_id,omitempty"`
 	FeaturePropertiesId string                 `protobuf:"bytes,3,opt,name=feature_properties_id,json=featurePropertiesId,proto3" json:"feature_properties_id,omitempty"`
-	Name                *string                `protobuf:"bytes,4,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	BuildingTotalArea   *string                `protobuf:"bytes,5,opt,name=building_total_area,json=buildingTotalArea,proto3,oneof" json:"building_total_area,omitempty"`
-	Density             *string                `protobuf:"bytes,6,opt,name=density,proto3,oneof" json:"density,omitempty"`
+	Density             *string                `protobuf:"bytes,6,opt,name=density,proto3,oneof" json:"density,omitempty"` // feature_properties.density
+	Length              *string                `protobuf:"bytes,7,opt,name=length,proto3,oneof" json:"length,omitempty"`   // from building model attributes (synced from 3dmeta)
+	Width               *string                `protobuf:"bytes,8,opt,name=width,proto3,oneof" json:"width,omitempty"`     // from building model attributes (synced from 3dmeta)
+	Karbari             string                 `protobuf:"bytes,9,opt,name=karbari,proto3" json:"karbari,omitempty"`       // feature_properties.karbari
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -4586,23 +4587,30 @@ func (x *CompletedBuilding) GetFeaturePropertiesId() string {
 	return ""
 }
 
-func (x *CompletedBuilding) GetName() string {
-	if x != nil && x.Name != nil {
-		return *x.Name
-	}
-	return ""
-}
-
-func (x *CompletedBuilding) GetBuildingTotalArea() string {
-	if x != nil && x.BuildingTotalArea != nil {
-		return *x.BuildingTotalArea
-	}
-	return ""
-}
-
 func (x *CompletedBuilding) GetDensity() string {
 	if x != nil && x.Density != nil {
 		return *x.Density
+	}
+	return ""
+}
+
+func (x *CompletedBuilding) GetLength() string {
+	if x != nil && x.Length != nil {
+		return *x.Length
+	}
+	return ""
+}
+
+func (x *CompletedBuilding) GetWidth() string {
+	if x != nil && x.Width != nil {
+		return *x.Width
+	}
+	return ""
+}
+
+func (x *CompletedBuilding) GetKarbari() string {
+	if x != nil {
+		return x.Karbari
 	}
 	return ""
 }
@@ -6203,19 +6211,20 @@ const file_features_proto_rawDesc = "" +
 	"\x1eListCompletedBuildingsResponse\x12/\n" +
 	"\x04data\x18\x01 \x03(\v2\x1b.features.CompletedBuildingR\x04data\x12/\n" +
 	"\x05links\x18\x02 \x01(\v2\x19.features.PaginationLinksR\x05links\x12?\n" +
-	"\x04meta\x18\x03 \x01(\v2+.features.FeatureTradeHistoryPaginationMetaR\x04meta\"\x90\x02\n" +
+	"\x04meta\x18\x03 \x01(\v2+.features.FeatureTradeHistoryPaginationMetaR\x04meta\"\xaf\x02\n" +
 	"\x11CompletedBuilding\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x1d\n" +
 	"\n" +
 	"feature_id\x18\x02 \x01(\x04R\tfeatureId\x122\n" +
-	"\x15feature_properties_id\x18\x03 \x01(\tR\x13featurePropertiesId\x12\x17\n" +
-	"\x04name\x18\x04 \x01(\tH\x00R\x04name\x88\x01\x01\x123\n" +
-	"\x13building_total_area\x18\x05 \x01(\tH\x01R\x11buildingTotalArea\x88\x01\x01\x12\x1d\n" +
-	"\adensity\x18\x06 \x01(\tH\x02R\adensity\x88\x01\x01B\a\n" +
-	"\x05_nameB\x16\n" +
-	"\x14_building_total_areaB\n" +
+	"\x15feature_properties_id\x18\x03 \x01(\tR\x13featurePropertiesId\x12\x1d\n" +
+	"\adensity\x18\x06 \x01(\tH\x00R\adensity\x88\x01\x01\x12\x1b\n" +
+	"\x06length\x18\a \x01(\tH\x01R\x06length\x88\x01\x01\x12\x19\n" +
+	"\x05width\x18\b \x01(\tH\x02R\x05width\x88\x01\x01\x12\x18\n" +
+	"\akarbari\x18\t \x01(\tR\akarbariB\n" +
 	"\n" +
-	"\b_density\"\x11\n" +
+	"\b_densityB\t\n" +
+	"\a_lengthB\b\n" +
+	"\x06_widthJ\x04\b\x04\x10\x05J\x04\b\x05\x10\x06R\x04nameR\x13building_total_area\"\x11\n" +
 	"\x0fListMapsRequest\"&\n" +
 	"\rGetMapRequest\x12\x15\n" +
 	"\x06map_id\x18\x01 \x01(\x04R\x05mapId\"5\n" +

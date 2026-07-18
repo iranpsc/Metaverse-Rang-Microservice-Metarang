@@ -228,7 +228,7 @@ func shouldSkipAuth(fullMethod string) bool {
 		// Financial service public endpoints (payment gateway callbacks)
 		"/financial.OrderService/HandleCallback",
 		// Features service public endpoints
-		"/features.BuildingService/ListCompletedBuildings",
+		"/features.BuildingService/ListCompletedBuildings", // GET /api/features/buildings/completed (no auth)
 		"/features.CitizenFeaturesService/GetCitizenFeatureSummary",
 		"/features.CitizenFeaturesService/GetCitizenFeatureChart",
 		"/features.CitizenFeaturesService/ListCitizenFeatures",

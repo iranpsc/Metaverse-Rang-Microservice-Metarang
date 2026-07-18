@@ -45,8 +45,8 @@ func TestBuildingHandler_ListCompletedBuildings_ServiceError(t *testing.T) {
 }
 
 func TestBuildingHandler_ListCompletedBuildings_Success(t *testing.T) {
-	name := "Tower A"
-	area := "120.5"
+	length := "30"
+	width := "50"
 	density := "3"
 	from, to := 1, 1
 	m := &mockCompletedBuildingPort{}
@@ -58,9 +58,10 @@ func TestBuildingHandler_ListCompletedBuildings_Success(t *testing.T) {
 					ID:                  42,
 					FeatureID:           7,
 					FeaturePropertiesID: "ABC-123",
-					Name:                &name,
-					BuildingTotalArea:   &area,
+					Length:              &length,
+					Width:               &width,
 					Density:             &density,
+					Karbari:             "m",
 				},
 			},
 			CurrentPage: 2,
@@ -80,12 +81,13 @@ func TestBuildingHandler_ListCompletedBuildings_Success(t *testing.T) {
 	assert.Equal(t, uint64(42), resp.Data[0].Id)
 	assert.Equal(t, uint64(7), resp.Data[0].FeatureId)
 	assert.Equal(t, "ABC-123", resp.Data[0].FeaturePropertiesId)
-	assert.Equal(t, "Tower A", resp.Data[0].GetName())
-	assert.Equal(t, "120.5", resp.Data[0].GetBuildingTotalArea())
+	assert.Equal(t, "30", resp.Data[0].GetLength())
+	assert.Equal(t, "50", resp.Data[0].GetWidth())
 	assert.Equal(t, "3", resp.Data[0].GetDensity())
+	assert.Equal(t, "m", resp.Data[0].GetKarbari())
 	assert.Equal(t, int32(2), resp.Meta.CurrentPage)
 	assert.Equal(t, int32(11), resp.Meta.Total)
-	assert.Equal(t, "/api/features/build/completed?page=1", resp.Links.First)
+	assert.Equal(t, "/api/features/buildings/completed?page=1", resp.Links.First)
 	assert.Contains(t, resp.Links.Prev, "page=1")
 	assert.Equal(t, "", resp.Links.Next)
 }

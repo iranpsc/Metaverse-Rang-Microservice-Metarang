@@ -155,7 +155,7 @@ func (h *BuildingHandler) DestroyBuilding(ctx context.Context, req *pb.DestroyBu
 }
 
 // ListCompletedBuildings returns paginated completed buildings.
-// Implements Laravel's BuildFeatureController@completedBuildings (GET /features/build/completed).
+// Implements GET /api/features/buildings/completed.
 func (h *BuildingHandler) ListCompletedBuildings(
 	ctx context.Context,
 	req *pb.ListCompletedBuildingsRequest,
@@ -223,12 +223,13 @@ func mapCompletedBuilding(item models.CompletedBuilding) *pb.CompletedBuilding {
 		Id:                  item.ID,
 		FeatureId:           item.FeatureID,
 		FeaturePropertiesId: item.FeaturePropertiesID,
+		Karbari:             item.Karbari,
 	}
-	if item.Name != nil {
-		out.Name = item.Name
+	if item.Length != nil {
+		out.Length = item.Length
 	}
-	if item.BuildingTotalArea != nil {
-		out.BuildingTotalArea = item.BuildingTotalArea
+	if item.Width != nil {
+		out.Width = item.Width
 	}
 	if item.Density != nil {
 		out.Density = item.Density

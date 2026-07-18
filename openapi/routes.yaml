@@ -448,7 +448,7 @@ routes:
     tag: Features
     summary: List features
     security: optional
-  - path: /api/features/build/completed
+  - path: /api/features/buildings/completed
     methods: [get]
     tag: Features
     summary: List construction-completed buildings (paginated, 10 per page)

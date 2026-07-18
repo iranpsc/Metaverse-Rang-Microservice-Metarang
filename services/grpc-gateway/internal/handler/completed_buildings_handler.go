@@ -7,7 +7,7 @@ import (
 	featurespb "metarang/shared/pb/features"
 )
 
-// ListCompletedBuildings handles GET /api/features/build/completed.
+// ListCompletedBuildings handles GET /api/features/buildings/completed.
 func (h *FeaturesHandler) ListCompletedBuildings(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -35,9 +35,10 @@ func (h *FeaturesHandler) ListCompletedBuildings(w http.ResponseWriter, r *http.
 			"id":                    item.Id,
 			"feature_id":            item.FeatureId,
 			"feature_properties_id": item.FeaturePropertiesId,
-			"name":                  optionalString(item.Name),
-			"building_total_area":   optionalString(item.BuildingTotalArea),
+			"length":                optionalString(item.Length),
+			"width":                 optionalString(item.Width),
 			"density":               optionalString(item.Density),
+			"karbari":               item.Karbari,
 		}
 		data = append(data, entry)
 	}

@@ -24,7 +24,8 @@ func TestBuildingRepository_UpsertBuildingModel(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("insert new model", func(t *testing.T) {
-		modelID := "model_001"
+		modelID := uint64(1001)
+		modelIDStr := "1001"
 		name := "Test Building Model"
 		sku := "SKU-001"
 		images := `["image1.jpg", "image2.jpg"]`
@@ -36,16 +37,17 @@ func TestBuildingRepository_UpsertBuildingModel(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify model was inserted
-		model, err := repo.FindBuildingModelByModelID(ctx, modelID)
+		model, err := repo.FindBuildingModelByModelID(ctx, modelIDStr)
 		require.NoError(t, err)
 		require.NotNil(t, model)
-		assert.Equal(t, modelID, model.ModelId)
+		assert.Equal(t, modelIDStr, model.ModelId)
 		assert.Equal(t, name, model.Name)
 		assert.Equal(t, sku, model.Sku)
 	})
 
 	t.Run("update existing model", func(t *testing.T) {
-		modelID := "model_002"
+		modelID := uint64(1002)
+		modelIDStr := "1002"
 		name := "Original Name"
 		sku := "SKU-002"
 		images := `["image1.jpg"]`
@@ -66,7 +68,7 @@ func TestBuildingRepository_UpsertBuildingModel(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify model was updated
-		model, err := repo.FindBuildingModelByModelID(ctx, modelID)
+		model, err := repo.FindBuildingModelByModelID(ctx, modelIDStr)
 		require.NoError(t, err)
 		require.NotNil(t, model)
 		assert.Equal(t, newName, model.Name)
@@ -74,7 +76,8 @@ func TestBuildingRepository_UpsertBuildingModel(t *testing.T) {
 	})
 
 	t.Run("verify JSON fields stored correctly", func(t *testing.T) {
-		modelID := "model_003"
+		modelID := uint64(1003)
+		modelIDStr := "1003"
 		name := "Test Model"
 		sku := "SKU-003"
 		images := `["url1.jpg", "url2.jpg"]`
@@ -85,7 +88,7 @@ func TestBuildingRepository_UpsertBuildingModel(t *testing.T) {
 		err := repo.UpsertBuildingModel(ctx, modelID, name, sku, images, attributes, file, requiredSatisfaction)
 		require.NoError(t, err)
 
-		model, err := repo.FindBuildingModelByModelID(ctx, modelID)
+		model, err := repo.FindBuildingModelByModelID(ctx, modelIDStr)
 		require.NoError(t, err)
 		require.NotNil(t, model)
 
@@ -119,7 +122,8 @@ func TestBuildingRepository_FindBuildingModelByModelID(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("find existing model by string model_id", func(t *testing.T) {
-		modelID := "model_004"
+		modelID := uint64(1004)
+		modelIDStr := "1004"
 		name := "Test Model"
 		sku := "SKU-004"
 		images := `["image1.jpg"]`
@@ -132,10 +136,10 @@ func TestBuildingRepository_FindBuildingModelByModelID(t *testing.T) {
 		require.NoError(t, err)
 
 		// Find by string model_id
-		model, err := repo.FindBuildingModelByModelID(ctx, modelID)
+		model, err := repo.FindBuildingModelByModelID(ctx, modelIDStr)
 		require.NoError(t, err)
 		require.NotNil(t, model)
-		assert.Equal(t, modelID, model.ModelId)
+		assert.Equal(t, modelIDStr, model.ModelId)
 		assert.Equal(t, name, model.Name)
 		assert.Equal(t, sku, model.Sku)
 		assert.Equal(t, "10.0000", model.RequiredSatisfaction) // Formatted to 4 decimals
@@ -148,7 +152,8 @@ func TestBuildingRepository_FindBuildingModelByModelID(t *testing.T) {
 	})
 
 	t.Run("verify all fields loaded correctly", func(t *testing.T) {
-		modelID := "model_005"
+		modelID := uint64(1005)
+		modelIDStr := "1005"
 		name := "Complete Model"
 		sku := "SKU-005"
 		images := `["img1.jpg", "img2.jpg"]`
@@ -159,12 +164,12 @@ func TestBuildingRepository_FindBuildingModelByModelID(t *testing.T) {
 		err := repo.UpsertBuildingModel(ctx, modelID, name, sku, images, attributes, file, requiredSatisfaction)
 		require.NoError(t, err)
 
-		model, err := repo.FindBuildingModelByModelID(ctx, modelID)
+		model, err := repo.FindBuildingModelByModelID(ctx, modelIDStr)
 		require.NoError(t, err)
 		require.NotNil(t, model)
 
 		assert.Greater(t, model.Id, uint64(0))
-		assert.Equal(t, modelID, model.ModelId)
+		assert.Equal(t, modelIDStr, model.ModelId)
 		assert.Equal(t, name, model.Name)
 		assert.Equal(t, sku, model.Sku)
 		assert.Equal(t, images, model.Images)
@@ -187,18 +192,19 @@ func TestBuildingRepository_HasBuilding(t *testing.T) {
 
 	t.Run("return true when building exists", func(t *testing.T) {
 		// First create a building model
-		modelID := "model_006"
+		modelID := uint64(1006)
+		modelIDStr := "1006"
 		err := repo.UpsertBuildingModel(ctx, modelID, "Test", "SKU-006", `[]`, `[]`, `{}`, 10.0)
 		require.NoError(t, err)
 
 		// Get model to get database ID
-		model, err := repo.FindBuildingModelByModelID(ctx, modelID)
+		model, err := repo.FindBuildingModelByModelID(ctx, modelIDStr)
 		require.NoError(t, err)
 		require.NotNil(t, model)
 
 		// Create building
 		featureID := uint64(1)
-		err = repo.CreateBuilding(ctx, featureID, uint64(1), modelID, "25.0", "45.0", "100.5, -50.25", "", time.Now(), time.Now().Add(24*time.Hour), 100.0)
+		err = repo.CreateBuilding(ctx, featureID, uint64(1), modelIDStr, "25.0", "45.0", "100.5, -50.25", "", time.Now(), time.Now().Add(24*time.Hour), 100.0)
 		require.NoError(t, err)
 
 		// Check if building exists
@@ -228,7 +234,8 @@ func TestBuildingRepository_CreateBuilding(t *testing.T) {
 
 	t.Run("create building with all fields", func(t *testing.T) {
 		// Create building model first
-		modelID := "model_007"
+		modelID := uint64(1007)
+		modelIDStr := "1007"
 		err := repo.UpsertBuildingModel(ctx, modelID, "Test Model", "SKU-007", `[]`, `[]`, `{}`, 10.0)
 		require.NoError(t, err)
 
@@ -241,7 +248,7 @@ func TestBuildingRepository_CreateBuilding(t *testing.T) {
 		endDate := startDate.Add(24 * time.Hour)
 		bubbleDiameter := 256.5
 
-		err = repo.CreateBuilding(ctx, featureID, uint64(1), modelID, launchedSatisfaction, rotation, position, information, startDate, endDate, bubbleDiameter)
+		err = repo.CreateBuilding(ctx, featureID, uint64(1), modelIDStr, launchedSatisfaction, rotation, position, information, startDate, endDate, bubbleDiameter)
 		require.NoError(t, err)
 
 		// Verify building was created
@@ -257,14 +264,15 @@ func TestBuildingRepository_CreateBuilding(t *testing.T) {
 	})
 
 	t.Run("store information JSON correctly", func(t *testing.T) {
-		modelID := "model_008"
+		modelID := uint64(1008)
+		modelIDStr := "1008"
 		err := repo.UpsertBuildingModel(ctx, modelID, "Test", "SKU-008", `[]`, `[]`, `{}`, 10.0)
 		require.NoError(t, err)
 
 		featureID := uint64(2)
 		information := `{"activity_line": "Retail", "name": "Store", "address": "123 Main St", "postal_code": "1234567890"}`
 
-		err = repo.CreateBuilding(ctx, featureID, uint64(1), modelID, "25.0", "0.0", "0,0", information, time.Now(), time.Now().Add(24*time.Hour), 100.0)
+		err = repo.CreateBuilding(ctx, featureID, uint64(1), modelIDStr, "25.0", "0.0", "0,0", information, time.Now(), time.Now().Add(24*time.Hour), 100.0)
 		require.NoError(t, err)
 
 		buildings, err := repo.FindByFeatureID(ctx, featureID)
@@ -292,12 +300,13 @@ func TestBuildingRepository_FindByFeatureID(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("return all buildings for feature", func(t *testing.T) {
-		modelID := "model_009"
+		modelID := uint64(1009)
+		modelIDStr := "1009"
 		err := repo.UpsertBuildingModel(ctx, modelID, "Test", "SKU-009", `[]`, `[]`, `{}`, 10.0)
 		require.NoError(t, err)
 
 		featureID := uint64(3)
-		err = repo.CreateBuilding(ctx, featureID, uint64(1), modelID, "25.0", "45.0", "100,200", "", time.Now(), time.Now().Add(24*time.Hour), 100.0)
+		err = repo.CreateBuilding(ctx, featureID, uint64(1), modelIDStr, "25.0", "45.0", "100,200", "", time.Now(), time.Now().Add(24*time.Hour), 100.0)
 		require.NoError(t, err)
 
 		buildings, err := repo.FindByFeatureID(ctx, featureID)
@@ -307,7 +316,7 @@ func TestBuildingRepository_FindByFeatureID(t *testing.T) {
 		// Verify building model data is joined correctly
 		building := buildings[len(buildings)-1]
 		assert.NotNil(t, building.Model)
-		assert.Equal(t, modelID, building.Model.ModelId)
+		assert.Equal(t, modelIDStr, building.Model.ModelId)
 	})
 
 	t.Run("return empty array when no buildings", func(t *testing.T) {
@@ -330,7 +339,8 @@ func TestBuildingRepository_UpdateBuilding(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("update all fields except bubble_diameter preservation", func(t *testing.T) {
-		modelID := "model_010"
+		modelID := uint64(1010)
+		modelIDStr := "1010"
 		err := repo.UpsertBuildingModel(ctx, modelID, "Test", "SKU-010", `[]`, `[]`, `{}`, 10.0)
 		require.NoError(t, err)
 
@@ -338,7 +348,7 @@ func TestBuildingRepository_UpdateBuilding(t *testing.T) {
 		originalBubbleDiameter := 200.0
 
 		// Create building
-		err = repo.CreateBuilding(ctx, featureID, uint64(1), modelID, "25.0", "45.0", "100,200", "", time.Now(), time.Now().Add(24*time.Hour), originalBubbleDiameter)
+		err = repo.CreateBuilding(ctx, featureID, uint64(1), modelIDStr, "25.0", "45.0", "100,200", "", time.Now(), time.Now().Add(24*time.Hour), originalBubbleDiameter)
 		require.NoError(t, err)
 
 		// Update building
@@ -349,7 +359,7 @@ func TestBuildingRepository_UpdateBuilding(t *testing.T) {
 		newEndDate := time.Now().Add(48 * time.Hour)
 		preservedBubbleDiameter := originalBubbleDiameter // Should be preserved
 
-		updatedBuilding, err := repo.UpdateBuilding(ctx, featureID, modelID, newLaunchedSatisfaction, newRotation, newPosition, newInformation, newEndDate, preservedBubbleDiameter)
+		updatedBuilding, err := repo.UpdateBuilding(ctx, featureID, modelIDStr, newLaunchedSatisfaction, newRotation, newPosition, newInformation, newEndDate, preservedBubbleDiameter)
 		require.NoError(t, err)
 		require.NotNil(t, updatedBuilding)
 
@@ -360,15 +370,16 @@ func TestBuildingRepository_UpdateBuilding(t *testing.T) {
 	})
 
 	t.Run("return updated building", func(t *testing.T) {
-		modelID := "model_011"
+		modelID := uint64(1011)
+		modelIDStr := "1011"
 		err := repo.UpsertBuildingModel(ctx, modelID, "Test", "SKU-011", `[]`, `[]`, `{}`, 10.0)
 		require.NoError(t, err)
 
 		featureID := uint64(5)
-		err = repo.CreateBuilding(ctx, featureID, uint64(1), modelID, "25.0", "0.0", "0,0", "", time.Now(), time.Now().Add(24*time.Hour), 100.0)
+		err = repo.CreateBuilding(ctx, featureID, uint64(1), modelIDStr, "25.0", "0.0", "0,0", "", time.Now(), time.Now().Add(24*time.Hour), 100.0)
 		require.NoError(t, err)
 
-		updatedBuilding, err := repo.UpdateBuilding(ctx, featureID, modelID, "30.0", "45.0", "50,50", "", time.Now().Add(48*time.Hour), 100.0)
+		updatedBuilding, err := repo.UpdateBuilding(ctx, featureID, modelIDStr, "30.0", "45.0", "50,50", "", time.Now().Add(48*time.Hour), 100.0)
 		require.NoError(t, err)
 		require.NotNil(t, updatedBuilding)
 		assert.Equal(t, "30.0", updatedBuilding.LaunchedSatisfaction)
@@ -387,12 +398,13 @@ func TestBuildingRepository_DeleteBuilding(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("delete building by feature_id and model_id", func(t *testing.T) {
-		modelID := "model_012"
+		modelID := uint64(1012)
+		modelIDStr := "1012"
 		err := repo.UpsertBuildingModel(ctx, modelID, "Test", "SKU-012", `[]`, `[]`, `{}`, 10.0)
 		require.NoError(t, err)
 
 		featureID := uint64(6)
-		err = repo.CreateBuilding(ctx, featureID, uint64(1), modelID, "25.0", "0.0", "0,0", "", time.Now(), time.Now().Add(24*time.Hour), 100.0)
+		err = repo.CreateBuilding(ctx, featureID, uint64(1), modelIDStr, "25.0", "0.0", "0,0", "", time.Now(), time.Now().Add(24*time.Hour), 100.0)
 		require.NoError(t, err)
 
 		// Verify building exists
@@ -401,7 +413,7 @@ func TestBuildingRepository_DeleteBuilding(t *testing.T) {
 		assert.True(t, hasBuilding)
 
 		// Delete building
-		err = repo.DeleteBuilding(ctx, featureID, modelID)
+		err = repo.DeleteBuilding(ctx, featureID, modelIDStr)
 		require.NoError(t, err)
 
 		// Verify building is deleted

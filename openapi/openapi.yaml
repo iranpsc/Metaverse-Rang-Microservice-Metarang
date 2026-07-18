@@ -2986,9 +2986,9 @@ paths:
             summary: Get feature details
             tags:
                 - Features
-    /api/features/build/completed:
+    /api/features/buildings/completed:
         get:
-            operationId: get_features_build_completed
+            operationId: get_features_buildings_completed
             parameters:
                 - description: Page number for pagination
                   in: query

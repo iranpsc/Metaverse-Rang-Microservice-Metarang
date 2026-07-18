@@ -202,17 +202,47 @@ func (m *MockFeatureProfitService) GetSingleProfit(ctx context.Context, req *fea
 	return &featurespb.HourlyProfitResponse{}, nil
 }
 
+// MockBuildingService implements featurespb.BuildingServiceServer for tests.
+type MockBuildingService struct {
+	featurespb.UnimplementedBuildingServiceServer
+	ListCompletedBuildingsFunc func(ctx context.Context, req *featurespb.ListCompletedBuildingsRequest) (*featurespb.ListCompletedBuildingsResponse, error)
+	GetBuildingsFunc           func(ctx context.Context, req *featurespb.GetBuildingsRequest) (*featurespb.BuildingsResponse, error)
+}
+
+func (m *MockBuildingService) ListCompletedBuildings(ctx context.Context, req *featurespb.ListCompletedBuildingsRequest) (*featurespb.ListCompletedBuildingsResponse, error) {
+	if m.ListCompletedBuildingsFunc != nil {
+		return m.ListCompletedBuildingsFunc(ctx, req)
+	}
+	return &featurespb.ListCompletedBuildingsResponse{}, nil
+}
+
+func (m *MockBuildingService) GetBuildings(ctx context.Context, req *featurespb.GetBuildingsRequest) (*featurespb.BuildingsResponse, error) {
+	if m.GetBuildingsFunc != nil {
+		return m.GetBuildingsFunc(ctx, req)
+	}
+	return &featurespb.BuildingsResponse{}, nil
+}
+
 // DialFeaturesConn returns a client connection with features-service mocks registered.
 func DialFeaturesConn(feature *MockFeatureService, profit *MockFeatureProfitService) (*grpc.ClientConn, func()) {
+	return DialFeaturesConnWithBuilding(feature, profit, nil)
+}
+
+// DialFeaturesConnWithBuilding returns a client connection with feature, profit, and building mocks.
+func DialFeaturesConnWithBuilding(feature *MockFeatureService, profit *MockFeatureProfitService, building *MockBuildingService) (*grpc.ClientConn, func()) {
 	if feature == nil {
 		feature = &MockFeatureService{}
 	}
 	if profit == nil {
 		profit = &MockFeatureProfitService{}
 	}
+	if building == nil {
+		building = &MockBuildingService{}
+	}
 	return DialBufConn(func(s *grpc.Server) {
 		featurespb.RegisterFeatureServiceServer(s, feature)
 		featurespb.RegisterFeatureProfitServiceServer(s, profit)
+		featurespb.RegisterBuildingServiceServer(s, building)
 	})
 }
 

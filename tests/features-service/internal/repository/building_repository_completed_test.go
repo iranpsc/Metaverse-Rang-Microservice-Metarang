@@ -2,6 +2,7 @@ package repository_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -22,19 +23,19 @@ func TestBuildingRepository_FindCompleted_OnlyPastEndDate(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now()
 
-	completedModelID := "completed_model_tdd_001"
-	inProgressModelID := "inprogress_model_tdd_001"
+	completedModelID := uint64(910001)
+	inProgressModelID := uint64(910002)
 
 	require.NoError(t, repo.UpsertBuildingModel(ctx, completedModelID, "Completed", "SKU-C", `[]`,
-		`[{"slug":"name","value":"Done Tower"},{"slug":"area","value":100},{"slug":"density","value":2}]`, `{}`, 10))
+		`[{"slug":"length","value":30},{"slug":"width","value":50}]`, `{}`, 10))
 	require.NoError(t, repo.UpsertBuildingModel(ctx, inProgressModelID, "In Progress", "SKU-I", `[]`, `[]`, `{}`, 10))
 
 	featureCompleted := uint64(91001)
 	featureInProgress := uint64(91002)
 
-	require.NoError(t, repo.CreateBuilding(ctx, featureCompleted, uint64(1), completedModelID, "10", "0", "0,0", "",
+	require.NoError(t, repo.CreateBuilding(ctx, featureCompleted, uint64(1), fmt.Sprintf("%d", completedModelID), "10", "0", "0,0", "",
 		now.Add(-48*time.Hour), now.Add(-1*time.Hour), 100))
-	require.NoError(t, repo.CreateBuilding(ctx, featureInProgress, uint64(1), inProgressModelID, "10", "0", "0,0", "",
+	require.NoError(t, repo.CreateBuilding(ctx, featureInProgress, uint64(1), fmt.Sprintf("%d", inProgressModelID), "10", "0", "0,0", "",
 		now.Add(-1*time.Hour), now.Add(48*time.Hour), 100))
 
 	rows, err := repo.FindCompleted(ctx, now, 10, 0)
@@ -45,7 +46,8 @@ func TestBuildingRepository_FindCompleted_OnlyPastEndDate(t *testing.T) {
 		assert.NotEqual(t, featureInProgress, row.FeatureID, "in-progress building must not appear")
 		if row.FeatureID == featureCompleted {
 			foundCompleted = true
-			assert.Contains(t, row.AttributesJSON, "Done Tower")
+			assert.Contains(t, row.AttributesJSON, `"length"`)
+			assert.Contains(t, row.AttributesJSON, `"width"`)
 		}
 	}
 	assert.True(t, foundCompleted, "expected completed building in results")

@@ -16,7 +16,7 @@ type completedBuildingRepo interface {
 	CountCompleted(ctx context.Context, now time.Time) (int, error)
 }
 
-// CompletedBuildingService lists construction-completed buildings (Laravel BuildFeatureController@completedBuildings).
+// CompletedBuildingService lists construction-completed buildings (GET /api/features/buildings/completed).
 type CompletedBuildingService struct {
 	repo completedBuildingRepo
 	now  func() time.Time
@@ -81,30 +81,38 @@ func (s *CompletedBuildingService) Paginate(ctx context.Context, page int) (*mod
 }
 
 func mapCompletedBuilding(row models.CompletedBuildingRow) models.CompletedBuilding {
-	name, area, density := extractCompletedBuildingAttributes(row.AttributesJSON)
+	length, width := extractLengthWidth(row.AttributesJSON)
 	return models.CompletedBuilding{
 		ID:                  row.ID,
 		FeatureID:           row.FeatureID,
 		FeaturePropertiesID: strings.ToUpper(row.FeaturePropertiesID),
-		Name:                name,
-		BuildingTotalArea:   area,
-		Density:             density,
+		Length:              length,
+		Width:               width,
+		Density:             densityStringPtr(row.Density),
+		Karbari:             row.Karbari,
 	}
 }
 
-func extractCompletedBuildingAttributes(attributesJSON string) (name, area, density *string) {
+// extractLengthWidth reads length/width from building model attributes synced from the 3dmeta API.
+func extractLengthWidth(attributesJSON string) (length, width *string) {
 	if attributesJSON == "" {
-		return nil, nil, nil
+		return nil, nil
 	}
 
 	var attrs []map[string]interface{}
 	if err := json.Unmarshal([]byte(attributesJSON), &attrs); err != nil {
-		return nil, nil, nil
+		return nil, nil
 	}
 
-	return attributeStringPtr(attrs, "name"),
-		attributeStringPtr(attrs, "area"),
-		attributeStringPtr(attrs, "density")
+	return attributeStringPtr(attrs, "length"), attributeStringPtr(attrs, "width")
+}
+
+func densityStringPtr(density *int) *string {
+	if density == nil {
+		return nil
+	}
+	formatted := strconv.Itoa(*density)
+	return &formatted
 }
 
 func attributeStringPtr(attrs []map[string]interface{}, slug string) *string {

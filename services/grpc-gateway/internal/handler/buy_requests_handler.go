@@ -407,7 +407,7 @@ func (h *FeaturesHandler) HandleFeaturesRoutes(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if path == "build/completed" || path == "building/completed" {
+	if path == "buildings/completed" {
 		if r.Method == http.MethodGet {
 			h.ListCompletedBuildings(w, r)
 		} else {
@@ -450,12 +450,16 @@ func (h *FeaturesHandler) HandleFeaturesRoutes(w http.ResponseWriter, r *http.Re
 	}
 
 	if strings.Contains(path, "/build/buildings") {
-		if r.Method == http.MethodGet {
-			h.GetBuildings(w, r)
-		} else {
-			http.NotFound(w, r)
+		parts := strings.Split(path, "/")
+		// Require {featureId}/build/buildings so "buildings/completed" is never matched.
+		if len(parts) >= 3 && parts[1] == "build" && parts[2] == "buildings" {
+			if r.Method == http.MethodGet {
+				h.GetBuildings(w, r)
+			} else {
+				http.NotFound(w, r)
+			}
+			return
 		}
-		return
 	}
 
 	if strings.Contains(path, "/build/") {

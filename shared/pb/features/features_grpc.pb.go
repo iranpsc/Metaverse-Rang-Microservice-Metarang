@@ -1274,7 +1274,7 @@ type BuildingServiceClient interface {
 	GetBuildings(ctx context.Context, in *GetBuildingsRequest, opts ...grpc.CallOption) (*BuildingsResponse, error)
 	UpdateBuilding(ctx context.Context, in *UpdateBuildingRequest, opts ...grpc.CallOption) (*BuildingResponse, error)
 	DestroyBuilding(ctx context.Context, in *DestroyBuildingRequest, opts ...grpc.CallOption) (*BuildingResponse, error)
-	// ListCompletedBuildings returns paginated buildings with construction_end_date < now (Laravel GET /features/build/completed).
+	// ListCompletedBuildings returns paginated buildings with construction_end_date < now (GET /api/features/buildings/completed).
 	ListCompletedBuildings(ctx context.Context, in *ListCompletedBuildingsRequest, opts ...grpc.CallOption) (*ListCompletedBuildingsResponse, error)
 }
 
@@ -1357,7 +1357,7 @@ type BuildingServiceServer interface {
 	GetBuildings(context.Context, *GetBuildingsRequest) (*BuildingsResponse, error)
 	UpdateBuilding(context.Context, *UpdateBuildingRequest) (*BuildingResponse, error)
 	DestroyBuilding(context.Context, *DestroyBuildingRequest) (*BuildingResponse, error)
-	// ListCompletedBuildings returns paginated buildings with construction_end_date < now (Laravel GET /features/build/completed).
+	// ListCompletedBuildings returns paginated buildings with construction_end_date < now (GET /api/features/buildings/completed).
 	ListCompletedBuildings(context.Context, *ListCompletedBuildingsRequest) (*ListCompletedBuildingsResponse, error)
 	mustEmbedUnimplementedBuildingServiceServer()
 }
