@@ -6,9 +6,9 @@ import (
 	"time"
 
 	pb "metarang/shared/pb/notifications"
+	grpcutil "metarang/shared/pkg/grpc"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 // NotificationClient wraps gRPC client for Notifications Service
@@ -19,13 +19,7 @@ type NotificationClient struct {
 
 // NewNotificationClient creates a new Notifications Service client
 func NewNotificationClient(address string) (*NotificationClient, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	conn, err := grpc.DialContext(ctx, address,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(),
-	)
+	conn, err := grpcutil.DialContextWithTimeout(address, 5*time.Second)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to notifications service at %s: %w", address, err)
 	}

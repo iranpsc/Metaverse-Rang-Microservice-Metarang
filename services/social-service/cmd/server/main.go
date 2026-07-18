@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
+	grpcutil "metarang/shared/pkg/grpc"
 	"metarang/shared/pkg/logger"
 	"metarang/shared/pkg/metrics"
 	"metarang/shared/pkg/sentry"
@@ -128,13 +129,17 @@ func main() {
 	serviceMetrics := metrics.NewMetrics("social_service")
 	metrics.StartHTTPServer(getEnv("METRICS_PORT", "9090"))
 
-	grpcServer := grpc.NewServer(
+	serverOpts, err := grpcutil.ServerOptions(
 		grpc.ChainUnaryInterceptor(
 			sentry.UnaryServerInterceptor(),
 			logger.UnaryServerInterceptor(structLog),
 			metrics.UnaryServerInterceptor(serviceMetrics),
 		),
 	)
+	if err != nil {
+		structLog.Fatal("Failed to configure gRPC server", "error", err)
+	}
+	grpcServer := grpc.NewServer(serverOpts...)
 	handler.RegisterChallengeHandler(grpcServer, challengeService)
 	handler.RegisterFollowHandler(grpcServer, followService)
 	reflection.Register(grpcServer)

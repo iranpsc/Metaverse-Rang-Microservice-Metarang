@@ -9,6 +9,5 @@ coverage/
 .env.*
 config.env
 services/**/config.env
-uploads/
-docs/
+uploads/**
 scripts/metarang_db.sql

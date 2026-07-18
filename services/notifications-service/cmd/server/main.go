@@ -19,6 +19,7 @@ import (
 	"metarang/notifications-service/internal/handler"
 	"metarang/notifications-service/internal/repository"
 	"metarang/notifications-service/internal/service"
+	grpcutil "metarang/shared/pkg/grpc"
 	"metarang/shared/pkg/metrics"
 	"metarang/shared/pkg/sentry"
 )
@@ -85,12 +86,16 @@ func main() {
 
 	serviceMetrics := metrics.NewMetrics("notifications_service")
 	metrics.StartHTTPServer(getEnv("METRICS_PORT", "9090"))
-	grpcServer := grpc.NewServer(
+	serverOpts, err := grpcutil.ServerOptions(
 		grpc.ChainUnaryInterceptor(
 			sentry.UnaryServerInterceptor(),
 			metrics.UnaryServerInterceptor(serviceMetrics),
 		),
 	)
+	if err != nil {
+		log.Fatalf("Failed to configure gRPC server: %v", err)
+	}
+	grpcServer := grpc.NewServer(serverOpts...)
 
 	handler.RegisterNotificationHandler(grpcServer, notificationService)
 	handler.RegisterSMSHandler(grpcServer, smsService)

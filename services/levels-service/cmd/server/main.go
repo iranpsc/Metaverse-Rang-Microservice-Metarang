@@ -15,6 +15,7 @@ import (
 	"metarang/levels-service/internal/service"
 	pb "metarang/shared/pb/levels"
 	"metarang/shared/pkg/db"
+	grpcutil "metarang/shared/pkg/grpc"
 	"metarang/shared/pkg/logger"
 	"metarang/shared/pkg/metrics"
 	"metarang/shared/pkg/sentry"
@@ -120,13 +121,17 @@ func main() {
 	// Create gRPC server with interceptors
 	serviceMetrics := metrics.NewMetrics("levels_service")
 	metrics.StartHTTPServer(metricsPort)
-	grpcServer := grpc.NewServer(
+	serverOpts, err := grpcutil.ServerOptions(
 		grpc.ChainUnaryInterceptor(
 			sentry.UnaryServerInterceptor(),
 			logger.UnaryServerInterceptor(log),
 			metrics.UnaryServerInterceptor(serviceMetrics),
 		),
 	)
+	if err != nil {
+		log.Fatal("Failed to configure gRPC server", "error", err)
+	}
+	grpcServer := grpc.NewServer(serverOpts...)
 
 	// Register services
 	pb.RegisterLevelServiceServer(grpcServer, levelHandler)

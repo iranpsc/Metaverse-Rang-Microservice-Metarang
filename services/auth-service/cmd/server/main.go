@@ -16,7 +16,6 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/redis/go-redis/v9/maintnotifications"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"metarang/auth-service/internal/handler"
 	"metarang/auth-service/internal/pubsub"
@@ -25,6 +24,7 @@ import (
 	pb "metarang/shared/pb/auth"
 	notificationspb "metarang/shared/pb/notifications"
 	storagepb "metarang/shared/pb/storage"
+	grpcutil "metarang/shared/pkg/grpc"
 	"metarang/shared/pkg/metrics"
 	"metarang/shared/pkg/sentry"
 )
@@ -184,7 +184,7 @@ func main() {
 	var smsClient notificationspb.SMSServiceClient
 	var notificationClient notificationspb.NotificationServiceClient
 	notificationsAddr := getEnv("NOTIFICATIONS_SERVICE_ADDR", "notifications-service:50058")
-	notificationsConn, err := grpc.Dial(notificationsAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	notificationsConn, err := grpcutil.NewClient(notificationsAddr)
 	if err != nil {
 		log.Printf("Warning: Failed to connect to notifications service: %v (continuing without notification support)", err)
 	} else {
@@ -268,7 +268,7 @@ func main() {
 	// Initialize storage service client for profile photo uploads
 	storageServiceAddr := getEnv("STORAGE_SERVICE_ADDR", "storage-service:50060")
 	var storageClient storagepb.FileStorageServiceClient
-	storageConn, err := grpc.NewClient(storageServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	storageConn, err := grpcutil.NewClient(storageServiceAddr)
 	if err != nil {
 		log.Printf("Warning: Failed to connect to storage service: %v (profile photo uploads will fail)", err)
 		storageClient = nil
@@ -287,12 +287,16 @@ func main() {
 	// Create gRPC server with Prometheus metrics
 	serviceMetrics := metrics.NewMetrics("auth_service")
 	metrics.StartHTTPServer(getEnv("METRICS_PORT", "9090"))
-	grpcServer := grpc.NewServer(
+	serverOpts, err := grpcutil.ServerOptions(
 		grpc.ChainUnaryInterceptor(
 			sentry.UnaryServerInterceptor(),
 			metrics.UnaryServerInterceptor(serviceMetrics),
 		),
 	)
+	if err != nil {
+		log.Fatalf("Failed to configure gRPC server: %v", err)
+	}
+	grpcServer := grpc.NewServer(serverOpts...)
 
 	// Create profile photo handler instance (needed by auth handler)
 	profilePhotoHandler := &handler.ProfilePhotoHandler{

@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 
 	commercialpb "metarang/shared/pb/commercial"
 	featurespb "metarang/shared/pb/features"
 	levelspb "metarang/shared/pb/levels"
 	"metarang/shared/pkg/auth"
+	grpcutil "metarang/shared/pkg/grpc"
 )
 
 // HelperService provides helper methods that integrate with other microservices
@@ -75,10 +75,7 @@ func NewHelperService(levelsAddr, featuresAddr, commercialAddr string) HelperSer
 
 	// Initialize gRPC connection to levels service
 	if levelsAddr != "" {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-
-		conn, err := grpc.DialContext(ctx, levelsAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		conn, err := grpcutil.DialContextWithTimeout(levelsAddr, 5*time.Second)
 		if err != nil {
 			log.Printf("Warning: Failed to connect to levels service at %s: %v (will use stub implementations)", levelsAddr, err)
 		} else {
@@ -90,36 +87,36 @@ func NewHelperService(levelsAddr, featuresAddr, commercialAddr string) HelperSer
 
 	// Initialize gRPC connection to features service
 	if featuresAddr != "" {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-
-		conn, err := grpc.DialContext(ctx, featuresAddr,
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
-			grpc.WithUnaryInterceptor(forwardAuthInterceptor()))
+		opts, err := grpcutil.ClientDialOptionsWithInterceptors(forwardAuthInterceptor())
 		if err != nil {
-			log.Printf("Warning: Failed to connect to features service at %s: %v (will use stub implementations)", featuresAddr, err)
+			log.Printf("Warning: Failed to configure features service client at %s: %v (will use stub implementations)", featuresAddr, err)
 		} else {
-			hs.featuresConn = conn
-			hs.featureProfitClient = featurespb.NewFeatureProfitServiceClient(conn)
-			log.Printf("Successfully connected to features service at %s", featuresAddr)
+			conn, err := grpcutil.DialContextWithTimeout(featuresAddr, 5*time.Second, opts...)
+			if err != nil {
+				log.Printf("Warning: Failed to connect to features service at %s: %v (will use stub implementations)", featuresAddr, err)
+			} else {
+				hs.featuresConn = conn
+				hs.featureProfitClient = featurespb.NewFeatureProfitServiceClient(conn)
+				log.Printf("Successfully connected to features service at %s", featuresAddr)
+			}
 		}
 	}
 
 	// Initialize gRPC connection to commercial service
 	if commercialAddr != "" {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-
-		conn, err := grpc.DialContext(ctx, commercialAddr,
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
-			grpc.WithUnaryInterceptor(forwardAuthInterceptor()))
+		opts, err := grpcutil.ClientDialOptionsWithInterceptors(forwardAuthInterceptor())
 		if err != nil {
-			log.Printf("Warning: Failed to connect to commercial service at %s: %v (will use stub implementations)", commercialAddr, err)
+			log.Printf("Warning: Failed to configure commercial service client at %s: %v (will use stub implementations)", commercialAddr, err)
 		} else {
-			hs.commercialConn = conn
-			hs.walletClient = commercialpb.NewWalletServiceClient(conn)
-			hs.userVariableClient = commercialpb.NewUserVariableServiceClient(conn)
-			log.Printf("Successfully connected to commercial service at %s", commercialAddr)
+			conn, err := grpcutil.DialContextWithTimeout(commercialAddr, 5*time.Second, opts...)
+			if err != nil {
+				log.Printf("Warning: Failed to connect to commercial service at %s: %v (will use stub implementations)", commercialAddr, err)
+			} else {
+				hs.commercialConn = conn
+				hs.walletClient = commercialpb.NewWalletServiceClient(conn)
+				hs.userVariableClient = commercialpb.NewUserVariableServiceClient(conn)
+				log.Printf("Successfully connected to commercial service at %s", commercialAddr)
+			}
 		}
 	}
 
@@ -243,9 +240,12 @@ func (s *helperService) GetUserWallet(ctx context.Context, userID uint64) (*Wall
 			return invoker(ctx, method, req, reply, cc, opts...)
 		}
 
-		conn, err := grpc.DialContext(connectCtx, s.commercialServiceAddr,
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
-			grpc.WithUnaryInterceptor(interceptor))
+		opts, err := grpcutil.ClientDialOptionsWithInterceptors(interceptor)
+		if err != nil {
+			return nil, fmt.Errorf("configure commercial service client at %s: %w", s.commercialServiceAddr, err)
+		}
+
+		conn, err := grpcutil.DialContext(connectCtx, s.commercialServiceAddr, opts...)
 		if err != nil {
 			return nil, fmt.Errorf("failed to connect to commercial service at %s: %w", s.commercialServiceAddr, err)
 		}

@@ -15,7 +15,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"metarang/financial-service/internal/config"
 	"metarang/financial-service/internal/handler"
@@ -24,6 +23,8 @@ import (
 	"metarang/financial-service/internal/service"
 	commercialpb "metarang/shared/pb/commercial"
 	notificationspb "metarang/shared/pb/notifications"
+	"metarang/shared/pkg/auth"
+	grpcutil "metarang/shared/pkg/grpc"
 	"metarang/shared/pkg/metrics"
 	"metarang/shared/pkg/sentry"
 )
@@ -94,7 +95,7 @@ func main() {
 	// Commercial-service client for wallet balance updates after payment
 	var walletClient commercialpb.WalletServiceClient
 	commercialAddr := getEnv("COMMERCIAL_SERVICE_ADDR", "commercial-service:50052")
-	commercialConn, err := grpc.NewClient(commercialAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	commercialConn, err := grpcutil.NewClient(commercialAddr)
 	if err != nil {
 		log.Printf("Warning: failed to dial commercial service at %s — wallet updates disabled: %v", commercialAddr, err)
 	} else {
@@ -106,7 +107,7 @@ func main() {
 	// Notifications-service client for post-payment SMS (optional)
 	var smsClient notificationspb.SMSServiceClient
 	notificationsAddr := getEnv("NOTIFICATIONS_SERVICE_ADDR", "notifications-service:50058")
-	notificationsConn, err := grpc.NewClient(notificationsAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	notificationsConn, err := grpcutil.NewClient(notificationsAddr)
 	if err != nil {
 		log.Printf("Warning: failed to dial notifications service at %s — payment SMS disabled: %v", notificationsAddr, err)
 	} else {
@@ -178,12 +179,34 @@ func main() {
 	// Create gRPC server
 	serviceMetrics := metrics.NewMetrics("financial_service")
 	metrics.StartHTTPServer(getEnv("METRICS_PORT", "9090"))
-	grpcServer := grpc.NewServer(
-		grpc.ChainUnaryInterceptor(
-			sentry.UnaryServerInterceptor(),
-			metrics.UnaryServerInterceptor(serviceMetrics),
-		),
-	)
+
+	authServiceAddr := getEnv("AUTH_SERVICE_ADDR", "auth-service:50051")
+	authConn, err := grpcutil.NewClient(authServiceAddr)
+	if err != nil {
+		log.Printf("Warning: failed to dial auth service at %s — user auth disabled: %v", authServiceAddr, err)
+	} else {
+		defer authConn.Close()
+		log.Printf("Connected to auth service at %s", authServiceAddr)
+	}
+
+	var tokenValidator auth.TokenValidator
+	if authConn != nil {
+		tokenValidator = auth.NewAuthServiceTokenValidator(authConn)
+	}
+
+	interceptors := []grpc.UnaryServerInterceptor{
+		sentry.UnaryServerInterceptor(),
+		metrics.UnaryServerInterceptor(serviceMetrics),
+	}
+	if tokenValidator != nil {
+		interceptors = append(interceptors, auth.UnaryServerInterceptor(tokenValidator))
+	}
+
+	serverOpts, err := grpcutil.ServerOptions(grpc.ChainUnaryInterceptor(interceptors...))
+	if err != nil {
+		log.Fatalf("Failed to configure gRPC server: %v", err)
+	}
+	grpcServer := grpc.NewServer(serverOpts...)
 
 	// Register handlers
 	handler.RegisterOrderHandler(grpcServer, orderService)

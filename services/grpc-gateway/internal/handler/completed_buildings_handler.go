@@ -8,7 +8,6 @@ import (
 )
 
 // ListCompletedBuildings handles GET /api/features/build/completed.
-// Public endpoint — matches Laravel BuildFeatureController@completedBuildings.
 func (h *FeaturesHandler) ListCompletedBuildings(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")

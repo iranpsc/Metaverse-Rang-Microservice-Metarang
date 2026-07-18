@@ -18,6 +18,7 @@ import (
 	"metarang/calendar-service/internal/handler"
 	"metarang/calendar-service/internal/repository"
 	"metarang/calendar-service/internal/service"
+	grpcutil "metarang/shared/pkg/grpc"
 	"metarang/shared/pkg/metrics"
 	"metarang/shared/pkg/sentry"
 )
@@ -77,12 +78,16 @@ func main() {
 
 	serviceMetrics := metrics.NewMetrics("calendar_service")
 	metrics.StartHTTPServer(getEnv("METRICS_PORT", "9090"))
-	grpcServer := grpc.NewServer(
+	serverOpts, err := grpcutil.ServerOptions(
 		grpc.ChainUnaryInterceptor(
 			sentry.UnaryServerInterceptor(),
 			metrics.UnaryServerInterceptor(serviceMetrics),
 		),
 	)
+	if err != nil {
+		log.Fatalf("Failed to configure gRPC server: %v", err)
+	}
+	grpcServer := grpc.NewServer(serverOpts...)
 	handler.RegisterCalendarHandler(grpcServer, calendarService)
 
 	port := getEnv("GRPC_PORT", "50058")

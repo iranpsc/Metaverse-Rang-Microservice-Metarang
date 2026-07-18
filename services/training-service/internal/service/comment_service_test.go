@@ -156,7 +156,7 @@ func TestCommentService_GetComments(t *testing.T) {
 		return &repository.UserBasic{ID: userID, Name: "U"}, nil
 	}
 	svc := service.NewCommentService(mc, mu)
-	list, total, err := svc.GetComments(context.Background(), 9, 1, 10)
+	list, total, err := svc.GetComments(context.Background(), 9, 1, 10, 0)
 	if err != nil || total != 1 || len(list) != 1 {
 		t.Fatalf("list=%d total=%d err=%v", len(list), total, err)
 	}

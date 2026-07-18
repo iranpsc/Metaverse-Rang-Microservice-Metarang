@@ -8,7 +8,9 @@ import (
 
 // AttachOutgoingAuth copies the bearer token from the current context into outgoing
 // gRPC metadata so downstream service calls inherit the caller's authentication.
+// When INTERNAL_SERVICE_SECRET is set, the inter-service token is attached as well.
 func AttachOutgoingAuth(ctx context.Context) context.Context {
+	ctx = AttachOutgoingServiceAuth(ctx)
 	if md, ok := metadata.FromOutgoingContext(ctx); ok {
 		if vals := md.Get("authorization"); len(vals) > 0 && vals[0] != "" {
 			return ctx

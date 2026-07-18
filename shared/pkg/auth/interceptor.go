@@ -43,6 +43,14 @@ func UnaryServerInterceptor(validator TokenValidator) grpc.UnaryServerIntercepto
 			return handler(ctx, req)
 		}
 
+		// Internal service methods require a shared service token (not public bypass).
+		if RequiresServiceAuth(info.FullMethod) {
+			if err := authorizeServiceCall(ctx); err != nil {
+				return nil, err
+			}
+			return handler(ctx, req)
+		}
+
 		// Optional auth: proceed without a token; attach user context when a valid token is sent
 		if shouldUseOptionalAuth(info.FullMethod) {
 			ctx = contextWithOptionalAuth(ctx, validator)
@@ -92,6 +100,14 @@ func StreamServerInterceptor(validator TokenValidator) grpc.StreamServerIntercep
 		}
 
 		ctx := stream.Context()
+
+		// Internal service methods require a shared service token (not public bypass).
+		if RequiresServiceAuth(info.FullMethod) {
+			if err := authorizeServiceCall(ctx); err != nil {
+				return err
+			}
+			return handler(srv, stream)
+		}
 
 		// Optional auth: proceed without a token; attach user context when a valid token is sent
 		if shouldUseOptionalAuth(info.FullMethod) {
@@ -207,21 +223,8 @@ func shouldSkipAuth(fullMethod string) bool {
 		"/auth.AuthService/ValidateToken", // Other services call this to validate tokens
 		// Commercial service public endpoints
 		"/commercial.WalletService/GetWallet", // Public endpoint - anyone can view any user's wallet
-		// Commercial service internal wallet mutations (called by other microservices)
-		"/commercial.WalletService/CreateWallet",
-		"/commercial.WalletService/AddBalance",
-		"/commercial.WalletService/DeductBalance",
-		"/commercial.WalletService/LockBalance",
-		"/commercial.WalletService/UnlockBalance",
-		"/commercial.UserVariableService/CreateUserVariables",
-		"/commercial.TransactionService/CreateTransaction",
-		// Financial service public endpoints (payment gateway callbacks, internal wallet RPC)
+		// Financial service public endpoints (payment gateway callbacks)
 		"/financial.OrderService/HandleCallback",
-		"/financial.WalletService/GetWallet",
-		"/financial.WalletService/AddBalance",
-		"/financial.WalletService/DeductBalance",
-		"/financial.WalletService/LockBalance",
-		"/financial.WalletService/UnlockBalance",
 		// Features service public endpoints
 		"/features.BuildingService/ListCompletedBuildings", // Laravel GET /features/build/completed (no auth)
 	}
@@ -232,6 +235,40 @@ func shouldSkipAuth(fullMethod string) bool {
 		}
 	}
 	return false
+}
+
+func authorizeServiceCall(ctx context.Context) error {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return status.Error(codes.Unauthenticated, "missing metadata")
+	}
+
+	tokens := md.Get(ServiceTokenMetadataKey)
+	if len(tokens) == 0 || tokens[0] == "" {
+		return status.Error(codes.Unauthenticated, "missing service token")
+	}
+
+	if !ValidateServiceToken(tokens[0]) {
+		return status.Error(codes.Unauthenticated, "invalid service token")
+	}
+
+	return nil
+}
+
+// AttachOutgoingServiceAuth adds the inter-service token to outgoing gRPC metadata.
+func AttachOutgoingServiceAuth(ctx context.Context) context.Context {
+	secret := ServiceSecretFromEnv()
+	if secret == "" {
+		return ctx
+	}
+
+	if md, ok := metadata.FromOutgoingContext(ctx); ok {
+		if vals := md.Get(ServiceTokenMetadataKey); len(vals) > 0 && vals[0] != "" {
+			return ctx
+		}
+	}
+
+	return metadata.AppendToOutgoingContext(ctx, ServiceTokenMetadataKey, secret)
 }
 
 // GetUserFromContext retrieves user context from the context

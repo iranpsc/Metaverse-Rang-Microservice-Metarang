@@ -36,7 +36,7 @@ require (
 
 require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
-	github.com/redis/go-redis/v9 v9.16.0
+	github.com/redis/go-redis/v9 v9.17.2
 	metarang/shared v0.0.0
 )
 

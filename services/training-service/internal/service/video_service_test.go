@@ -155,7 +155,7 @@ func TestVideoService_GetVideoWithDetails_NoCategoryWhenSubMissing(t *testing.T)
 	}
 	svc := service.NewVideoService(mv, mc, &testutil.MockUserRepo{})
 	video := &models.Video{ID: 1, CreatedAt: time.Now()}
-	d, err := svc.GetVideoWithDetails(context.Background(), video)
+	d, err := svc.GetVideoWithDetails(context.Background(), video, nil)
 	if err != nil || d.Category != nil {
 		t.Fatalf("%+v", d)
 	}
@@ -185,7 +185,7 @@ func TestVideoService_GetVideoWithDetails(t *testing.T) {
 		CreatorCode:        code,
 		CreatedAt:          time.Now(),
 	}
-	d, err := svc.GetVideoWithDetails(context.Background(), video)
+	d, err := svc.GetVideoWithDetails(context.Background(), video, nil)
 	if err != nil || d.Creator == nil || d.Category == nil || d.SubCategory == nil || d.Stats.ViewsCount != 3 {
 		t.Fatalf("details=%+v err=%v", d, err)
 	}

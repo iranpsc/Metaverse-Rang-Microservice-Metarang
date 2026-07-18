@@ -15,6 +15,7 @@ import (
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 
+	grpcutil "metarang/shared/pkg/grpc"
 	"metarang/shared/pkg/metrics"
 	"metarang/shared/pkg/sentry"
 	"metarang/storage-service/internal/ftp"
@@ -106,13 +107,17 @@ func main() {
 	// Create gRPC server
 	serviceMetrics := metrics.NewMetrics("storage_service")
 	metrics.StartHTTPServer(getEnv("METRICS_PORT", "9090"))
-	grpcServer := grpc.NewServer(
+	serverOpts, err := grpcutil.ServerOptions(
 		grpc.MaxRecvMsgSize(100*1024*1024), // 100MB for file uploads
 		grpc.ChainUnaryInterceptor(
 			sentry.UnaryServerInterceptor(),
 			metrics.UnaryServerInterceptor(serviceMetrics),
 		),
 	)
+	if err != nil {
+		log.Fatalf("Failed to configure gRPC server: %v", err)
+	}
+	grpcServer := grpc.NewServer(serverOpts...)
 
 	// Register gRPC handlers
 	handler.RegisterStorageHandler(grpcServer, storageService)

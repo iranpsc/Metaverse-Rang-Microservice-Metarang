@@ -21,6 +21,7 @@ import (
 	"metarang/dynasty-service/internal/service"
 
 	dynastypb "metarang/shared/pb/dynasty"
+	grpcutil "metarang/shared/pkg/grpc"
 	"metarang/shared/pkg/metrics"
 	"metarang/shared/pkg/sentry"
 )
@@ -125,12 +126,16 @@ func main() {
 	// Create gRPC server
 	serviceMetrics := metrics.NewMetrics("dynasty_service")
 	metrics.StartHTTPServer(getEnv("METRICS_PORT", "9090"))
-	grpcServer := grpc.NewServer(
+	serverOpts, err := grpcutil.ServerOptions(
 		grpc.ChainUnaryInterceptor(
 			sentry.UnaryServerInterceptor(),
 			metrics.UnaryServerInterceptor(serviceMetrics),
 		),
 	)
+	if err != nil {
+		log.Fatalf("Failed to configure gRPC server: %v", err)
+	}
+	grpcServer := grpc.NewServer(serverOpts...)
 
 	// Create dedicated handlers for each service
 	handler.SetProjectLocale(getEnv("PROJECT_LOCALE", "EN"))

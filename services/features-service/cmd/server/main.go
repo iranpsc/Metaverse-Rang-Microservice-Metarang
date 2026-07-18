@@ -21,13 +21,13 @@ import (
 	pb "metarang/shared/pb/features"
 	"metarang/shared/pkg/auth"
 	"metarang/shared/pkg/db"
+	grpcutil "metarang/shared/pkg/grpc"
 	"metarang/shared/pkg/logger"
 	sharedmetrics "metarang/shared/pkg/metrics"
 	"metarang/shared/pkg/sentry"
 
 	_ "github.com/go-sql-driver/mysql"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 )
 
@@ -237,7 +237,7 @@ func main() {
 	// Initialize token validator for authentication
 	// Connect to auth service for token validation
 	authServiceAddr := getEnv("AUTH_SERVICE_ADDR", "auth-service:50051")
-	authConn, err := grpc.NewClient(authServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	authConn, err := grpcutil.NewClient(authServiceAddr)
 	if err != nil {
 		log.Warn("Failed to connect to auth service - authentication disabled", "error", err)
 	} else {
@@ -267,9 +267,13 @@ func main() {
 		interceptors = append(interceptors, auth.UnaryServerInterceptor(tokenValidator))
 	}
 
-	grpcServer := grpc.NewServer(
+	serverOpts, err := grpcutil.ServerOptions(
 		grpc.ChainUnaryInterceptor(interceptors...),
 	)
+	if err != nil {
+		log.Fatal("Failed to configure gRPC server", "error", err)
+	}
+	grpcServer := grpc.NewServer(serverOpts...)
 
 	// Register services
 	pb.RegisterFeatureServiceServer(grpcServer, featureHandler)

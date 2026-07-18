@@ -4,6 +4,17 @@ x-sentry-environment: &sentry-environment
   SENTRY_RELEASE: ${SENTRY_RELEASE:-}
   SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0}
 
+x-internal-auth: &internal-auth
+  INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-metarang-local-dev-service-secret-change-in-production}
+
+x-grpc-tls: &grpc-tls
+  GRPC_TLS_ENABLED: ${GRPC_TLS_ENABLED:-false}
+  GRPC_TLS_CERT_FILE: ${GRPC_TLS_CERT_FILE:-/certs/server.crt}
+  GRPC_TLS_KEY_FILE: ${GRPC_TLS_KEY_FILE:-/certs/server.key}
+  GRPC_TLS_CA_FILE: ${GRPC_TLS_CA_FILE:-/certs/ca.crt}
+  GRPC_TLS_CLIENT_CERT_FILE: ${GRPC_TLS_CLIENT_CERT_FILE:-/certs/client.crt}
+  GRPC_TLS_CLIENT_KEY_FILE: ${GRPC_TLS_CLIENT_KEY_FILE:-/certs/client.key}
+
 services:
   # ============================================================================
   # Infrastructure Services
@@ -60,8 +71,7 @@ services:
       context: .
       dockerfile: ./services/auth-service/Dockerfile
     container_name: metarang-auth-service
-    ports:
-      - "50051:50051"
+    # gRPC is internal-only; reachable on metarang-network, not exposed on the host
     env_file:
       - ./services/auth-service/config.env
     environment:
@@ -78,7 +88,7 @@ services:
       LEVELS_SERVICE_ADDR: levels-service:50054
       FEATURES_SERVICE_ADDR: features-service:50053
       COMMERCIAL_SERVICE_ADDR: commercial-service:50052
-      <<: *sentry-environment
+      <<: [*sentry-environment, *internal-auth, *grpc-tls]
     depends_on:
       mysql:
         condition: service_healthy
@@ -130,7 +140,7 @@ services:
       SOCIAL_SERVICE_ADDR: social-service:50061
       NOTIFICATION_SERVICE_ADDR: notifications-service:50058
       STORAGE_SERVICE_ADDR: storage-service:8059
-      <<: *sentry-environment
+      <<: [*sentry-environment, *internal-auth, *grpc-tls]
     depends_on:
       auth-service:
         condition: service_started
@@ -172,8 +182,7 @@ services:
       context: .
       dockerfile: ./services/commercial-service/Dockerfile
     container_name: metarang-commercial-service
-    ports:
-      - "50052:50052"
+    # gRPC is internal-only; reachable on metarang-network, not exposed on the host
     env_file:
       - ./services/commercial-service/config.env
     environment:
@@ -184,7 +193,7 @@ services:
       DB_USER: metarang_user
       DB_PASSWORD: metarang_password
       AUTH_SERVICE_ADDR: auth-service:50051
-      <<: *sentry-environment
+      <<: [*sentry-environment, *internal-auth, *grpc-tls]
     depends_on:
       mysql:
         condition: service_healthy
@@ -214,8 +223,7 @@ services:
       context: .
       dockerfile: ./services/features-service/Dockerfile
     container_name: metarang-features-service
-    ports:
-      - "50053:50053"
+    # gRPC is internal-only; reachable on metarang-network, not exposed on the host
     env_file:
       - ./services/features-service/config.env
     environment:
@@ -228,7 +236,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       COMMERCIAL_SERVICE_ADDR: commercial-service:50052
-      <<: *sentry-environment
+      <<: [*sentry-environment, *internal-auth, *grpc-tls]
     depends_on:
       mysql:
         condition: service_healthy
@@ -256,8 +264,7 @@ services:
       context: .
       dockerfile: ./services/levels-service/Dockerfile
     container_name: metarang-levels-service
-    ports:
-      - "50054:50054"
+    # gRPC is internal-only; reachable on metarang-network, not exposed on the host
     env_file:
       - ./services/levels-service/config.env
     environment:
@@ -267,7 +274,7 @@ services:
       DB_DATABASE: metarang_db
       DB_USER: metarang_user
       DB_PASSWORD: metarang_password
-      <<: *sentry-environment
+      <<: [*sentry-environment, *internal-auth, *grpc-tls]
     depends_on:
       mysql:
         condition: service_healthy
@@ -291,8 +298,7 @@ services:
       context: .
       dockerfile: ./services/dynasty-service/Dockerfile
     container_name: metarang-dynasty-service
-    ports:
-      - "50055:50055"
+    # gRPC is internal-only; reachable on metarang-network, not exposed on the host
     env_file:
       - ./services/dynasty-service/config.env
     environment:
@@ -306,7 +312,7 @@ services:
       NOTIFICATION_SERVICE_ADDR: notifications-service:50058
       AUTH_SERVICE_ADDR: auth-service:50051
       FEATURES_SERVICE_ADDR: features-service:50053
-      <<: *sentry-environment
+      <<: [*sentry-environment, *internal-auth, *grpc-tls]
     depends_on:
       mysql:
         condition: service_healthy
@@ -330,8 +336,7 @@ services:
       context: .
       dockerfile: ./services/calendar-service/Dockerfile
     container_name: metarang-calendar-service
-    ports:
-      - "50059:50059"
+    # gRPC is internal-only; reachable on metarang-network, not exposed on the host
     env_file:
       - ./services/calendar-service/config.env
     environment:
@@ -341,7 +346,7 @@ services:
       DB_DATABASE: metarang_db
       DB_USER: metarang_user
       DB_PASSWORD: metarang_password
-      <<: *sentry-environment
+      <<: [*sentry-environment, *internal-auth, *grpc-tls]
     depends_on:
       mysql:
         condition: service_healthy
@@ -365,8 +370,7 @@ services:
       context: .
       dockerfile: ./services/support-service/Dockerfile
     container_name: metarang-support-service
-    ports:
-      - "50056:50056"
+    # gRPC is internal-only; reachable on metarang-network, not exposed on the host
     env_file:
       - ./services/support-service/config.env
     environment:
@@ -377,7 +381,7 @@ services:
       DB_USER: metarang_user
       DB_PASSWORD: metarang_password
       NOTIFICATION_SERVICE_ADDR: notifications-service:50058
-      <<: *sentry-environment
+      <<: [*sentry-environment, *internal-auth, *grpc-tls]
     depends_on:
       mysql:
         condition: service_healthy
@@ -408,8 +412,7 @@ services:
       context: .
       dockerfile: ./services/social-service/Dockerfile
     container_name: metarang-social-service
-    ports:
-      - "50061:50061"
+    # gRPC is internal-only; reachable on metarang-network, not exposed on the host
     env_file:
       - ./services/social-service/config.env
     environment:
@@ -422,7 +425,7 @@ services:
       AUTH_SERVICE_ADDR: auth-service:50051
       COMMERCIAL_SERVICE_ADDR: commercial-service:50052
       LEVELS_SERVICE_ADDR: levels-service:50054
-      <<: *sentry-environment
+      <<: [*sentry-environment, *internal-auth, *grpc-tls]
     depends_on:
       mysql:
         condition: service_healthy
@@ -457,8 +460,7 @@ services:
       context: .
       dockerfile: ./services/training-service/Dockerfile
     container_name: metarang-training-service
-    ports:
-      - "50057:50057"
+    # gRPC is internal-only; reachable on metarang-network, not exposed on the host
     env_file:
       - ./services/training-service/config.env
     environment:
@@ -469,7 +471,7 @@ services:
       DB_USER: metarang_user
       DB_PASSWORD: metarang_password
       AUTH_SERVICE_ADDR: auth-service:50051
-      <<: *sentry-environment
+      <<: [*sentry-environment, *internal-auth, *grpc-tls]
     depends_on:
       mysql:
         condition: service_healthy
@@ -500,8 +502,7 @@ services:
       context: .
       dockerfile: ./services/notifications-service/Dockerfile
     container_name: metarang-notifications-service
-    ports:
-      - "50058:50058"
+    # gRPC is internal-only; reachable on metarang-network, not exposed on the host
     env_file:
       - ./services/notifications-service/config.env
     environment:
@@ -516,7 +517,7 @@ services:
       DB_CONN_MAX_LIFETIME: 5m
       REDIS_ADDR: redis:6379
       REDIS_DB: 0
-      <<: *sentry-environment
+      <<: [*sentry-environment, *internal-auth, *grpc-tls]
     depends_on:
       mysql:
         condition: service_healthy
@@ -547,8 +548,7 @@ services:
       context: .
       dockerfile: ./services/financial-service/Dockerfile
     container_name: metarang-financial-service
-    ports:
-      - "50062:50062"
+    # gRPC is internal-only; reachable on metarang-network, not exposed on the host
     env_file:
       - ./services/financial-service/config.env
     environment:
@@ -558,7 +558,10 @@ services:
       DB_DATABASE: metarang_db
       DB_USER: metarang_user
       DB_PASSWORD: metarang_password
-      <<: *sentry-environment
+      AUTH_SERVICE_ADDR: auth-service:50051
+      COMMERCIAL_SERVICE_ADDR: commercial-service:50052
+      NOTIFICATIONS_SERVICE_ADDR: notifications-service:50058
+      <<: [*sentry-environment, *internal-auth, *grpc-tls]
     depends_on:
       mysql:
         condition: service_healthy
@@ -588,8 +591,7 @@ services:
       dockerfile: ./services/storage-service/Dockerfile
     container_name: metarang-storage-service
     ports:
-      - "50060:50060"  # gRPC port
-      - "8059:8059"    # HTTP REST API port
+      - "8059:8059"    # HTTP REST API port (uploads); gRPC stays internal-only
     volumes:
       - ./services/storage-service/uploads:/app/uploads
     env_file:
@@ -604,7 +606,7 @@ services:
       DB_USER: metarang_user
       DB_PASSWORD: metarang_password
       TEMP_DIR: /tmp/storage-chunks
-      <<: *sentry-environment
+      <<: [*sentry-environment, *internal-auth, *grpc-tls]
     depends_on:
       mysql:
         condition: service_healthy
@@ -627,21 +629,21 @@ services:
   # Gateway Services
   # ============================================================================
 
-  # WebSocket Gateway - Real-time Communication
+  # WebSocket Gateway - Real-time Communication (Go)
   websocket-gateway:
     build:
       context: .
-      dockerfile: ./websocket-gateway/Dockerfile
+      dockerfile: ./services/websocket-gateway/Dockerfile
     container_name: metarang-websocket-gateway
     ports:
       - "3002:3002"
     env_file:
-      - ./websocket-gateway/config.env
+      - ./services/websocket-gateway/config.env
     environment:
       PORT: 3002
       REDIS_URL: redis://redis:6379
       AUTH_SERVICE_ADDR: auth-service:50051
-      <<: *sentry-environment
+      <<: [*sentry-environment, *grpc-tls]
     depends_on:
       redis:
         condition: service_healthy
@@ -651,22 +653,20 @@ services:
       - metarang-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3002/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/health"]
       interval: 30s
       timeout: 5s
       retries: 3
     develop:
       watch:
-        - action: sync+restart
-          path: ./websocket-gateway
-          target: /app
+        - action: rebuild
+          path: ./services/websocket-gateway
           ignore:
-            - "**/node_modules"
+            - "**/_test.go"
+            - "**/tmp"
             - "**/.git"
         - action: rebuild
-          path: ./websocket-gateway/package.json
-        - action: rebuild
-          path: ./websocket-gateway/package-lock.json
+          path: ./shared
 
   # Health Check Service - System Health Monitoring
   health-check-service:
@@ -719,11 +719,11 @@ services:
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_ADMIN_ERROR_LOG: /dev/stderr
-      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      KONG_ADMIN_LISTEN: 127.0.0.1:8001
       KONG_PROXY_LISTEN: 0.0.0.0:8000
     ports:
       - "8000:8000" # Proxy port (main API endpoint)
-      - "8001:8001" # Admin API
+      # Admin API listens on 127.0.0.1:8001 inside the container only — not exposed on the host
     volumes:
       - ./kong/kong.yml:/kong/kong.yml:ro
       - ./shared/proto:/kong/protos:ro
@@ -799,12 +799,12 @@ services:
     ports:
       - "3001:3001"
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin123
-      - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SERVER_HTTP_PORT=3001
-      - GF_SERVER_ROOT_URL=http://localhost:3001
-      - GF_INSTALL_PLUGINS=
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-metarang-local-dev-grafana-password-change-in-production}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_HTTP_PORT: "3001"
+      GF_SERVER_ROOT_URL: http://localhost:3001
+      GF_INSTALL_PLUGINS: ""
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro

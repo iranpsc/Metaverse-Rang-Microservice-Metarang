@@ -9,9 +9,7 @@ import (
 	"time"
 
 	pbNotification "metarang/shared/pb/notifications"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	grpcutil "metarang/shared/pkg/grpc"
 )
 
 type TicketService interface {
@@ -229,7 +227,7 @@ func (s *ticketService) CheckAuthorization(ctx context.Context, ticketID, userID
 
 func (s *ticketService) sendTicketNotification(userID uint64, ticket *models.TicketWithRelations) {
 	// Connect to notification service
-	conn, err := grpc.Dial(s.notificationServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpcutil.NewClient(s.notificationServiceAddr)
 	if err != nil {
 		fmt.Printf("Failed to connect to notification service: %v\n", err)
 		return

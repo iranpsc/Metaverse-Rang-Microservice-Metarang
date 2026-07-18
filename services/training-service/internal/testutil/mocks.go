@@ -14,6 +14,7 @@ type MockVideoRepo struct {
 	GetVideoByFileNameFunc func(ctx context.Context, fileName string) (*models.Video, error)
 	SearchVideosFunc       func(ctx context.Context, searchTerm string, page, perPage int32) ([]*models.Video, int32, error)
 	GetVideoStatsFunc      func(ctx context.Context, videoID uint64) (*models.VideoStats, error)
+	GetUserInteractionFunc func(ctx context.Context, videoID, userID uint64) (*bool, error)
 	IncrementViewFunc      func(ctx context.Context, videoID uint64, ipAddress string) error
 	AddInteractionFunc     func(ctx context.Context, videoID, userID uint64, liked bool, ipAddress string) error
 }
@@ -51,6 +52,13 @@ func (m *MockVideoRepo) GetVideoStats(ctx context.Context, videoID uint64) (*mod
 		return m.GetVideoStatsFunc(ctx, videoID)
 	}
 	return &models.VideoStats{}, nil
+}
+
+func (m *MockVideoRepo) GetUserInteraction(ctx context.Context, videoID, userID uint64) (*bool, error) {
+	if m.GetUserInteractionFunc != nil {
+		return m.GetUserInteractionFunc(ctx, videoID, userID)
+	}
+	return nil, nil
 }
 
 func (m *MockVideoRepo) IncrementView(ctx context.Context, videoID uint64, ipAddress string) error {
@@ -145,19 +153,20 @@ func (m *MockCategoryRepo) GetSubCategoryStatsByCategoryID(ctx context.Context, 
 
 // MockCommentRepo implements repository.CommentRepositoryInterface for tests.
 type MockCommentRepo struct {
-	GetCommentsFunc           func(ctx context.Context, videoID uint64, page, perPage int32) ([]*models.Comment, int32, error)
-	GetRepliesFunc            func(ctx context.Context, commentID uint64, page, perPage int32) ([]*models.Comment, int32, error)
-	GetCommentByIDFunc        func(ctx context.Context, commentID uint64) (*models.Comment, error)
-	AddCommentFunc            func(ctx context.Context, videoID, userID uint64, content string) (*models.Comment, error)
-	UpdateCommentFunc         func(ctx context.Context, commentID, userID uint64, content string) error
-	DeleteCommentFunc         func(ctx context.Context, commentID, userID uint64) error
-	AddReplyFunc              func(ctx context.Context, parentCommentID, userID uint64, content string) (*models.Comment, error)
-	UpdateReplyFunc           func(ctx context.Context, replyID, userID uint64, content string) error
-	DeleteReplyFunc           func(ctx context.Context, replyID, userID uint64) error
-	GetCommentStatsFunc       func(ctx context.Context, commentID uint64) (*models.CommentStats, error)
-	AddCommentInteractionFunc func(ctx context.Context, commentID, userID uint64, liked bool, ipAddress string) error
-	AddReplyInteractionFunc   func(ctx context.Context, replyID, userID uint64, liked bool, ipAddress string) error
-	ReportCommentFunc         func(ctx context.Context, videoID, commentID, userID uint64, content string) error
+	GetCommentsFunc                    func(ctx context.Context, videoID uint64, page, perPage int32) ([]*models.Comment, int32, error)
+	GetRepliesFunc                     func(ctx context.Context, commentID uint64, page, perPage int32) ([]*models.Comment, int32, error)
+	GetCommentByIDFunc                 func(ctx context.Context, commentID uint64) (*models.Comment, error)
+	AddCommentFunc                     func(ctx context.Context, videoID, userID uint64, content string) (*models.Comment, error)
+	UpdateCommentFunc                  func(ctx context.Context, commentID, userID uint64, content string) error
+	DeleteCommentFunc                  func(ctx context.Context, commentID, userID uint64) error
+	AddReplyFunc                       func(ctx context.Context, parentCommentID, userID uint64, content string) (*models.Comment, error)
+	UpdateReplyFunc                    func(ctx context.Context, replyID, userID uint64, content string) error
+	DeleteReplyFunc                    func(ctx context.Context, replyID, userID uint64) error
+	GetCommentStatsFunc                func(ctx context.Context, commentID uint64) (*models.CommentStats, error)
+	AddCommentInteractionFunc          func(ctx context.Context, commentID, userID uint64, liked bool, ipAddress string) error
+	AddReplyInteractionFunc            func(ctx context.Context, replyID, userID uint64, liked bool, ipAddress string) error
+	ReportCommentFunc                  func(ctx context.Context, videoID, commentID, userID uint64, content string) error
+	GetUserInteractionsForCommentsFunc func(ctx context.Context, commentIDs []uint64, userID uint64) (map[uint64]bool, error)
 }
 
 func (m *MockCommentRepo) GetComments(ctx context.Context, videoID uint64, page, perPage int32) ([]*models.Comment, int32, error) {
@@ -249,6 +258,13 @@ func (m *MockCommentRepo) ReportComment(ctx context.Context, videoID, commentID,
 		return m.ReportCommentFunc(ctx, videoID, commentID, userID, content)
 	}
 	return nil
+}
+
+func (m *MockCommentRepo) GetUserInteractionsForComments(ctx context.Context, commentIDs []uint64, userID uint64) (map[uint64]bool, error) {
+	if m.GetUserInteractionsForCommentsFunc != nil {
+		return m.GetUserInteractionsForCommentsFunc(ctx, commentIDs, userID)
+	}
+	return map[uint64]bool{}, nil
 }
 
 // MockUserRepo implements repository.UserRepositoryInterface for tests.

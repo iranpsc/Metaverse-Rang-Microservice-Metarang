@@ -95,7 +95,10 @@ plugins:
   - name: rate-limiting
     config:
       minute: 60
-      policy: local
+      policy: redis
+      redis:
+        host: redis
+        port: 6379
   - name: cors
     config:
       origins:
@@ -103,7 +106,6 @@ plugins:
         - https://metarang.com
         - http://localhost:5173
         - http://localhost:5175
-        - http://192.168.1.2:5173
       methods:
         - GET
         - POST

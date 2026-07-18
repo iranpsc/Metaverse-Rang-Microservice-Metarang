@@ -15,6 +15,7 @@ import (
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 
+	grpcutil "metarang/shared/pkg/grpc"
 	"metarang/shared/pkg/metrics"
 	"metarang/shared/pkg/sentry"
 	"metarang/support-service/internal/handler"
@@ -86,12 +87,16 @@ func main() {
 
 	serviceMetrics := metrics.NewMetrics("support_service")
 	metrics.StartHTTPServer(getEnv("METRICS_PORT", "9090"))
-	grpcServer := grpc.NewServer(
+	serverOpts, err := grpcutil.ServerOptions(
 		grpc.ChainUnaryInterceptor(
 			sentry.UnaryServerInterceptor(),
 			metrics.UnaryServerInterceptor(serviceMetrics),
 		),
 	)
+	if err != nil {
+		log.Fatalf("Failed to configure gRPC server: %v", err)
+	}
+	grpcServer := grpc.NewServer(serverOpts...)
 
 	handler.RegisterTicketHandler(grpcServer, ticketService)
 	handler.RegisterReportHandler(grpcServer, reportService)

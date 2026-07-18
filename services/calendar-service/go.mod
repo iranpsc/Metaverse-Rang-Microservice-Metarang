@@ -3,7 +3,6 @@ module metarang/calendar-service
 go 1.25.0
 
 require (
-	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/joho/godotenv v1.5.1
 	google.golang.org/grpc v1.79.3

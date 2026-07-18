@@ -13,12 +13,12 @@ import (
 
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"metarang/grpc-gateway/internal/config"
 	"metarang/grpc-gateway/internal/handler"
 	"metarang/grpc-gateway/internal/middleware"
 	pb "metarang/shared/pb/auth"
+	grpcutil "metarang/shared/pkg/grpc"
 	"metarang/shared/pkg/sentry"
 )
 
@@ -51,9 +51,8 @@ func main() {
 	cfg := config.Load()
 
 	// Create gRPC connections
-	authConn, err := grpc.NewClient(
+	authConn, err := grpcutil.NewClient(
 		cfg.AuthServiceAddr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
 		log.Fatalf("Failed to connect to auth service: %v", err)
@@ -65,9 +64,8 @@ func main() {
 	var calendarConn, dynastyConn, featuresConn, financialConn, commercialConn, socialConn, levelsConn, trainingConn, supportConn, notificationConn *grpc.ClientConn
 
 	if cfg.CalendarServiceAddr != "" {
-		calendarConn, err = grpc.NewClient(
+		calendarConn, err = grpcutil.NewClient(
 			cfg.CalendarServiceAddr,
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
 		)
 		if err != nil {
 			log.Printf("⚠️  Failed to connect to calendar service: %v", err)
@@ -78,9 +76,8 @@ func main() {
 	}
 
 	if cfg.DynastyServiceAddr != "" {
-		dynastyConn, err = grpc.NewClient(
+		dynastyConn, err = grpcutil.NewClient(
 			cfg.DynastyServiceAddr,
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
 		)
 		if err != nil {
 			log.Printf("⚠️  Failed to connect to dynasty service: %v", err)
@@ -91,9 +88,8 @@ func main() {
 	}
 
 	if cfg.FeaturesServiceAddr != "" {
-		featuresConn, err = grpc.NewClient(
+		featuresConn, err = grpcutil.NewClient(
 			cfg.FeaturesServiceAddr,
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
 		)
 		if err != nil {
 			log.Printf("⚠️  Failed to connect to features service: %v", err)
@@ -104,9 +100,8 @@ func main() {
 	}
 
 	if cfg.FinancialServiceAddr != "" {
-		financialConn, err = grpc.NewClient(
+		financialConn, err = grpcutil.NewClient(
 			cfg.FinancialServiceAddr,
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
 		)
 		if err != nil {
 			log.Printf("⚠️  Failed to connect to financial service: %v", err)
@@ -117,9 +112,8 @@ func main() {
 	}
 
 	if cfg.CommercialServiceAddr != "" {
-		commercialConn, err = grpc.NewClient(
+		commercialConn, err = grpcutil.NewClient(
 			cfg.CommercialServiceAddr,
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
 		)
 		if err != nil {
 			log.Printf("⚠️  Failed to connect to commercial service: %v", err)
@@ -130,9 +124,8 @@ func main() {
 	}
 
 	if cfg.SocialServiceAddr != "" {
-		socialConn, err = grpc.NewClient(
+		socialConn, err = grpcutil.NewClient(
 			cfg.SocialServiceAddr,
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
 		)
 		if err != nil {
 			log.Printf("⚠️  Failed to connect to social service: %v", err)
@@ -147,9 +140,8 @@ func main() {
 	}
 
 	if cfg.LevelsServiceAddr != "" {
-		levelsConn, err = grpc.NewClient(
+		levelsConn, err = grpcutil.NewClient(
 			cfg.LevelsServiceAddr,
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
 		)
 		if err != nil {
 			log.Printf("⚠️  Failed to connect to levels service: %v", err)
@@ -160,9 +152,8 @@ func main() {
 	}
 
 	if cfg.TrainingServiceAddr != "" {
-		trainingConn, err = grpc.NewClient(
+		trainingConn, err = grpcutil.NewClient(
 			cfg.TrainingServiceAddr,
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
 		)
 		if err != nil {
 			log.Printf("⚠️  Failed to connect to training service: %v", err)
@@ -177,9 +168,8 @@ func main() {
 	}
 
 	if cfg.SupportServiceAddr != "" {
-		supportConn, err = grpc.NewClient(
+		supportConn, err = grpcutil.NewClient(
 			cfg.SupportServiceAddr,
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
 		)
 		if err != nil {
 			log.Printf("⚠️  Failed to connect to support service: %v", err)
@@ -190,9 +180,8 @@ func main() {
 	}
 
 	if cfg.NotificationServiceAddr != "" {
-		notificationConn, err = grpc.NewClient(
+		notificationConn, err = grpcutil.NewClient(
 			cfg.NotificationServiceAddr,
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
 		)
 		if err != nil {
 			log.Printf("⚠️  Failed to connect to notification service: %v", err)

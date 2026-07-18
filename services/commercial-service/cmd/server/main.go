@@ -11,13 +11,13 @@ import (
 
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"metarang/commercial-service/internal/handler"
 	"metarang/commercial-service/internal/repository"
 	"metarang/commercial-service/internal/service"
 	"metarang/shared/pkg/auth"
 	"metarang/shared/pkg/db"
+	grpcutil "metarang/shared/pkg/grpc"
 	"metarang/shared/pkg/metrics"
 	"metarang/shared/pkg/sentry"
 )
@@ -80,7 +80,7 @@ func main() {
 	userVariableService := service.NewUserVariableService(userVariableRepo)
 
 	authServiceAddr := getEnv("AUTH_SERVICE_ADDR", "auth-service:50051")
-	authConn, err := grpc.Dial(authServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	authConn, err := grpcutil.NewClient(authServiceAddr)
 	if err != nil {
 		log.Printf("Warning: Failed to connect to auth service - authentication disabled: %v", err)
 	} else {
@@ -104,7 +104,11 @@ func main() {
 		interceptors = append(interceptors, auth.UnaryServerInterceptor(tokenValidator))
 	}
 
-	grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(interceptors...))
+	serverOpts, err := grpcutil.ServerOptions(grpc.ChainUnaryInterceptor(interceptors...))
+	if err != nil {
+		log.Fatalf("Failed to configure gRPC server: %v", err)
+	}
+	grpcServer := grpc.NewServer(serverOpts...)
 
 	handler.RegisterWalletHandler(grpcServer, walletService)
 	handler.RegisterTransactionHandler(grpcServer, transactionService)
