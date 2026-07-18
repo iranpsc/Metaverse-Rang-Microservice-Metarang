@@ -93,13 +93,11 @@ help:
 # OpenAPI Documentation
 # =============================================================================
 
+# Generate openapi/openapi.yaml from openapi/routes.yaml (+ handler discovery).
+# Uses GOWORK=off so scripts/gen-openapi can run outside the root go.work (Git Bash + Unix).
 openapi:
 	@echo "📄 Generating OpenAPI specification..."
-ifeq ($(OS),Windows_NT)
-	@powershell -NoProfile -Command "cd scripts/gen-openapi; $$env:GOWORK='off'; go run ."
-else
 	cd scripts/gen-openapi && GOWORK=off go run .
-endif
 	@echo "✅ openapi/openapi.yaml generated"
 
 docs: openapi docs-up

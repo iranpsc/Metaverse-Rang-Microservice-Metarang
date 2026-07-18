@@ -1524,6 +1524,99 @@ paths:
             summary: GetCitizenReferralChart
             tags:
                 - Citizen
+    /api/citizen/{code}/wallet/history/chart:
+        get:
+            operationId: get_citizen_code_wallet_history_chart
+            parameters:
+                - description: Citizen code
+                  in: path
+                  name: code
+                  required: true
+                  schema:
+                    example: HM-2000000
+                    type: string
+                - description: Optional filter by asset names
+                  in: query
+                  name: assets
+                  required: false
+                  schema:
+                    example:
+                        - psc
+                    items:
+                        type: string
+                    type: array
+                - description: Required time window (`daily`, `weekly`, `monthly`, or `yearly`)
+                  in: query
+                  name: period
+                  required: false
+                  schema:
+                    example: weekly
+                    type: string
+            responses:
+                "200":
+                    description: Successful response
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: Unauthenticated
+                "422":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ValidationError'
+                    description: Validation error
+            summary: Citizen wallet asset history income/spending chart
+            tags:
+                - Citizen
+    /api/citizen/{code}/wallet/history/summary:
+        get:
+            operationId: get_citizen_code_wallet_history_summary
+            parameters:
+                - description: Citizen code
+                  in: path
+                  name: code
+                  required: true
+                  schema:
+                    example: HM-2000000
+                    type: string
+                - description: Optional filter by asset names (`psc`, `irr`, `red`, `blue`, `yellow`, `satisfaction`, `effect`)
+                  in: query
+                  name: assets
+                  required: false
+                  schema:
+                    example:
+                        - psc
+                        - irr
+                    items:
+                        type: string
+                    type: array
+                - description: Required time window (`daily`, `weekly`, `monthly`, or `yearly`)
+                  in: query
+                  name: period
+                  required: false
+                  schema:
+                    example: weekly
+                    type: string
+            responses:
+                "200":
+                    description: Successful response
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                    description: Unauthenticated
+                "422":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ValidationError'
+                    description: Validation error
+            summary: Citizen wallet asset history summary cards
+            tags:
+                - Citizen
     /api/comments/{comment}/replies:
         get:
             operationId: get_comments_comment_replies
