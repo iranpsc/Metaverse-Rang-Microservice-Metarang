@@ -15,6 +15,9 @@ x-grpc-tls: &grpc-tls
   GRPC_TLS_CLIENT_CERT_FILE: ${GRPC_TLS_CLIENT_CERT_FILE:-/certs/client.crt}
   GRPC_TLS_CLIENT_KEY_FILE: ${GRPC_TLS_CLIENT_KEY_FILE:-/certs/client.key}
 
+# Host certs from scripts/generate-grpc-certs.sh → container /certs
+x-grpc-certs-mount: &grpc-certs-mount ./certs/grpc:/certs:ro
+
 services:
   # ============================================================================
   # Infrastructure Services
@@ -98,6 +101,8 @@ services:
         condition: service_started
       commercial-service:
         condition: service_healthy
+    volumes:
+      - *grpc-certs-mount
     networks:
       - metarang-network
     restart: unless-stopped
@@ -156,6 +161,8 @@ services:
         condition: service_started
       social-service:
         condition: service_started
+    volumes:
+      - *grpc-certs-mount
     networks:
       - metarang-network
     restart: unless-stopped
@@ -203,6 +210,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    volumes:
+      - *grpc-certs-mount
     networks:
       - metarang-network
     restart: unless-stopped
@@ -244,6 +253,8 @@ services:
         condition: service_healthy
       commercial-service:
         condition: service_started
+    volumes:
+      - *grpc-certs-mount
     networks:
       - metarang-network
     restart: unless-stopped
@@ -278,6 +289,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    volumes:
+      - *grpc-certs-mount
     networks:
       - metarang-network
     restart: unless-stopped
@@ -316,6 +329,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    volumes:
+      - *grpc-certs-mount
     networks:
       - metarang-network
     restart: unless-stopped
@@ -350,6 +365,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    volumes:
+      - *grpc-certs-mount
     networks:
       - metarang-network
     restart: unless-stopped
@@ -387,6 +404,8 @@ services:
         condition: service_healthy
       notifications-service:
         condition: service_started
+    volumes:
+      - *grpc-certs-mount
     networks:
       - metarang-network
     restart: unless-stopped
@@ -435,6 +454,8 @@ services:
         condition: service_healthy
       levels-service:
         condition: service_started
+    volumes:
+      - *grpc-certs-mount
     networks:
       - metarang-network
     restart: unless-stopped
@@ -477,6 +498,8 @@ services:
         condition: service_healthy
       auth-service:
         condition: service_healthy
+    volumes:
+      - *grpc-certs-mount
     networks:
       - metarang-network
     restart: unless-stopped
@@ -523,6 +546,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - *grpc-certs-mount
     networks:
       - metarang-network
     restart: unless-stopped
@@ -565,6 +590,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    volumes:
+      - *grpc-certs-mount
     networks:
       - metarang-network
     restart: unless-stopped
@@ -594,6 +621,7 @@ services:
       - "8059:8059"    # HTTP REST API port (uploads); gRPC stays internal-only
     volumes:
       - ./services/storage-service/uploads:/app/uploads
+      - *grpc-certs-mount
     env_file:
       - ./services/storage-service/config.env
     environment:
@@ -649,6 +677,8 @@ services:
         condition: service_healthy
       auth-service:
         condition: service_started
+    volumes:
+      - *grpc-certs-mount
     networks:
       - metarang-network
     restart: unless-stopped
