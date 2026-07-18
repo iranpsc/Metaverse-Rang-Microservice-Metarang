@@ -5,7 +5,7 @@ PROTO_DIR=shared/proto
 PROTO_OUT_DIR=shared/pb
 
 # Docker
-DOCKER_REGISTRY=metarang
+DOCKER_REGISTRY=abbasajorloo
 VERSION?=latest
 
 # Local uploads (storage-service writes here; link-uploads exposes it at project root)
