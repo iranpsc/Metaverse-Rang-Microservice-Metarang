@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"metarang/grpc-gateway/internal/middleware"
 	featurespb "metarang/shared/pb/features"
 )
 
@@ -13,11 +12,6 @@ import (
 func (h *FeaturesHandler) GetFeatureTradeHistory(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
-		return
-	}
-
-	if _, err := middleware.GetUserFromRequest(r); err != nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
 		return
 	}
 

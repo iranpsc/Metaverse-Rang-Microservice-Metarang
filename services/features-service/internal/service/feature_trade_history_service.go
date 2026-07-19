@@ -46,10 +46,10 @@ func NewFeatureTradeHistoryService(
 	}
 }
 
-// Paginate returns a page of trade history for the feature owner.
+// Paginate returns a page of trade history for a feature.
 func (s *FeatureTradeHistoryService) Paginate(
 	ctx context.Context,
-	featureID, requesterID uint64,
+	featureID uint64,
 	page int,
 ) (*models.TradeHistoryPage, error) {
 	if page < 1 {
@@ -65,9 +65,6 @@ func (s *FeatureTradeHistoryService) Paginate(
 	}
 	if feature == nil {
 		return nil, models.ErrFeatureNotFound
-	}
-	if feature.OwnerID != requesterID {
-		return nil, models.ErrNotFeatureOwner
 	}
 
 	systemUserID, err := s.tradeRepo.FindSystemUserID(ctx)

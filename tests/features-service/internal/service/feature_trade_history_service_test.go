@@ -77,20 +77,9 @@ func sampleFeature(ownerID uint64, createdAt time.Time) *models.Feature {
 
 func TestFeatureTradeHistoryService_NotFound(t *testing.T) {
 	svc := newTradeHistoryService(&mockTradeHistoryFeatureRepo{}, &mockTradeHistoryTradeRepo{})
-	_, err := svc.Paginate(context.Background(), 99, 1, 1)
+	_, err := svc.Paginate(context.Background(), 99, 1)
 	require.Error(t, err)
 	assert.ErrorIs(t, err, models.ErrFeatureNotFound)
-}
-
-func TestFeatureTradeHistoryService_NotOwner(t *testing.T) {
-	createdAt := time.Date(2022, 11, 1, 9, 0, 0, 0, time.UTC)
-	svc := newTradeHistoryService(
-		&mockTradeHistoryFeatureRepo{feature: sampleFeature(7, createdAt)},
-		&mockTradeHistoryTradeRepo{systemUserID: 1},
-	)
-	_, err := svc.Paginate(context.Background(), 10, 8, 1)
-	require.Error(t, err)
-	assert.ErrorIs(t, err, models.ErrNotFeatureOwner)
 }
 
 func TestFeatureTradeHistoryService_GenesisOnly(t *testing.T) {
@@ -100,7 +89,7 @@ func TestFeatureTradeHistoryService_GenesisOnly(t *testing.T) {
 		&mockTradeHistoryTradeRepo{systemUserID: 1},
 	)
 
-	page, err := svc.Paginate(context.Background(), 10, 7, 1)
+	page, err := svc.Paginate(context.Background(), 10, 1)
 	require.NoError(t, err)
 	require.Len(t, page.Items, 1)
 	assert.Equal(t, 1, page.Total)
@@ -163,7 +152,7 @@ func TestFeatureTradeHistoryService_SortDescendingAndCurrencyVsColor(t *testing.
 		&mockTradeHistoryTradeRepo{systemUserID: systemUserID, trades: trades},
 	)
 
-	page, err := svc.Paginate(context.Background(), 10, 3, 1)
+	page, err := svc.Paginate(context.Background(), 10, 1)
 	require.NoError(t, err)
 	require.Len(t, page.Items, 3)
 	assert.Equal(t, 3, page.Total)
@@ -225,7 +214,7 @@ func TestFeatureTradeHistoryService_ColorViaTransactionsWithoutSystemSeller(t *t
 		&mockTradeHistoryTradeRepo{systemUserID: 1, trades: trades},
 	)
 
-	page, err := svc.Paginate(context.Background(), 10, 7, 1)
+	page, err := svc.Paginate(context.Background(), 10, 1)
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, len(page.Items), 1)
 	assert.Equal(t, models.TradeHistoryPriceColor, page.Items[0].Price.Type)
@@ -257,7 +246,7 @@ func TestFeatureTradeHistoryService_UsesDateWhenCreatedAtMissing(t *testing.T) {
 		&mockTradeHistoryTradeRepo{systemUserID: 1, trades: trades},
 	)
 
-	page, err := svc.Paginate(context.Background(), 10, 7, 1)
+	page, err := svc.Paginate(context.Background(), 10, 1)
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, len(page.Items), 1)
 	assert.Equal(t, "00:00:00", page.Items[0].DateTime.Time)
@@ -286,7 +275,7 @@ func TestFeatureTradeHistoryService_PaginationGenesisOnLastPage(t *testing.T) {
 		&mockTradeHistoryTradeRepo{systemUserID: 1, trades: trades},
 	)
 
-	page1, err := svc.Paginate(context.Background(), 10, 7, 1)
+	page1, err := svc.Paginate(context.Background(), 10, 1)
 	require.NoError(t, err)
 	assert.Equal(t, 13, page1.Total) // 12 trades + genesis
 	assert.Equal(t, 2, page1.LastPage)
@@ -300,7 +289,7 @@ func TestFeatureTradeHistoryService_PaginationGenesisOnLastPage(t *testing.T) {
 	assert.Equal(t, 1, *page1.From)
 	assert.Equal(t, 10, *page1.To)
 
-	page2, err := svc.Paginate(context.Background(), 10, 7, 2)
+	page2, err := svc.Paginate(context.Background(), 10, 2)
 	require.NoError(t, err)
 	require.Len(t, page2.Items, 3) // 2 trades + genesis
 	assert.Equal(t, models.TradeHistoryTypeGenesis, page2.Items[len(page2.Items)-1].Type)
@@ -317,7 +306,7 @@ func TestFeatureTradeHistoryService_SystemUserLookupFailureStillWorks(t *testing
 		&mockTradeHistoryTradeRepo{systemErr: errors.New("missing system user")},
 	)
 
-	page, err := svc.Paginate(context.Background(), 10, 7, 1)
+	page, err := svc.Paginate(context.Background(), 10, 1)
 	require.NoError(t, err)
 	require.Len(t, page.Items, 1)
 	assert.Equal(t, models.TradeHistoryTypeGenesis, page.Items[0].Type)

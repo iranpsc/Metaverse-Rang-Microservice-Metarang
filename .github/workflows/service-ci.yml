@@ -10,6 +10,10 @@ on:
         required: false
         type: boolean
         default: true
+      enable_test:
+        required: false
+        type: boolean
+        default: true
     secrets:
       DOCKER_USERNAME:
         required: true
@@ -64,6 +68,7 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     needs: lint
+    if: inputs.enable_test
 
     env:
       DB_HOST: 127.0.0.1
@@ -144,7 +149,8 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: test
+    needs: [lint, test]
+    if: always() && needs.lint.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped')
 
     steps:
       - name: Checkout code

@@ -34,7 +34,7 @@ Notes:
 
 - PRs build the Docker image but never push it.
 - Images are tagged with the commit SHA (used by deploy), branch name, `branch-shortsha`, semver (on tags), and `latest` on the default branch.
-- `health-check-service` skips the deploy job (`enable_deploy: false`).
+- `health-check-service` skips the test and deploy jobs (`enable_test: false`, `enable_deploy: false`).
 - Deploys target the `production` GitHub environment — configure required reviewers there to gate deploys.
 
 ## Manual full rebuild

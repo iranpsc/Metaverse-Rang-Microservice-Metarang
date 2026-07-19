@@ -138,4 +138,5 @@ jobs:
     with:
       service_name: ${{ matrix.service }}
       enable_deploy: ${{ matrix.service != 'health-check-service' }}
+      enable_test: ${{ matrix.service != 'health-check-service' }}
     secrets: inherit

@@ -24,7 +24,7 @@ type FeatureServicePort interface {
 
 // TradeHistoryServicePort is implemented by *service.FeatureTradeHistoryService.
 type TradeHistoryServicePort interface {
-	Paginate(ctx context.Context, featureID, requesterID uint64, page int) (*models.TradeHistoryPage, error)
+	Paginate(ctx context.Context, featureID uint64, page int) (*models.TradeHistoryPage, error)
 }
 
 // MarketplaceServicePort is implemented by *service.MarketplaceService.

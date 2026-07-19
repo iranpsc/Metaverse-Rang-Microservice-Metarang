@@ -7,7 +7,6 @@ import (
 
 	"metarang/features-service/internal/models"
 	pb "metarang/shared/pb/features"
-	"metarang/shared/pkg/auth"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -18,11 +17,6 @@ func (h *FeatureHandler) GetFeatureTradeHistory(
 	ctx context.Context,
 	req *pb.GetFeatureTradeHistoryRequest,
 ) (*pb.GetFeatureTradeHistoryResponse, error) {
-	user, err := auth.GetUserFromContext(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "unauthorized: authentication required")
-	}
-
 	if req.FeatureId == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "feature_id is required")
 	}
@@ -36,13 +30,10 @@ func (h *FeatureHandler) GetFeatureTradeHistory(
 		page = 1
 	}
 
-	result, err := h.tradeHistory.Paginate(ctx, req.FeatureId, user.UserID, page)
+	result, err := h.tradeHistory.Paginate(ctx, req.FeatureId, page)
 	if err != nil {
 		if errors.Is(err, models.ErrFeatureNotFound) {
 			return nil, status.Errorf(codes.NotFound, "feature not found")
-		}
-		if errors.Is(err, models.ErrNotFeatureOwner) {
-			return nil, status.Errorf(codes.PermissionDenied, "only the feature owner can view trade history")
 		}
 		return nil, status.Errorf(codes.Internal, "failed to get trade history: %v", err)
 	}
