@@ -1,0 +1,170 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: training-service
+  namespace: metarang
+  labels:
+    app: training-service
+    version: v1
+spec:
+  replicas: 1
+  progressDeadlineSeconds: 600
+  selector:
+    matchLabels:
+      app: training-service
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: training-service
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+        traffic.sidecar.istio.io/excludeInboundPorts: "9090"
+    spec:
+      imagePullSecrets:
+        - name: dockerhub-credentials
+      containers:
+      - name: training-service
+        image: abbasajorloo/training-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 50057
+          name: grpc
+          protocol: TCP
+        - containerPort: 9090
+          name: metrics
+          protocol: TCP
+        env:
+        - name: DB_HOST
+          value: "mysql"
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: db.port
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: metarang-secrets
+              key: db.user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: metarang-secrets
+              key: db.password
+        - name: DB_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: db.database
+        - name: GRPC_PORT
+          value: "50057"
+        - name: METRICS_PORT
+          value: "9090"
+        - name: AUTH_SERVICE_ADDR
+          value: "auth-service:50051"
+        - name: ADMIN_PANEL_URL
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: admin.panel.url
+              optional: true
+        - name: INTERNAL_SERVICE_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: metarang-secrets
+              key: internal.service.secret
+        - name: SENTRY_DSN
+          valueFrom:
+            secretKeyRef:
+              name: metarang-secrets
+              key: sentry.dsn
+              optional: true
+        - name: SENTRY_ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: sentry.environment
+        - name: SENTRY_RELEASE
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: sentry.release
+              optional: true
+        - name: SENTRY_TRACES_SAMPLE_RATE
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: sentry.traces_sample_rate
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command: ["/bin/sh", "-c", "nc -z localhost 50057"]
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 3
+          failureThreshold: 5
+        readinessProbe:
+          exec:
+            command: ["/bin/sh", "-c", "nc -z localhost 50057"]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 10
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: training-service
+  namespace: metarang
+  labels:
+    app: training-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 50057
+    targetPort: 50057
+    protocol: TCP
+    name: grpc
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  selector:
+    app: training-service
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: training-service-hpa
+  namespace: metarang
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: training-service
+  minReplicas: 1
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

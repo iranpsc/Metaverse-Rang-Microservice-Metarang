@@ -23,6 +23,16 @@ data:
   # Application Settings
   app.environment: "production"
   app.log.level: "info"
+  app.url: "https://api.metarang.com"
+  frontend.url: "https://app.metarang.com"
+  admin.panel.url: "https://admin.metarang.com"
+  cors.origin: "https://app.metarang.com"
+
+  # FTP / Storage
+  ftp.host: "ftp.metarang.com"
+  ftp.port: "21"
+  ftp.base.path: "/uploads"
+  ftp.base.url: "https://cdn.metarang.com/uploads"
 
   # Sentry Error Monitoring
   sentry.environment: "production"

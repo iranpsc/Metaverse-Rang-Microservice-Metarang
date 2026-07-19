@@ -1,0 +1,141 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: websocket-gateway
+  namespace: metarang
+  labels:
+    app: websocket-gateway
+    version: v1
+spec:
+  replicas: 2
+  progressDeadlineSeconds: 600
+  selector:
+    matchLabels:
+      app: websocket-gateway
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: websocket-gateway
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3002"
+        prometheus.io/path: "/metrics"
+    spec:
+      imagePullSecrets:
+        - name: dockerhub-credentials
+      containers:
+      - name: websocket-gateway
+        image: abbasajorloo/websocket-gateway:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3002
+          name: http
+          protocol: TCP
+        env:
+        - name: PORT
+          value: "3002"
+        - name: REDIS_URL
+          value: "redis://redis:6379"
+        - name: AUTH_SERVICE_ADDR
+          value: "auth-service:50051"
+        - name: CORS_ORIGIN
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: cors.origin
+              optional: true
+        - name: SENTRY_DSN
+          valueFrom:
+            secretKeyRef:
+              name: metarang-secrets
+              key: sentry.dsn
+              optional: true
+        - name: SENTRY_ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: sentry.environment
+        - name: SENTRY_RELEASE
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: sentry.release
+              optional: true
+        - name: SENTRY_TRACES_SAMPLE_RATE
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: sentry.traces_sample_rate
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3002
+          initialDelaySeconds: 15
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3002
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: websocket-gateway
+  namespace: metarang
+  labels:
+    app: websocket-gateway
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3002
+    targetPort: 3002
+    protocol: TCP
+    name: http
+  - port: 9090
+    targetPort: 3002
+    protocol: TCP
+    name: metrics
+  selector:
+    app: websocket-gateway
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: websocket-gateway-hpa
+  namespace: metarang
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: websocket-gateway
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

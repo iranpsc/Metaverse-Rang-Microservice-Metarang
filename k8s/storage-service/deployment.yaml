@@ -1,0 +1,232 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: storage-uploads-pvc
+  namespace: metarang
+  labels:
+    app: storage-service
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storage-service
+  namespace: metarang
+  labels:
+    app: storage-service
+    version: v1
+spec:
+  replicas: 1
+  progressDeadlineSeconds: 600
+  selector:
+    matchLabels:
+      app: storage-service
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: storage-service
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+        traffic.sidecar.istio.io/excludeInboundPorts: "9090"
+    spec:
+      imagePullSecrets:
+        - name: dockerhub-credentials
+      containers:
+      - name: storage-service
+        image: abbasajorloo/storage-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 50060
+          name: grpc
+          protocol: TCP
+        - containerPort: 8059
+          name: http
+          protocol: TCP
+        - containerPort: 9090
+          name: metrics
+          protocol: TCP
+        env:
+        - name: DB_HOST
+          value: "mysql"
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: db.port
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: metarang-secrets
+              key: db.user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: metarang-secrets
+              key: db.password
+        - name: DB_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: db.database
+        - name: GRPC_PORT
+          value: "50060"
+        - name: HTTP_PORT
+          value: "8059"
+        - name: METRICS_PORT
+          value: "9090"
+        - name: UPLOAD_DIR
+          value: "/app/uploads"
+        - name: TEMP_DIR
+          value: "/tmp/storage-chunks"
+        - name: FTP_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: ftp.host
+              optional: true
+        - name: FTP_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: ftp.port
+              optional: true
+        - name: FTP_USER
+          valueFrom:
+            secretKeyRef:
+              name: metarang-secrets
+              key: ftp.user
+              optional: true
+        - name: FTP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: metarang-secrets
+              key: ftp.password
+              optional: true
+        - name: FTP_BASE_PATH
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: ftp.base.path
+              optional: true
+        - name: FTP_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: ftp.base.url
+              optional: true
+        - name: INTERNAL_SERVICE_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: metarang-secrets
+              key: internal.service.secret
+        - name: SENTRY_DSN
+          valueFrom:
+            secretKeyRef:
+              name: metarang-secrets
+              key: sentry.dsn
+              optional: true
+        - name: SENTRY_ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: sentry.environment
+        - name: SENTRY_RELEASE
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: sentry.release
+              optional: true
+        - name: SENTRY_TRACES_SAMPLE_RATE
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: sentry.traces_sample_rate
+        volumeMounts:
+        - name: uploads
+          mountPath: /app/uploads
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          exec:
+            command: ["/bin/sh", "-c", "nc -z localhost 50060 && nc -z localhost 8059"]
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 5
+        readinessProbe:
+          exec:
+            command: ["/bin/sh", "-c", "nc -z localhost 50060 && nc -z localhost 8059"]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 10
+      volumes:
+      - name: uploads
+        persistentVolumeClaim:
+          claimName: storage-uploads-pvc
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: storage-service
+  namespace: metarang
+  labels:
+    app: storage-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 50060
+    targetPort: 50060
+    protocol: TCP
+    name: grpc
+  - port: 8059
+    targetPort: 8059
+    protocol: TCP
+    name: http
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  selector:
+    app: storage-service
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: storage-service-hpa
+  namespace: metarang
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: storage-service
+  minReplicas: 1
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

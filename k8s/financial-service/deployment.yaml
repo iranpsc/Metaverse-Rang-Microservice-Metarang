@@ -1,0 +1,210 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: financial-service
+  namespace: metarang
+  labels:
+    app: financial-service
+    version: v1
+spec:
+  replicas: 1
+  progressDeadlineSeconds: 600
+  selector:
+    matchLabels:
+      app: financial-service
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: financial-service
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+        traffic.sidecar.istio.io/excludeInboundPorts: "9090"
+    spec:
+      imagePullSecrets:
+        - name: dockerhub-credentials
+      containers:
+      - name: financial-service
+        image: abbasajorloo/financial-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 50062
+          name: grpc
+          protocol: TCP
+        - containerPort: 9090
+          name: metrics
+          protocol: TCP
+        env:
+        - name: DB_HOST
+          value: "mysql"
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: db.port
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: metarang-secrets
+              key: db.user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: metarang-secrets
+              key: db.password
+        - name: DB_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: db.database
+        - name: GRPC_PORT
+          value: "50062"
+        - name: METRICS_PORT
+          value: "9090"
+        - name: AUTH_SERVICE_ADDR
+          value: "auth-service:50051"
+        - name: COMMERCIAL_SERVICE_ADDR
+          value: "commercial-service:50052"
+        - name: NOTIFICATIONS_SERVICE_ADDR
+          value: "notifications-service:50058"
+        - name: INTERNAL_SERVICE_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: metarang-secrets
+              key: internal.service.secret
+        - name: PROJECT_URL
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: app.url
+        - name: FRONTEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: frontend.url
+        - name: SADAD_CALLBACK_PORT
+          value: "8080"
+        - name: SADAD_MERCHANT_ID
+          valueFrom:
+            secretKeyRef:
+              name: metarang-secrets
+              key: sadad.merchant.id
+              optional: true
+        - name: SADAD_TERMINAL_ID
+          valueFrom:
+            secretKeyRef:
+              name: metarang-secrets
+              key: sadad.terminal.id
+              optional: true
+        - name: SADAD_TRANSACTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: metarang-secrets
+              key: sadad.transaction.key
+              optional: true
+        - name: SADAD_PAYMENT_IDENTITY_RIAL
+          valueFrom:
+            secretKeyRef:
+              name: metarang-secrets
+              key: sadad.payment.identity.rial
+              optional: true
+        - name: SADAD_PAYMENT_IDENTITY_NON_RIAL
+          valueFrom:
+            secretKeyRef:
+              name: metarang-secrets
+              key: sadad.payment.identity.non_rial
+              optional: true
+        - name: SENTRY_DSN
+          valueFrom:
+            secretKeyRef:
+              name: metarang-secrets
+              key: sentry.dsn
+              optional: true
+        - name: SENTRY_ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: sentry.environment
+        - name: SENTRY_RELEASE
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: sentry.release
+              optional: true
+        - name: SENTRY_TRACES_SAMPLE_RATE
+          valueFrom:
+            configMapKeyRef:
+              name: metarang-config
+              key: sentry.traces_sample_rate
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command: ["/bin/sh", "-c", "nc -z localhost 50062"]
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 3
+          failureThreshold: 5
+        readinessProbe:
+          exec:
+            command: ["/bin/sh", "-c", "nc -z localhost 50062"]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 10
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: financial-service
+  namespace: metarang
+  labels:
+    app: financial-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 50062
+    targetPort: 50062
+    protocol: TCP
+    name: grpc
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  selector:
+    app: financial-service
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: financial-service-hpa
+  namespace: metarang
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: financial-service
+  minReplicas: 1
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
