@@ -29,7 +29,7 @@ spec:
       containers:
       - name: features-service
         image: abbasajorloo/features-service:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 50053
           name: grpc

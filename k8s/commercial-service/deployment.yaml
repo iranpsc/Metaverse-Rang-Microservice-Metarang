@@ -29,7 +29,7 @@ spec:
       containers:
       - name: commercial-service
         image: abbasajorloo/commercial-service:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 50052
           name: grpc

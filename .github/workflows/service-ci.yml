@@ -233,12 +233,51 @@ jobs:
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Apply cluster configuration
+        run: kubectl apply -f k8s/config/configmap.yaml
+
+      - name: Prepare deployment
+        env:
+          DEPLOY: ${{ inputs.service_name }}
         run: |
-          kubectl apply -f k8s/config/configmap.yaml
-          MANIFEST="k8s/${{ inputs.service_name }}/deployment.yaml"
-          if [ -f "$MANIFEST" ]; then
-            kubectl apply -f "$MANIFEST"
+          NS=metarang
+
+          kubectl patch serviceaccount default -n "$NS" \
+            -p '{"imagePullSecrets":[{"name":"dockerhub-credentials"}]}' 2>/dev/null || true
+
+          if ! kubectl get deployment "$DEPLOY" -n "$NS" >/dev/null 2>&1; then
+            MANIFEST="k8s/${DEPLOY}/deployment.yaml"
+            if [ -f "$MANIFEST" ]; then
+              kubectl apply -f "$MANIFEST"
+            else
+              echo "Deployment $DEPLOY not found and no manifest exists in k8s/${DEPLOY}/"
+              exit 1
+            fi
+          else
+            kubectl patch deployment "$DEPLOY" -n "$NS" --type=json \
+              -p='[{"op":"add","path":"/spec/template/spec/imagePullSecrets","value":[{"name":"dockerhub-credentials"}]}]' \
+              2>/dev/null || \
+            kubectl patch deployment "$DEPLOY" -n "$NS" --type=json \
+              -p='[{"op":"replace","path":"/spec/template/spec/imagePullSecrets","value":[{"name":"dockerhub-credentials"}]}]'
+
+            kubectl patch deployment "$DEPLOY" -n "$NS" \
+              -p "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${DEPLOY}\",\"imagePullPolicy\":\"IfNotPresent\"}]}}}}"
+
+            kubectl patch hpa "${DEPLOY}-hpa" -n "$NS" \
+              -p '{"spec":{"minReplicas":1}}' 2>/dev/null || true
+
+            MANIFEST="k8s/${DEPLOY}/deployment.yaml"
+            if [ -f "$MANIFEST" ]; then
+              kubectl set env deployment/"$DEPLOY" -n "$NS" \
+                DB_HOST=mysql --containers="$DEPLOY"
+              if [ "$DEPLOY" = "features-service" ]; then
+                kubectl set env deployment/"$DEPLOY" -n "$NS" \
+                  REDIS_ADDR=redis:6379 --containers="$DEPLOY"
+              fi
+            fi
           fi
+
+          kubectl delete pods -l app="$DEPLOY" -n "$NS" \
+            --field-selector=status.phase!=Running --ignore-not-found
 
       - name: Recover stuck deployment
         run: |
@@ -264,9 +303,12 @@ jobs:
 
       - name: Verify pod readiness
         run: |
+          # Only watch Running pods; terminating pods can disappear mid-wait during
+          # rolling updates and cause kubectl wait to fail with NotFound.
           kubectl wait --for=condition=ready pod \
             -l app=${{ inputs.service_name }} \
             -n metarang \
+            --field-selector=status.phase=Running \
             --timeout=120s
 
       - name: Rollback on failure

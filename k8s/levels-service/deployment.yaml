@@ -28,7 +28,7 @@ spec:
       containers:
       - name: levels-service
         image: abbasajorloo/levels-service:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 50054
           name: grpc
