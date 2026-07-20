@@ -268,7 +268,7 @@ func TestVerifyAccountSecuritySuccess(t *testing.T) {
 		t.Fatalf("expected one user event, got %d", len(activityRepo.events))
 	}
 	event := activityRepo.events[0]
-	if event.Event != "??? ???? ???? ????? ???? ??????" {
+	if event.Event != "غیر فعال سازی امنیت حساب کاربری" {
 		t.Fatalf("unexpected event message: %q", event.Event)
 	}
 	if event.IP != "127.0.0.1" {
@@ -654,7 +654,7 @@ func TestVerifyAccountSecurityEventLogging(t *testing.T) {
 	if event.UserID != 1 {
 		t.Errorf("expected user ID 1, got %d", event.UserID)
 	}
-	if event.Event != "??? ???? ???? ????? ???? ??????" {
+	if event.Event != "غیر فعال سازی امنیت حساب کاربری" {
 		t.Errorf("expected Farsi event message, got %q", event.Event)
 	}
 	if event.IP != "192.168.1.100" {
