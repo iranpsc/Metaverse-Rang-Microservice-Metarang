@@ -62,19 +62,7 @@ func main() {
 	log.Printf("✅ Created auth service client for %s (connection will be established on first RPC call)", cfg.AuthServiceAddr)
 
 	// Create connections to other services (with fallback if not configured)
-	var calendarConn, dynastyConn, featuresConn, financialConn, commercialConn, socialConn, levelsConn, trainingConn, supportConn, notificationConn *grpc.ClientConn
-
-	if cfg.CalendarServiceAddr != "" {
-		calendarConn, err = grpcutil.NewClient(
-			cfg.CalendarServiceAddr,
-		)
-		if err != nil {
-			log.Printf("⚠️  Failed to connect to calendar service: %v", err)
-		} else {
-			defer func() { _ = calendarConn.Close() }()
-			log.Printf("✅ Connected to calendar service at %s", cfg.CalendarServiceAddr)
-		}
-	}
+	var dynastyConn, featuresConn, financialConn, commercialConn, socialConn, levelsConn, trainingConn, supportConn, notificationConn *grpc.ClientConn
 
 	if cfg.DynastyServiceAddr != "" {
 		dynastyConn, err = grpcutil.NewClient(
@@ -203,11 +191,6 @@ func main() {
 	// Create handlers (levels optional: enriches /api/auth/me level.fbx_file from level gem via levels-service)
 	authHandler := handler.NewAuthHandler(authConn, levelsConn, cfg.Locale)
 	walletHandler := handler.NewWalletHandler(authConn, cfg.Locale)
-
-	var calendarHandler *handler.CalendarHandler
-	if calendarConn != nil {
-		calendarHandler = handler.NewCalendarHandler(calendarConn, authConn)
-	}
 
 	var dynastyHandler *handler.DynastyHandler
 	if dynastyConn != nil {
@@ -551,15 +534,6 @@ func main() {
 			authHandler.GetUserEvent(w, r)
 		}
 	})))
-
-	// Calendar routes
-	if calendarHandler != nil {
-		mux.Handle("/api/calendar", optionalAuthMiddleware(http.HandlerFunc(calendarHandler.GetEvents)))
-		mux.Handle("/api/calendar/", optionalAuthMiddleware(http.HandlerFunc(calendarHandler.GetEvent)))
-		mux.Handle("/api/calendar/filter", optionalAuthMiddleware(http.HandlerFunc(calendarHandler.FilterByDateRange)))
-		mux.Handle("/api/calendar/latest-version", optionalAuthMiddleware(http.HandlerFunc(calendarHandler.GetLatestVersion)))
-		mux.Handle("/api/calendar/events/", authMiddleware(http.HandlerFunc(calendarHandler.AddInteraction)))
-	}
 
 	// Dynasty routes
 	if dynastyHandler != nil {

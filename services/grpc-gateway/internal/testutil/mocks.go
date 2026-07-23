@@ -7,7 +7,6 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	pb "metarang/shared/pb/auth"
-	calendarpb "metarang/shared/pb/calendar"
 	featurespb "metarang/shared/pb/features"
 	socialpb "metarang/shared/pb/social"
 )
@@ -143,37 +142,6 @@ func (m *MockKYCService) GetBankAccount(ctx context.Context, req *pb.GetBankAcco
 		return m.GetBankAccountFunc(ctx, req)
 	}
 	return &pb.BankAccountResponse{}, nil
-}
-
-// MockCalendarService implements calendarpb.CalendarServiceServer for tests.
-type MockCalendarService struct {
-	calendarpb.UnimplementedCalendarServiceServer
-	GetEventsFunc func(ctx context.Context, req *calendarpb.GetEventsRequest) (*calendarpb.EventsResponse, error)
-	GetEventFunc  func(ctx context.Context, req *calendarpb.GetEventRequest) (*calendarpb.EventResponse, error)
-}
-
-func (m *MockCalendarService) GetEvents(ctx context.Context, req *calendarpb.GetEventsRequest) (*calendarpb.EventsResponse, error) {
-	if m.GetEventsFunc != nil {
-		return m.GetEventsFunc(ctx, req)
-	}
-	return &calendarpb.EventsResponse{}, nil
-}
-
-func (m *MockCalendarService) GetEvent(ctx context.Context, req *calendarpb.GetEventRequest) (*calendarpb.EventResponse, error) {
-	if m.GetEventFunc != nil {
-		return m.GetEventFunc(ctx, req)
-	}
-	return &calendarpb.EventResponse{}, nil
-}
-
-// DialCalendarConn returns a client connection with calendar-service mock registered.
-func DialCalendarConn(calendar *MockCalendarService) (*grpc.ClientConn, func()) {
-	if calendar == nil {
-		calendar = &MockCalendarService{}
-	}
-	return DialBufConn(func(s *grpc.Server) {
-		calendarpb.RegisterCalendarServiceServer(s, calendar)
-	})
 }
 
 // MockFeatureService implements featurespb.FeatureServiceServer for tests.

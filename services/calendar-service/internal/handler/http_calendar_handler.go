@@ -1,36 +1,81 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"io"
+	"net"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 
-	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 
-	"metarang/grpc-gateway/internal/middleware"
-	pb "metarang/shared/pb/auth"
+	"metarang/calendar-service/internal/middleware"
 	calendarpb "metarang/shared/pb/calendar"
 	commonpb "metarang/shared/pb/common"
 	"metarang/shared/pkg/jalali"
+	"metarang/shared/pkg/sentry"
 )
 
-type CalendarHandler struct {
-	calendarClient calendarpb.CalendarServiceClient
-	authClient     pb.AuthServiceClient
+// calendarAPI is the subset of calendar RPCs used by the HTTP layer.
+type calendarAPI interface {
+	GetEvents(context.Context, *calendarpb.GetEventsRequest) (*calendarpb.EventsResponse, error)
+	GetEvent(context.Context, *calendarpb.GetEventRequest) (*calendarpb.EventResponse, error)
+	FilterByDateRange(context.Context, *calendarpb.FilterByDateRangeRequest) (*calendarpb.SimplifiedEventsResponse, error)
+	GetLatestVersion(context.Context, *calendarpb.GetLatestVersionRequest) (*calendarpb.LatestVersionResponse, error)
+	AddInteraction(context.Context, *calendarpb.AddInteractionRequest) (*calendarpb.EventResponse, error)
 }
 
-func NewCalendarHandler(calendarConn *grpc.ClientConn, authConn *grpc.ClientConn) *CalendarHandler {
-	return &CalendarHandler{
-		calendarClient: calendarpb.NewCalendarServiceClient(calendarConn),
-		authClient:     pb.NewAuthServiceClient(authConn),
+// HTTPCalendarHandler serves Kong-facing REST routes for calendar-service.
+type HTTPCalendarHandler struct {
+	api calendarAPI
+}
+
+// NewHTTPCalendarHandler wraps the gRPC calendar handler for local HTTP use.
+func NewHTTPCalendarHandler(api calendarAPI) *HTTPCalendarHandler {
+	return &HTTPCalendarHandler{api: api}
+}
+
+// RegisterHTTPRoutes registers calendar REST routes and /health.
+func (h *HTTPCalendarHandler) RegisterHTTPRoutes(
+	mux *http.ServeMux,
+	authMiddleware func(http.Handler) http.Handler,
+	optionalAuthMiddleware func(http.Handler) http.Handler,
+) {
+	mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	})
+
+	mux.Handle("/api/calendar", optionalAuthMiddleware(http.HandlerFunc(h.GetEvents)))
+	mux.Handle("/api/calendar/filter", optionalAuthMiddleware(http.HandlerFunc(h.FilterByDateRange)))
+	mux.Handle("/api/calendar/latest-version", optionalAuthMiddleware(http.HandlerFunc(h.GetLatestVersion)))
+	mux.Handle("/api/calendar/events/", authMiddleware(http.HandlerFunc(h.AddInteraction)))
+	// Catch-all for GET /api/calendar/{id} — register after more specific paths.
+	mux.Handle("/api/calendar/", optionalAuthMiddleware(http.HandlerFunc(h.GetEvent)))
+}
+
+// StartHTTPServer starts the public HTTP server (behind Kong).
+func StartHTTPServer(
+	httpHandler *HTTPCalendarHandler,
+	port string,
+	authMiddleware func(http.Handler) http.Handler,
+	optionalAuthMiddleware func(http.Handler) http.Handler,
+) error {
+	mux := http.NewServeMux()
+	httpHandler.RegisterHTTPRoutes(mux, authMiddleware, optionalAuthMiddleware)
+
+	server := &http.Server{
+		Addr:    ":" + port,
+		Handler: sentry.HTTPMiddleware(mux),
 	}
+	return server.ListenAndServe()
 }
 
 // GetEvents handles GET /api/calendar
-func (h *CalendarHandler) GetEvents(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPCalendarHandler) GetEvents(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
@@ -68,7 +113,6 @@ func (h *CalendarHandler) GetEvents(w http.ResponseWriter, r *http.Request) {
 		Date:   date,
 		UserId: userID,
 	}
-
 	if date == "" {
 		grpcReq.Pagination = &commonpb.PaginationRequest{
 			Page:    page,
@@ -76,9 +120,9 @@ func (h *CalendarHandler) GetEvents(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	resp, err := h.calendarClient.GetEvents(r.Context(), grpcReq)
+	resp, err := h.api.GetEvents(r.Context(), grpcReq)
 	if err != nil {
-		writeGRPCError(w, err)
+		writeHandlerError(w, err)
 		return
 	}
 
@@ -115,7 +159,7 @@ func (h *CalendarHandler) GetEvents(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetEvent handles GET /api/calendar/{event}
-func (h *CalendarHandler) GetEvent(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPCalendarHandler) GetEvent(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
@@ -133,12 +177,12 @@ func (h *CalendarHandler) GetEvent(w http.ResponseWriter, r *http.Request) {
 		userID = userCtx.UserID
 	}
 
-	resp, err := h.calendarClient.GetEvent(r.Context(), &calendarpb.GetEventRequest{
+	resp, err := h.api.GetEvent(contextWithClientIP(r), &calendarpb.GetEventRequest{
 		EventId: eventID,
 		UserId:  userID,
 	})
 	if err != nil {
-		writeGRPCError(w, err)
+		writeHandlerError(w, err)
 		return
 	}
 
@@ -148,7 +192,7 @@ func (h *CalendarHandler) GetEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 // FilterByDateRange handles GET /api/calendar/filter
-func (h *CalendarHandler) FilterByDateRange(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPCalendarHandler) FilterByDateRange(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
@@ -186,12 +230,12 @@ func (h *CalendarHandler) FilterByDateRange(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	resp, err := h.calendarClient.FilterByDateRange(r.Context(), &calendarpb.FilterByDateRangeRequest{
+	resp, err := h.api.FilterByDateRange(r.Context(), &calendarpb.FilterByDateRangeRequest{
 		StartDate: startDate,
 		EndDate:   endDate,
 	})
 	if err != nil {
-		writeGRPCError(w, err)
+		writeHandlerError(w, err)
 		return
 	}
 
@@ -210,15 +254,15 @@ func (h *CalendarHandler) FilterByDateRange(w http.ResponseWriter, r *http.Reque
 }
 
 // GetLatestVersion handles GET /api/calendar/latest-version
-func (h *CalendarHandler) GetLatestVersion(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPCalendarHandler) GetLatestVersion(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
-	resp, err := h.calendarClient.GetLatestVersion(r.Context(), &calendarpb.GetLatestVersionRequest{})
+	resp, err := h.api.GetLatestVersion(r.Context(), &calendarpb.GetLatestVersionRequest{})
 	if err != nil {
-		writeGRPCError(w, err)
+		writeHandlerError(w, err)
 		return
 	}
 
@@ -235,7 +279,7 @@ func (h *CalendarHandler) GetLatestVersion(w http.ResponseWriter, r *http.Reques
 }
 
 // AddInteraction handles POST /api/calendar/events/{event}/interact
-func (h *CalendarHandler) AddInteraction(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPCalendarHandler) AddInteraction(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
@@ -294,13 +338,13 @@ func (h *CalendarHandler) AddInteraction(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	resp, err := h.calendarClient.AddInteraction(r.Context(), &calendarpb.AddInteractionRequest{
+	resp, err := h.api.AddInteraction(contextWithClientIP(r), &calendarpb.AddInteractionRequest{
 		EventId: eventID,
 		UserId:  userCtx.UserID,
 		Liked:   req.Liked,
 	})
 	if err != nil {
-		writeGRPCError(w, err)
+		writeHandlerError(w, err)
 		return
 	}
 
@@ -367,63 +411,26 @@ func buildCalendarEventMap(event *calendarpb.EventResponse, includeViews bool, r
 	return eventMap
 }
 
-func buildSimplePaginationLinks(r *http.Request, currentPage int32, hasMore bool) map[string]interface{} {
-	baseURL := requestBaseURL(r)
-	query := r.URL.Query()
-
-	links := map[string]interface{}{}
-
-	query.Set("page", "1")
-	links["first"] = baseURL + "?" + query.Encode()
-	links["last"] = nil
-
-	if currentPage > 1 {
-		query.Set("page", strconv.FormatInt(int64(currentPage-1), 10))
-		links["prev"] = baseURL + "?" + query.Encode()
-	} else {
-		links["prev"] = nil
+func contextWithClientIP(r *http.Request) context.Context {
+	ip := clientIPFromRequest(r)
+	if ip == "" {
+		return r.Context()
 	}
-
-	if hasMore {
-		query.Set("page", strconv.FormatInt(int64(currentPage+1), 10))
-		links["next"] = baseURL + "?" + query.Encode()
-	} else {
-		links["next"] = nil
-	}
-
-	return links
+	md := metadata.Pairs("x-forwarded-for", ip)
+	return metadata.NewIncomingContext(r.Context(), md)
 }
 
-// publicBaseURL returns the Kong/public gateway base (scheme+host) when APP_URL
-// is set. Kong sets preserve_host=false, so r.Host is the upstream grpc-gateway
-// host and must not be used in client-facing pagination links.
-func publicBaseURL(r *http.Request) string {
-	if appURL := strings.TrimSuffix(os.Getenv("APP_URL"), "/"); appURL != "" {
-		return appURL
+func clientIPFromRequest(r *http.Request) string {
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		parts := strings.Split(xff, ",")
+		return strings.TrimSpace(parts[0])
 	}
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
+	if xri := r.Header.Get("X-Real-IP"); xri != "" {
+		return xri
 	}
-	if forwarded := r.Header.Get("X-Forwarded-Proto"); forwarded != "" {
-		scheme = forwarded
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
 	}
-	return scheme + "://" + r.Host
-}
-
-func requestBaseURL(r *http.Request) string {
-	return publicBaseURL(r) + r.URL.Path
-}
-
-func requestPath(r *http.Request) string {
-	return publicBaseURL(r) + r.URL.Path
-}
-
-func writeFieldValidationError(w http.ResponseWriter, message string, errors map[string][]string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusUnprocessableEntity)
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-		"message": message,
-		"errors":  errors,
-	})
+	return host
 }
