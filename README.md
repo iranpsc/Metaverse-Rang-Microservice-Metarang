@@ -159,8 +159,7 @@ metarang-microservices/
 
 ```bash
 make test-unit        # Unit tests
-make test-integration # Integration tests
-make test-golden      # Golden JSON (Laravel compatibility)
+make test-services    # Dedicated service test modules
 make test-database    # Database tests
 make test-all         # Full suite
 ```
@@ -173,7 +172,7 @@ Shared schema in `scripts/schema.sql`. Notes: `transactions.id` is VARCHAR; `fea
 
 ## API Compatibility
 
-**CRITICAL**: All services MUST maintain 100% API compatibility with the Laravel monolith (JSON fields, status codes, validation format, Jalali dates, URLs). Golden tests enforce this.
+**CRITICAL**: All services MUST maintain 100% API compatibility with the Laravel monolith (JSON fields, status codes, validation format, Jalali dates, URLs).
 
 ## Troubleshooting
 
